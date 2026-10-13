@@ -38,12 +38,19 @@
   </section>
 
   <section class="bd-card" id="sms">
-    <h2 class="bd-section-title">📱 SMS שבועי</h2>
-    <p class="bd-help bd-mb">בכל יום ראשון בבוקר תקבלו SMS עם כל ימי ההולדת של השבוע (מקורבים ובני משפחה).</p>
+    <h2 class="bd-section-title">📱 תזכורות SMS</h2>
+    <p class="bd-help bd-mb">תזכורת בבוקר עם ימי ההולדת (מקורבים ובני משפחה). בשבת ובחג לא נשלחות הודעות — ההודעה נשלחת ביום החול שלפני וכוללת גם את ימי השבת/החג.</p>
+    <p class="bd-mb"><span class="bd-status <%= quota.left ? 'bd-status--accent' : 'bd-status--bad' %>"><span>מכסה החודש: נוצלו <bdi class="bd-num"><%= quota.used %></bdi> מתוך <bdi class="bd-num"><%= quota.quota %></bdi> יחידות</span></span></p>
     <% if (!smsOn) { %><div class="bd-msg bd-msg--err">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</div><% } %>
     <form method="post" action="<%= base %>/sms">
       <div class="bd-field"><label class="bd-label" for="sms-ph">מספר נייד לקבלת ההודעה</label><input class="bd-input" id="sms-ph" name="sms_phone" type="tel" dir="ltr" style="text-align:right" inputmode="tel" value="<%= shliach.sms_phone %>" placeholder="050-0000000"></div>
-      <label class="bd-check"><input type="checkbox" name="sms_enabled" <%= shliach.sms_enabled ? 'checked' : '' %>> לשלוח לי SMS בכל יום ראשון</label>
+      <fieldset class="bd-field"><legend class="bd-label">מתי לשלוח</legend>
+      <div class="bd-toggle" role="radiogroup" aria-label="תדירות">
+        <% Object.entries(FREQUENCIES).forEach(([k, label]) => { %><input type="radio" name="sms_frequency" id="fq-<%= k %>" value="<%= k %>" <%= shliach.sms_frequency === k ? 'checked' : '' %>><label for="fq-<%= k %>"><%= label %></label><% }) %>
+      </div>
+      <span class="bd-help">שבועי: כל ימי ההולדת של השבוע, ביום ראשון. יומי: ימי ההולדת של היום, רק בימים שיש בהם ימי הולדת.</span>
+      </fieldset>
+      <label class="bd-check"><input type="checkbox" name="sms_enabled" <%= shliach.sms_enabled ? 'checked' : '' %>> לשלוח לי תזכורות SMS</label>
       <button class="bd-btn bd-btn--primary bd-mt">שמירה</button>
     </form>
     <% if (shliach.sms_last_sent) { %><p class="bd-help bd-mt">נשלח לאחרונה: <span class="bd-num"><%= shliach.sms_last_sent.split('-').reverse().join('.') %></span></p><% } %>

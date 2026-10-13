@@ -89,3 +89,30 @@ test('הודעת SMS שבועית', async () => {
   assert.equal(normalizePhone('+972-52-123-4567'), '0521234567');
   assert.equal(normalizePhone('03-1234567'), null);
 });
+
+test('שבת וחג: שליחה יומית מוקדמת ליום החול שלפני וכוללת את ימי השבת/החג', async () => {
+  const { dailyRange, weeklySendDay, isRestDay } = await import('../lib/dates.js');
+  const r = (iso) => { const x = dailyRange(new Date(iso + 'T00:00')); return `${toISO(x.start)}..${toISO(x.end)}`; };
+  assert.equal(r('2026-10-14'), '2026-10-14..2026-10-14'); // יום חול רגיל
+  assert.equal(r('2026-10-16'), '2026-10-16..2026-10-17'); // שישי → כולל שבת
+  assert.equal(r('2026-09-11'), '2026-09-11..2026-09-13'); // ערב ראש השנה (שבת+ראשון)
+  assert.equal(r('2026-09-20'), '2026-09-20..2026-09-21'); // ערב יום כיפור
+  assert.equal(r('2027-04-21'), '2027-04-21..2027-04-22'); // ערב פסח
+  assert.ok(isRestDay(new Date(2026, 9, 3)));  // שמיני עצרת
+  assert.ok(!isRestDay(new Date(2026, 8, 29))); // חול המועד
+  // יום ראשון שהוא חג (ב׳ ראש השנה) → שבועי נשלח ביום שישי
+  assert.equal(toISO(weeklySendDay(new Date(2026, 8, 13))), '2026-09-11');
+  assert.equal(toISO(weeklySendDay(new Date(2026, 9, 18))), '2026-10-18');
+});
+
+test('יחידות SMS ומכסה', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { smsUnits, buildDailyMessage } = await import('../lib/sms.js');
+  assert.equal(smsUnits('א'.repeat(70)), 1);
+  assert.equal(smsUnits('א'.repeat(71)), 2);
+  assert.equal(smsUnits('א'.repeat(134)), 2);
+  assert.equal(smsUnits('א'.repeat(135)), 3);
+  assert.equal(smsUnits('a'.repeat(160)), 1);
+  const msg = buildDailyMessage([], { start: new Date(2026, 9, 16), end: new Date(2026, 9, 17) }, '');
+  assert.equal(msg, '🎂 ימי הולדת היום ועד מוצאי שבת/חג (16.10–17.10)\nאין ימי הולדת בימים אלה.');
+});
