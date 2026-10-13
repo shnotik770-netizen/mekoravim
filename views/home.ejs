@@ -33,8 +33,8 @@
       <% if (a.next) { %>יום ההולדת הבא: <%= a.next.label %>, <span class="bd-num"><%= fmtGreg(a.next.date) %></span> — ימלאו לו <%= a.next.age %>.<% } %></div>
     <div class="bd-example"><b>נולד באדר בשנה פשוטה</b> (<%= b.text %>): בשנה מעוברת חוגגים באדר ב׳.
       <% if (b.next) { %>הפעם הבאה: <%= b.next.label %>, <span class="bd-num"><%= fmtGreg(b.next.date) %></span>.<% } %></div>
-    <div class="bd-example"><b>ל׳ בחודש שלא תמיד קיים</b> (<%= c.text %>): בשנה שבה לחשוון יש רק 29 ימים — יום ההולדת עובר לא׳ כסלו.
-      <% if (c.next) { %>הפעם הבאה: <%= c.next.label %>, <span class="bd-num"><%= fmtGreg(c.next.date) %></span>.<% } %></div>
+    <div class="bd-example"><b>ל׳ בחודש שלא תמיד קיים</b> (<%= c.text %>): בשנה שבה לחשוון יש רק 29 ימים — מציינים יום קודם, בכ״ט חשוון, ובמערכת מופיעה הערה.
+      <% if (c.next) { %>הפעם הבאה: <span class="bd-num"><%= fmtGreg(c.next.date) %></span><%= c.next.note ? ' — ' + c.next.note : '' %>.<% } %></div>
   </div>
   <p class="bd-help bd-mt">תאריך שלא קיים כלל (למשל ל׳ טבת) לא יתקבל בטופס.</p>
 </section>

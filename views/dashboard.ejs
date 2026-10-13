@@ -75,7 +75,7 @@
         <ul class="bd-mini">
           <% overdue.forEach(e => { const d = String(e.contact.phone || '').replace(/\D/g, ''); %>
           <li>
-            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date"><%= e.label %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
+            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date"><%= e.label %><%= e.note ? ' (' + e.actualLabel + ')' : '' %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
             <% if (d) { %><a class="bd-icon-btn bd-icon-btn--wa" href="https://wa.me/972<%= d.replace(/^0/, '') %>" target="_blank" rel="noopener" aria-label="וואטסאפ ל<%= e.name %>"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
             <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log">
               <input type="hidden" name="back" value="<%= back %>">
@@ -95,7 +95,7 @@
         <ul class="bd-mini">
           <% upcoming.forEach(e => { %>
           <li>
-            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date">יום <%= DAY_NAMES[e.date.getDay()] %> · <%= e.label %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
+            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date">יום <%= DAY_NAMES[e.date.getDay()] %> · <%= e.label %><%= e.note ? ' (' + e.actualLabel + ')' : '' %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
             <%- include('partials/cat_chip', { cat: catById.get(e.contact.category_id) }) %>
           </li>
           <% }) %>

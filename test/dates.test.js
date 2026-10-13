@@ -15,9 +15,30 @@ test('אדר בשנה פשוטה נשמר כ-13 וחל באדר ב׳ בשנה מ
   assert.equal(toISO(hebOccurrence(14, 12, 5786)), '2026-03-03'); // אדר א׳ בשנה פשוטה → אדר
 });
 
-test('30 בחודש חסר עובר ל-א׳ בחודש הבא', () => {
+test('ל׳ בחודש חסר: מציינים יום קודם (כ״ט), התווית נשארת ל׳ עם הערה', () => {
   // חשוון 5786 חסר (29 יום)
-  assert.equal(toISO(hebOccurrence(30, 8, 5786)), toISO(hebOccurrence(1, 9, 5786)));
+  assert.equal(toISO(hebOccurrence(30, 8, 5786)), toISO(hebOccurrence(29, 8, 5786)));
+  const [e] = eventsInRange({ h_day: 30, h_month: 8, h_year: 5750 }, new Date(2025, 10, 10), new Date(2025, 10, 30));
+  assert.equal(toISO(e.date), '2025-11-20');
+  assert.equal(e.label, 'ל׳ חשוון');
+  assert.equal(e.note, 'השנה אין ל׳ חשוון — מציינים בכ״ט חשוון');
+  // בשנה מלאה — בלי הערה
+  const [f] = eventsInRange({ h_day: 30, h_month: 8, h_year: 5750 }, new Date(2026, 10, 1), new Date(2026, 10, 30));
+  assert.equal(toISO(f.date), '2026-11-10');
+  assert.equal(f.note, null);
+  // ל׳ אדר א׳ בשנה פשוטה → כ״ט אדר
+  const [g] = eventsInRange({ h_day: 30, h_month: 12, h_year: 5744 }, new Date(2026, 1, 15), new Date(2026, 3, 5));
+  assert.equal(toISO(g.date), '2026-03-18');
+  assert.equal(g.label, 'ל׳ אדר א׳');
+});
+
+test('אדר: התווית המקורית, הערה על התאריך של השנה', () => {
+  const [a] = eventsInRange({ h_day: 14, h_month: 13, h_year: 5745 }, new Date(2027, 2, 1), new Date(2027, 3, 5));
+  assert.equal(a.label, 'י״ד אדר');
+  assert.equal(a.note, 'בשנה מעוברת מציינים בי״ד אדר ב׳');
+  const [b] = eventsInRange({ h_day: 14, h_month: 13, h_year: 5744 }, new Date(2027, 2, 1), new Date(2027, 3, 5));
+  assert.equal(b.label, 'י״ד אדר ב׳');
+  assert.equal(b.note, null);
 });
 
 test('אירועים בטווח וגיל — עברי בלבד', () => {

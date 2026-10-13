@@ -25,6 +25,7 @@
       <% if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
       <% if (e.member) { %><span><%= e.member.relation %> של <%= e.contact.first_name %> <%= e.contact.last_name %></span><% } %>
       <% if (past && !done) { %><span style="color:var(--bd-bad);font-weight:500">טרם נוצר קשר</span><% } %>
+      <% if (e.note) { %><span class="bd-note">ⓘ <%= e.note %></span><% } %>
     </div>
   </div>
   <div class="bd-row__actions">

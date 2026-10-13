@@ -134,3 +134,6 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 .bd-wa-float { position: fixed; bottom: 20px; inset-inline-start: 20px; z-index: 40; width: 56px; height: 56px; border-radius: 50%;
   display: grid; place-items: center; background: var(--bd-wa); color: #fff; box-shadow: 0 6px 18px rgb(0 0 0 / .2); }
 .bd a.bd-wa-float { color: #fff; }
+
+/* הערה על תאריך שמציינים השנה במועד אחר (ל׳ בחודש חסר, אדר א׳/ב׳) */
+.bd-note { color: var(--bd-gold); font-size: var(--bd-fs-sm); }

@@ -1,6 +1,6 @@
 <%- include('partials/head', { title: c.first_name + ' ' + c.last_name, nav: true, active: 'contacts' }) %>
 <%
-  const nextStr = (n) => n ? `${n.label} — יום ${DAY_NAMES[n.date.getDay()]}, ${fmtGreg(n.date)}${n.age ? ' · ימלאו ' + n.age : ''}` : '—';
+  const nextStr = (n) => n ? `${n.label} — יום ${DAY_NAMES[n.date.getDay()]}, ${fmtGreg(n.date)}${n.age ? ' · ימלאו ' + n.age : ''}${n.note ? ' (' + n.note + ')' : ''}` : '—';
 %>
 <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
 <div class="bd-layout bd-layout--split">

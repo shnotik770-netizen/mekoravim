@@ -31,7 +31,7 @@
         <div class="bd-item__sub"><span class="bd-num"><%= c.phone %></span> · <%= birthText(c) %></div>
       </div>
       <div class="bd-item__side">
-        <% if (c.next) { %>🎂 <b><%= c.next.label %></b> <span class="bd-muted bd-num">(<%= fmtGreg(c.next.date) %>)</span><% } %>
+        <% if (c.next) { %>🎂 <b><%= c.next.label %></b> <span class="bd-muted bd-num">(<%= fmtGreg(c.next.date) %>)</span><% if (c.next.note) { %><div class="bd-note"><%= c.next.note %></div><% } %><% } %>
         <% if (c.last_contact) { %><div class="bd-muted">קשר אחרון: <span class="bd-num"><%= fmtDate(c.last_contact) %></span></div><% } %>
       </div>
     </a></li>
