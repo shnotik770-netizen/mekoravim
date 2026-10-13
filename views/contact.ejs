@@ -9,11 +9,11 @@
     <div class="bd-pagehead" style="margin-bottom:0">
       <div>
         <h1 class="bd-title"><%= c.first_name %> <%= c.last_name %></h1>
-        <p class="bd-sub bd-num"><%= c.phone %></p>
+        <p class="bd-sub bd-num"><%= c.phone || 'אין טלפון' %></p>
       </div>
       <div class="bd-actions">
         <% if (wa) { %><a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="וואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
-        <a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a>
+        <% if (c.phone) { %><a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a><% } %>
       </div>
     </div>
     <div class="bd-facts">
@@ -29,16 +29,7 @@
       </select>
       <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
     </form>
-    <form method="post" action="<%= base %>/contacts/<%= c.id %>/remind" class="bd-inline bd-mt">
-      <label class="bd-label" for="remind">🔔 תזכורת SMS על יום ההולדת</label>
-      <select class="bd-input" id="remind" name="remind_days" data-autosubmit style="max-width:260px">
-        <option value="" <%= c.remind_days === null ? 'selected' : '' %>>בלי תזכורת</option>
-        <option value="0" <%= c.remind_days === 0 ? 'selected' : '' %>>ביום ההולדת</option>
-        <option value="1" <%= c.remind_days === 1 ? 'selected' : '' %>>יום לפני</option>
-        <% for (let d = 2; d <= 7; d++) { %><option value="<%= d %>" <%= c.remind_days === d ? 'selected' : '' %>><%= d === 7 ? 'שבוע' : d + ' ימים' %> לפני</option><% } %>
-      </select>
-      <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
-    </form>
+    <div class="bd-mt"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/remind', value: c.remind_days, id: 'remind', label: '🔔 תזכורת SMS על יום ההולדת' }) %></div>
     <p class="bd-help">נשלח לנייד שלכם גם אם תזכורות ה-SMS הכלליות כבויות. בשבת ובחג — ביום החול שלפני. יורד ממכסת ה-SMS לתזכורות.</p>
     <p class="bd-help bd-mt">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <span class="bd-num"><%= fmtDate(c.created_at) %></span></p>
   </section>
@@ -50,11 +41,17 @@
     <% family.forEach(f => { %>
       <li class="bd-item">
         <div class="bd-item__main">
-          <div class="bd-item__title"><%= f.first_name %> <span class="bd-status"><%= f.relation %></span></div>
+          <div class="bd-item__title"><%= f.first_name %> <span class="bd-status"><%= f.relation %></span><% if (f.remind_days !== null && f.remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></div>
           <div class="bd-item__sub"><%= birthText(f) %></div>
           <div class="bd-item__sub">הבא: <%= nextStr(f.next) %></div>
         </div>
-        <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="bd-link-btn">מחיקה</button></form>
+        <div class="bd-family__ops">
+          <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: '🔔 תזכורת' }) %>
+          <div class="bd-actions">
+            <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/split" data-confirm="להעביר את <%= f.first_name %> לכרטיס מקורב נפרד? התאריכים, התזכורת וסימוני &quot;יצרתי קשר&quot; יעברו איתו."><button class="bd-link-btn bd-link-btn--accent">הפרדה לכרטיס נפרד</button></form>
+            <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="bd-link-btn">מחיקה</button></form>
+          </div>
+        </div>
       </li>
     <% }) %>
     </ul>
@@ -79,7 +76,7 @@
           <div class="bd-field"><label class="bd-label" for="e-fn">שם פרטי</label><input class="bd-input" id="e-fn" name="first_name" value="<%= values.first_name %>" required maxlength="60"></div>
           <div class="bd-field"><label class="bd-label" for="e-ln">שם משפחה</label><input class="bd-input" id="e-ln" name="last_name" value="<%= values.last_name %>" required maxlength="60"></div>
         </div>
-        <div class="bd-field"><label class="bd-label" for="e-ph">טלפון</label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>" required></div>
+        <div class="bd-field"><label class="bd-label" for="e-ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>"></div>
         <fieldset class="bd-field"><legend class="bd-label">תאריך לידה</legend><%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'edit' }) %></fieldset>
         <%- include('partials/cat_select', { selected: values.category_id }) %>
         <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea></div>

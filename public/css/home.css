@@ -107,6 +107,7 @@ h1, h2, h3 { margin: 0; }
 /* ---------- אזורים ---------- */
 .hm-sec { max-width: 1120px; margin: 0 auto; padding: 84px 20px 0; }
 .hm-h2 { font: 900 clamp(1.8rem, 5vw, 2.7rem)/1.15 var(--display); text-align: center; margin-bottom: 40px; }
+.hm-gold { color: var(--gold-2); }
 .hm-h2 em { font-style: normal; color: var(--gold-2); text-decoration: line-through; text-decoration-thickness: 3px; text-decoration-color: rgb(201 138 26 / .5); }
 
 .hm-feats { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }

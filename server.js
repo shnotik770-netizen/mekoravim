@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { q, migrate } from './lib/db.js';
+import { q, pool, migrate } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
   hebToday, addDays, fmtGreg, hebFromGreg, parseISO,
@@ -775,15 +775,58 @@ router.post('/contacts/:id/category', loadContact, async (req, res) => {
   res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
 });
 
-// תזכורת SMS אישית על המקורב (0–7 ימים לפני; ריק = בלי). נשלחת גם אם התזכורות הכלליות כבויות
+// תזכורת SMS אישית על המקורב / בן משפחה (0–7 ימים לפני; ריק = בלי). נשלחת גם אם התזכורות הכלליות כבויות
+function remindDays(v) {
+  const d = v === '' || v === undefined ? null : parseInt(v, 10);
+  return Number.isInteger(d) && d >= 0 && d <= 7 ? d : null;
+}
+const remindText = (d) => (d === 0 ? 'ביום ההולדת' : d === 1 ? 'יום לפני יום ההולדת' : `${d} ימים לפני יום ההולדת`);
+
+router.post('/contacts/:id/family/:fid/remind', loadContact, async (req, res) => {
+  const days = remindDays(req.body.remind_days);
+  const { rowCount } = await q('UPDATE family_members SET remind_days=$1 WHERE id=$2 AND contact_id=$3', [days, int(req.params.fid), req.contact.id]);
+  if (rowCount) flash(req, days === null ? 'התזכורת בוטלה' : `נשמר — תקבלו SMS ${remindText(days)}`);
+  res.redirect(`${res.locals.base}/contacts/${req.contact.id}#family`);
+});
+
+// הפרדת בן משפחה לכרטיס מקורב נפרד: התאריכים, התזכורת והיסטוריית "יצרתי קשר" עוברים איתו
+router.post('/contacts/:id/family/:fid/split', loadContact, async (req, res) => {
+  const c = req.contact;
+  const client = await pool.connect();
+  let newId = null;
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query('SELECT * FROM family_members WHERE id=$1 AND contact_id=$2 FOR UPDATE', [int(req.params.fid), c.id]);
+    const f = rows[0];
+    if (f) {
+      const ins = await client.query(
+        `INSERT INTO contacts (shliach_id, first_name, last_name, phone, notes, g_date, g_after_sunset, h_day, h_month, h_year, category_id, remind_days)
+         VALUES ($1,$2,$3,'',$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+        [req.shliach.id, f.first_name, c.last_name, `${f.relation} של ${c.first_name} ${c.last_name}`.slice(0, 1000),
+          f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year, c.category_id, f.remind_days]);
+      newId = ins.rows[0].id;
+      await client.query('UPDATE contact_log SET contact_id=$1, family_member_id=NULL WHERE family_member_id=$2', [newId, f.id]);
+      await client.query('DELETE FROM family_members WHERE id=$1', [f.id]);
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+  if (!newId) return res.redirect(`${res.locals.base}/contacts/${c.id}#family`);
+  flash(req, 'בן המשפחה הועבר לכרטיס נפרד');
+  res.redirect(`${res.locals.base}/contacts/${newId}`);
+});
+
 router.post('/contacts/:id/remind', loadContact, async (req, res) => {
-  const d = req.body.remind_days === '' || req.body.remind_days === undefined ? null : parseInt(req.body.remind_days, 10);
-  const days = Number.isInteger(d) && d >= 0 && d <= 7 ? d : null;
+  const days = remindDays(req.body.remind_days);
   await q('UPDATE contacts SET remind_days=$1 WHERE id=$2', [days, req.contact.id]);
   const s = req.shliach;
   const phone = normalizePhone(s.sms_phone) || normalizePhone(s.phone);
   flash(req, days === null ? 'התזכורת על המקורב בוטלה'
-    : `נשמר — תקבלו SMS ${days === 0 ? 'ביום ההולדת' : days === 1 ? 'יום לפני יום ההולדת' : `${days} ימים לפני יום ההולדת`}${phone ? '' : ' (שימו לב: אין מספר נייד בהגדרות)'}`);
+    : `נשמר — תקבלו SMS ${remindText(days)}${phone ? '' : ' (שימו לב: אין מספר נייד בהגדרות)'}`);
   res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
 });
 

@@ -17,7 +17,7 @@
     <div class="bd-field"><label class="bd-label" for="fn">שם פרטי<span class="req">*</span></label><input class="bd-input" id="fn" name="first_name" value="<%= values.first_name || '' %>" autocomplete="given-name" required maxlength="60"></div>
     <div class="bd-field"><label class="bd-label" for="ln">שם משפחה<span class="req">*</span></label><input class="bd-input" id="ln" name="last_name" value="<%= values.last_name || '' %>" autocomplete="family-name" required maxlength="60"></div>
   </div>
-  <div class="bd-field"><label class="bd-label" for="ph">טלפון<span class="req">*</span></label><input class="bd-input" id="ph" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" autocomplete="tel" placeholder="050-0000000" value="<%= values.phone || '' %>" required maxlength="30"></div>
+  <div class="bd-field"><label class="bd-label" for="ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="ph" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" autocomplete="tel" placeholder="050-0000000" value="<%= values.phone || '' %>" maxlength="30"></div>
 
   <fieldset class="bd-field">
     <legend class="bd-label">תאריך לידה<span class="req">*</span></legend>

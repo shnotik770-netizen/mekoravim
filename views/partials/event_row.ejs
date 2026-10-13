@@ -18,7 +18,7 @@
   </div>
   <div class="bd-row__who">
     <div class="bd-row__line">
-      <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><% if (!e.member && e.contact.remind_days !== null && e.contact.remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></span>
+      <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><% if ((e.member || e.contact).remind_days !== null && (e.member || e.contact).remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></span>
       <%- include('cat_chip', { cat }) %>
     </div>
     <div class="bd-row__meta">

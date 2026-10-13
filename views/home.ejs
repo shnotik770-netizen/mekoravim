@@ -1,7 +1,7 @@
 <%
   const waNumber = '972533404770';
   const wa = (t) => `https://wa.me/${waNumber}?text=${encodeURIComponent(t)}`;
-  const waContact = wa('שלום, אשמח לפתוח חשבון במערכת ימי הולדת למקורבים');
+  const waContact = wa('שלום, אשמח לשמוע על מערכת ימי הולדת למקורבים');
   const ticker = ['ימי הולדת עבריים', 'תזכורת SMS שבועית ויומית', 'קישורי רישום למקורבים', 'ייבוא מאקסל', 'בני משפחה', 'סימון "יצרתי קשר"', 'בלי שבת וחג', 'נשמר כאפליקציה'];
 %><!doctype html>
 <html lang="he" dir="rtl">
@@ -24,7 +24,7 @@
 
 <header class="hm-bar">
   <a class="hm-brand" href="/"><img src="/icons/icon-192.png" alt="" width="34" height="34">ימי הולדת <span>למקורבים</span></a>
-  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener">פתיחת חשבון</a>
+  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
 </header>
 
 <section class="hm-hero">
@@ -35,7 +35,7 @@
       <h1 class="hm-title hm-rise" style="--d:1">אף יום הולדת של מקורב<br>לא יעבור <em>בלי ברכה</em></h1>
       <p class="hm-lead hm-rise" style="--d:2">כל ימי ההולדת העבריים של המקורבים ובני המשפחה — במקום אחד, עם תזכורת ב-SMS ובוואטסאפ בלחיצה.</p>
       <div class="hm-cta hm-rise" style="--d:3">
-        <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>רוצים חשבון? דברו איתנו</a>
+        <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
         <a class="hm-btn hm-btn--line" href="#how">איך זה עובד</a>
       </div>
     </div>
@@ -55,7 +55,7 @@
 
 <main>
   <section class="hm-sec" id="features">
-    <h2 class="hm-h2" data-reveal>הכול מה שצריך — <em>בלי</em> מה שלא</h2>
+    <h2 class="hm-h2" data-reveal>כל מה שצריך כדי <span class="hm-gold">לא לפספס</span> אף יום הולדת</h2>
     <div class="hm-feats">
       <article class="hm-feat" data-reveal><span class="hm-ico">📅</span><h3>תאריך עברי, אוטומטית</h3><p>ממלאים לועזי ומקבלים עברי — כולל "נולד אחרי השקיעה" ואדר א׳/ב׳.</p></article>
       <article class="hm-feat" data-reveal><span class="hm-ico">🔗</span><h3>המקורבים נרשמים לבד</h3><p>שולחים קישור רישום — וכל מי שנרשם נכנס עם הסיווג הנכון.</p></article>
@@ -69,7 +69,7 @@
   <section class="hm-sec hm-sec--how" id="how">
     <h2 class="hm-h2" data-reveal>שלושה צעדים, ומתחילים</h2>
     <ol class="hm-steps">
-      <li data-reveal><span>1</span><h3>פותחים חשבון</h3><p>הקישור האישי מגיע אליכם ב-SMS.</p></li>
+      <li data-reveal><span>1</span><h3>נרשמים ומקבלים קישור אישי</h3><p>הקישור לחשבון שלכם מגיע ב-SMS.</p></li>
       <li data-reveal><span>2</span><h3>מוסיפים מקורבים</h3><p>בעצמכם, מאקסל, או בקישור רישום.</p></li>
       <li data-reveal><span>3</span><h3>מקבלים תזכורת ומברכים</h3><p>וואטסאפ או שיחה — בלחיצה אחת.</p></li>
     </ol>
@@ -88,7 +88,7 @@
   <section class="hm-banner" data-reveal>
     <div class="hm-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <h2>מוכנים שאף מקורב לא יישכח?</h2>
-    <p>שלחו הודעה — ונפתח לכם חשבון תוך דקות.</p>
+    <p>שלחו לנו הודעה בוואטסאפ ונחזור אליכם.</p>
     <a class="hm-btn hm-btn--gold hm-btn--lg" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>וואטסאפ · <span dir="ltr">053-340-4770</span></a>
   </section>
 </main>

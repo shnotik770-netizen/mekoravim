@@ -199,3 +199,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 /* קישורים מתחת למסכי הכניסה */
 .bd-login-links { display: flex; gap: var(--bd-sp-2); justify-content: center; flex-wrap: wrap; margin-top: var(--bd-sp-4); }
 .bd button.bd-btn--ghost { color: var(--bd-fg); }
+
+/* תזכורת SMS ופעולות על בן משפחה */
+.bd-remind .bd-input { max-width: 200px; flex: 0 1 200px; }
+.bd-family__ops { display: grid; gap: var(--bd-sp-2); justify-items: start; }

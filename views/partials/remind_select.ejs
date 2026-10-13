@@ -1,0 +1,11 @@
+<%# בורר תזכורת SMS (0–7 ימים לפני). משתנים: action, value, id, label %>
+<form method="post" action="<%= action %>" class="bd-inline bd-remind">
+  <label class="bd-label" for="<%= id %>"><%= label %></label>
+  <select class="bd-input" id="<%= id %>" name="remind_days" data-autosubmit>
+    <option value="" <%= value === null || value === undefined ? 'selected' : '' %>>בלי תזכורת</option>
+    <option value="0" <%= value === 0 ? 'selected' : '' %>>ביום ההולדת</option>
+    <option value="1" <%= value === 1 ? 'selected' : '' %>>יום לפני</option>
+    <% for (let d = 2; d <= 7; d++) { %><option value="<%= d %>" <%= value === d ? 'selected' : '' %>><%= d === 7 ? 'שבוע' : d + ' ימים' %> לפני</option><% } %>
+  </select>
+  <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+</form>
