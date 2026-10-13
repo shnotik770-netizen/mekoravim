@@ -29,7 +29,7 @@
       </select>
       <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
     </form>
-    <div class="bd-mt"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/remind', value: c.remind_days, id: 'remind', label: '🔔 תזכורת SMS על יום ההולדת' }) %></div>
+    <div class="bd-mt"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/remind', value: c.remind_days, id: 'remind', label: '🔔 תזכורת מיוחדת בסמס' }) %></div>
     <p class="bd-help">נשלח לנייד שלכם גם אם תזכורות ה-SMS הכלליות כבויות. בשבת ובחג — ביום החול שלפני. יורד ממכסת ה-SMS לתזכורות.</p>
     <p class="bd-help bd-mt">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <span class="bd-num"><%= fmtDate(c.created_at) %></span></p>
   </section>
@@ -46,7 +46,7 @@
           <div class="bd-item__sub">הבא: <%= nextStr(f.next) %></div>
         </div>
         <div class="bd-family__ops">
-          <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: '🔔 תזכורת' }) %>
+          <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: '🔔 תזכורת מיוחדת בסמס' }) %>
           <div class="bd-actions">
             <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/split" data-confirm="להעביר את <%= f.first_name %> לכרטיס מקורב נפרד? התאריכים, התזכורת וסימוני &quot;יצרתי קשר&quot; יעברו איתו."><button class="bd-link-btn bd-link-btn--accent">הפרדה לכרטיס נפרד</button></form>
             <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="bd-link-btn">מחיקה</button></form>
