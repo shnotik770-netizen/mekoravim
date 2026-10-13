@@ -37,14 +37,14 @@
 <% if (_nav) { %>
 <header class="bd-appbar">
   <a class="bd-brand" href="<%= base %>"><%- include('logo') %><%= shliach.name %></a>
-  <nav class="bd-nav" aria-label="ניווט ראשי">
-    <a href="<%= base %>" <%- _active === 'dashboard' ? 'aria-current="page"' : '' %>>דשבורד</a>
-    <a href="<%= base %>/contacts" <%- _active === 'contacts' ? 'aria-current="page"' : '' %>>מקורבים</a>
-    <a href="<%= base %>/contacts/new" <%- _active === 'new' ? 'aria-current="page"' : '' %>>+ הוספה</a>
-    <a href="<%= base %>/links" <%- _active === 'links' ? 'aria-current="page"' : '' %>>קישורי רישום</a>
-    <a href="<%= base %>/settings" <%- _active === 'settings' ? 'aria-current="page"' : '' %>>הגדרות</a>
+  <div class="bd-appbar__tools">
     <button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button>
-    <% if (typeof demo !== 'undefined' && demo) { %><a href="/" class="bd-link-btn--accent">יציאה</a><% } else { %><form method="post" action="<%= base %>/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form><% } %>
+    <% if (typeof demo !== 'undefined' && demo) { %><a href="/" class="bd-tool-btn" aria-label="יציאה"><%- include('icons', { name: 'logout' }) %></a><% } else { %><form method="post" action="<%= base %>/logout"><button class="bd-tool-btn" aria-label="יציאה" title="יציאה"><%- include('icons', { name: 'logout' }) %></button></form><% } %>
+  </div>
+  <nav class="bd-tabs" aria-label="ניווט ראשי">
+    <% [['dashboard', '', 'home', 'דשבורד'], ['contacts', '/contacts', 'users', 'מקורבים'], ['new', '/contacts/new', 'plus', 'הוספה'], ['links', '/links', 'link', 'קישורי רישום'], ['settings', '/settings', 'settings', 'הגדרות']].forEach(([key, path, icon, label]) => { %>
+    <a href="<%= base + path %>" class="bd-tab <%= key === 'new' ? 'bd-tab--add' : '' %>" <%- _active === key ? 'aria-current="page"' : '' %>><span class="bd-tab__ico"><%- include('icons', { name: icon }) %></span><span class="bd-tab__label"><%= label %></span></a>
+    <% }) %>
   </nav>
 </header>
 <% } %>

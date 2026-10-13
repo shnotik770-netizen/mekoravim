@@ -146,3 +146,17 @@ document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener(
     form.append(h); form.submit();
   }));
 })();
+
+// כפתור "העתקת קישור"
+document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('click', async () => {
+  const label = btn.querySelector('span');
+  const orig = label ? label.textContent : '';
+  try {
+    await navigator.clipboard.writeText(btn.dataset.copy);
+    if (label) label.textContent = 'הועתק ✓';
+  } catch {
+    window.prompt('העתיקו את הקישור:', btn.dataset.copy);
+  }
+  btn.classList.add('is-copied');
+  setTimeout(() => { btn.classList.remove('is-copied'); if (label) label.textContent = orig; }, 1800);
+}));

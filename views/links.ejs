@@ -29,6 +29,7 @@
       </div>
       <div class="bd-actions">
         <% if (l.active) { %>
+          <button type="button" class="bd-btn bd-btn--soft bd-btn--sm bd-copy-btn" data-copy="<%= url %>"><%- include('partials/icons', { name: 'copy' }) %><span>העתקת קישור</span></button>
           <a class="bd-icon-btn bd-icon-btn--wa" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('נשמח לדעת מתי יום ההולדת שלך 🎂 ' + url) %>" aria-label="שליחה בוואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a>
           <a class="bd-btn bd-btn--ghost bd-btn--sm" target="_blank" rel="noopener" href="<%= url %>">תצוגה</a>
         <% } %>

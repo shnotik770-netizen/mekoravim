@@ -226,3 +226,41 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 /* טווח עברי ופרשת השבוע בכותרת "השבוע" */
 .bd-week-heb { flex-basis: 100%; order: 1; margin: -2px 0 var(--bd-sp-2); color: var(--bd-gold); font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); }
 .bd-card__head .bd-seg { order: 2; }
+
+/* ---------- סרגל ניווט ראשי (שליח) ---------- */
+.bd .bd-appbar { gap: var(--bd-sp-3); padding-bottom: var(--bd-sp-4); }
+.bd-appbar__tools { display: flex; align-items: center; gap: var(--bd-sp-2); margin-inline-start: auto; }
+.bd .bd-tool-btn { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
+  color: var(--bd-fg-muted); background: var(--bd-surface); border: 1px solid var(--bd-line); }
+.bd .bd-tool-btn:hover { color: var(--bd-bad); border-color: var(--bd-bad); }
+.bd .bd-tool-btn:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-tabs { order: 3; width: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 6px; border-radius: 20px;
+  background: var(--bd-surface); border: 1px solid var(--bd-line); box-shadow: 0 6px 20px rgb(15 27 51 / .06); }
+.bd a.bd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 62px; padding: 8px 4px; border-radius: 14px;
+  color: var(--bd-fg-muted); text-align: center; transition: background .15s, color .15s, transform .15s; }
+.bd a.bd-tab:hover { background: var(--bd-surface-2); color: var(--bd-fg); }
+.bd a.bd-tab:active { transform: scale(.96); }
+.bd a.bd-tab:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-tab__label { font-size: .74rem; font-weight: var(--bd-fw-medium); line-height: 1.15; }
+.bd a.bd-tab[aria-current="page"] { background: var(--bd-accent); color: var(--bd-accent-fg); box-shadow: 0 6px 16px color-mix(in srgb, var(--bd-accent) 35%, transparent); }
+.bd a.bd-tab--add .bd-tab__ico { display: grid; place-items: center; width: 34px; height: 34px; margin-top: -2px; border-radius: 50%; background: var(--bd-gold); color: #fff; box-shadow: 0 4px 12px color-mix(in srgb, var(--bd-gold) 45%, transparent); }
+.bd a.bd-tab--add[aria-current="page"] .bd-tab__ico { background: #fff; color: var(--bd-accent); }
+@media (min-width: 760px) {
+  .bd-tabs { order: 0; width: auto; margin-inline-start: auto; display: flex; border-radius: 999px; padding: 5px; }
+  .bd a.bd-tab { flex-direction: row; min-height: 42px; padding: 0 16px; border-radius: 999px; gap: 8px; }
+  .bd-tab__label { font-size: var(--bd-fs-sm); }
+  .bd a.bd-tab--add .bd-tab__ico { width: 26px; height: 26px; margin: 0; }
+  .bd a.bd-tab--add .bd-tab__ico svg { width: 18px; height: 18px; }
+  .bd-appbar__tools { order: 1; margin-inline-start: 0; }
+}
+
+/* תגית "קרוב של" בשורת בן משפחה */
+.bd-kin { margin-top: 4px; }
+.bd-kin > span { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: var(--bd-fs-xs); font-weight: var(--bd-fw-medium);
+  background: color-mix(in srgb, var(--bd-gold) 14%, var(--bd-surface)); color: var(--bd-fg); border: 1px solid color-mix(in srgb, var(--bd-gold) 35%, transparent); }
+.bd .bd-kin a { color: var(--bd-accent); font-weight: var(--bd-fw-bold); }
+
+/* כפתור העתקת קישור */
+.bd .bd-copy-btn { display: inline-flex; align-items: center; gap: 6px; }
+.bd .bd-copy-btn svg { width: 16px; height: 16px; }
+.bd .bd-copy-btn.is-copied { background: var(--bd-ok-soft); color: var(--bd-ok); }

@@ -23,9 +23,9 @@
       <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><% if ((e.member || e.contact).remind_days !== null && (e.member || e.contact).remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></span>
       <%- include('cat_chip', { cat }) %>
     </div>
+    <% if (e.member) { %><div class="bd-kin"><span>👪 <%= e.member.relation %> של <a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.contact.first_name %> <%= e.contact.last_name %></a></span></div><% } %>
     <div class="bd-row__meta">
       <% if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
-      <% if (e.member) { %><span><%= e.member.relation %> של <%= e.contact.first_name %> <%= e.contact.last_name %></span><% } %>
       <% if (past && !done) { %><span style="color:var(--bd-bad);font-weight:500">טרם נוצר קשר</span><% } %>
       <% if (e.note) { %><span class="bd-note">ⓘ <%= e.note %></span><% } %>
     </div>
