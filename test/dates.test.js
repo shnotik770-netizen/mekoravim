@@ -143,3 +143,18 @@ test('ייבוא מאקסל: טבלה, זיהוי עמודות ותאריכים'
   assert.ok(parseRow(['', 'כהן', '', '1.1.2000'], ['first_name', 'last_name', 'phone', 'date']).error);
   assert.equal(dupKey({ phone: '+972-52-1234567', first_name: 'x' }), dupKey({ phone: '0521234567', first_name: 'y' }));
 });
+
+test('תזכורת אישית על מקורב: יום השליחה, כולל דחייה לפני שבת/חג', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { contactReminderDue, buildContactReminder } = await import('../lib/sms.js');
+  const D = (y, m, d) => new Date(y, m - 1, d);
+  // יום הולדת ביום ה' 22.10.2026, תזכורת 2 ימים לפני → שלישי 20.10
+  assert.ok(contactReminderDue(2, D(2026, 10, 22), D(2026, 10, 20)));
+  assert.ok(!contactReminderDue(2, D(2026, 10, 22), D(2026, 10, 19)));
+  // תזכורת ביום עצמו, יום ההולדת בשבת 24.10 → נשלחת בשישי 23.10
+  assert.ok(contactReminderDue(0, D(2026, 10, 24), D(2026, 10, 23)));
+  // תזכורת יום לפני, יום ההולדת ב-ב׳ ראש השנה (ראשון 13.9.2026) → יום התזכורת שבת → נשלחת בשישי 11.9
+  assert.ok(contactReminderDue(1, D(2026, 9, 13), D(2026, 9, 11)));
+  const msg = buildContactReminder([{ date: D(2026, 10, 22), label: 'י״א חשוון', age: 40, name: 'דוד כהן', contact: { phone: '052-1234567' } }], D(2026, 10, 20), '');
+  assert.equal(msg, '🔔 תזכורת יום הולדת:\nדוד כהן (40) — בעוד 2 ימים, חמישי י״א חשוון · 052-1234567');
+});

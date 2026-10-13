@@ -286,8 +286,8 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
     GROUP BY w ORDER BY w`, [id]);
   const { rows: smsMonths } = await q(`
     SELECT to_char(m, 'MM/YY') AS label,
-           coalesce(sum(l.units) FILTER (WHERE l.kind IN ('weekly','daily')), 0)::int AS reminders,
-           coalesce(sum(l.units) FILTER (WHERE l.kind NOT IN ('weekly','daily')), 0)::int AS system
+           coalesce(sum(l.units) FILTER (WHERE l.kind IN ('weekly','daily','contact')), 0)::int AS reminders,
+           coalesce(sum(l.units) FILTER (WHERE l.kind NOT IN ('weekly','daily','contact')), 0)::int AS system
     FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
     LEFT JOIN sms_log l ON l.shliach_id=$1 AND date_trunc('month', l.created_at) = m
     GROUP BY m ORDER BY m`, [id]);
@@ -772,6 +772,18 @@ router.post('/contacts/:id', loadContact, async (req, res) => {
 router.post('/contacts/:id/category', loadContact, async (req, res) => {
   await q('UPDATE contacts SET category_id=$1 WHERE id=$2', [await validCategory(req.shliach.id, int(req.body.category_id)), req.contact.id]);
   flash(req, 'הסיווג עודכן');
+  res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
+});
+
+// תזכורת SMS אישית על המקורב (0–7 ימים לפני; ריק = בלי). נשלחת גם אם התזכורות הכלליות כבויות
+router.post('/contacts/:id/remind', loadContact, async (req, res) => {
+  const d = req.body.remind_days === '' || req.body.remind_days === undefined ? null : parseInt(req.body.remind_days, 10);
+  const days = Number.isInteger(d) && d >= 0 && d <= 7 ? d : null;
+  await q('UPDATE contacts SET remind_days=$1 WHERE id=$2', [days, req.contact.id]);
+  const s = req.shliach;
+  const phone = normalizePhone(s.sms_phone) || normalizePhone(s.phone);
+  flash(req, days === null ? 'התזכורת על המקורב בוטלה'
+    : `נשמר — תקבלו SMS ${days === 0 ? 'ביום ההולדת' : days === 1 ? 'יום לפני יום ההולדת' : `${days} ימים לפני יום ההולדת`}${phone ? '' : ' (שימו לב: אין מספר נייד בהגדרות)'}`);
   res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
 });
 

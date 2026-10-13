@@ -29,6 +29,17 @@
       </select>
       <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
     </form>
+    <form method="post" action="<%= base %>/contacts/<%= c.id %>/remind" class="bd-inline bd-mt">
+      <label class="bd-label" for="remind">🔔 תזכורת SMS על יום ההולדת</label>
+      <select class="bd-input" id="remind" name="remind_days" data-autosubmit style="max-width:260px">
+        <option value="" <%= c.remind_days === null ? 'selected' : '' %>>בלי תזכורת</option>
+        <option value="0" <%= c.remind_days === 0 ? 'selected' : '' %>>ביום ההולדת</option>
+        <option value="1" <%= c.remind_days === 1 ? 'selected' : '' %>>יום לפני</option>
+        <% for (let d = 2; d <= 7; d++) { %><option value="<%= d %>" <%= c.remind_days === d ? 'selected' : '' %>><%= d === 7 ? 'שבוע' : d + ' ימים' %> לפני</option><% } %>
+      </select>
+      <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+    </form>
+    <p class="bd-help">נשלח לנייד שלכם גם אם תזכורות ה-SMS הכלליות כבויות. בשבת ובחג — ביום החול שלפני. יורד ממכסת ה-SMS לתזכורות.</p>
     <p class="bd-help bd-mt">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <span class="bd-num"><%= fmtDate(c.created_at) %></span></p>
   </section>
 

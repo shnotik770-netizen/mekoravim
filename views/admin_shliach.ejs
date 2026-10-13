@@ -1,7 +1,7 @@
 <%- include('partials/head', { title: s.name + ' — דשבורד' }) %>
 <%
   const ago = (d) => d ? fmtTime(d) : '—';
-  const kindName = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
+  const kindName = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', contact: 'תזכורת על מקורב', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
   const pct = bdays.past30 ? Math.round(bdays.covered30 / bdays.past30 * 100) : null;
   const alertCls = { bad: 'bd-msg--err', warn: 'bd-msg--warn', info: 'bd-msg--info' };
 %>

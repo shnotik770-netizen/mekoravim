@@ -26,7 +26,7 @@
   <% contacts.forEach(c => { %>
     <li><a class="bd-item bd-item--link" href="<%= base %>/contacts/<%= c.id %>">
       <div class="bd-item__main">
-        <div class="bd-item__title"><%= c.first_name %> <%= c.last_name %> <%- include('partials/cat_chip', { cat: catById.get(c.category_id) }) %>
+        <div class="bd-item__title"><%= c.first_name %> <%= c.last_name %> <%- include('partials/cat_chip', { cat: catById.get(c.category_id) }) %><% if (c.remind_days !== null && c.remind_days !== undefined) { %> <span title="תזכורת SMS <%= c.remind_days ? c.remind_days + ' ימים לפני' : 'ביום ההולדת' %>">🔔</span><% } %>
           <% if (c.fam_count) { %><span class="bd-small bd-muted" style="font-weight:400">+<%= c.fam_count %> בני משפחה</span><% } %></div>
         <div class="bd-item__sub"><span class="bd-num"><%= c.phone %></span> · <%= birthText(c) %></div>
       </div>
