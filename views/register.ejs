@@ -1,0 +1,37 @@
+<%- include('partials/head', { title: internal ? 'מקורב חדש' : 'רישום — ' + shliach.name, nav: internal }) %>
+<div class="narrow">
+  <% if (!internal) { %>
+  <div class="center">
+    <div class="hero-icon">🎂</div>
+    <h1><%= shliach.name %></h1>
+    <p class="lead">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
+  </div>
+  <% } else { %>
+  <h1>הוספת מקורב</h1>
+  <% } %>
+  <% if (error) { %><div class="error"><%= error %></div><% } %>
+  <form method="post" class="card" novalidate>
+    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+    <div class="row2">
+      <label>שם פרטי * <input name="first_name" value="<%= values.first_name || '' %>" required maxlength="60"></label>
+      <label>שם משפחה * <input name="last_name" value="<%= values.last_name || '' %>" required maxlength="60"></label>
+    </div>
+    <label>טלפון * <input name="phone" type="tel" inputmode="tel" dir="ltr" value="<%= values.phone || '' %>" required maxlength="30"></label>
+    <h3>תאריך לידה *</h3>
+    <p class="small muted">אפשר למלא תאריך לועזי מלא, או תאריך עברי (שנת הלידה העברית אינה חובה).</p>
+    <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
+    <% if (internal) { %>
+      <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes || '' %></textarea></label>
+    <% } %>
+
+    <h3>בני משפחה <small class="muted">(לא חובה)</small></h3>
+    <div id="fam-list">
+      <% family.forEach((f, i) => { %><%- include('partials/family_row', { i, f }) %><% }) %>
+    </div>
+    <button type="button" class="btn ghost" id="add-fam">+ הוספת בן/בת משפחה</button>
+    <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'g' } }) %></template>
+
+    <button class="btn wide"><%= internal ? 'שמירה' : 'שליחה' %></button>
+  </form>
+</div>
+<%- include('partials/foot') %>

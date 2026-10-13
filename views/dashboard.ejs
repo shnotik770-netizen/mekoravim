@@ -1,0 +1,41 @@
+<%- include('partials/head', { title: 'דשבורד', nav: true }) %>
+<%
+  const todays = week.filter(e => e.date.getTime() === today.getTime());
+  const open = (list) => list.filter(e => !e.contacted && e.date <= today).length;
+%>
+<div class="stats">
+  <div class="stat"><div class="num"><%= todays.length %></div><div>היום</div></div>
+  <div class="stat"><div class="num"><%= week.length %></div><div>השבוע</div></div>
+  <div class="stat"><div class="num"><%= month.length %></div><div>החודש</div></div>
+  <a class="stat" href="<%= base %>/contacts"><div class="num"><%= total %></div><div>מקורבים</div></a>
+</div>
+
+<form class="search" method="get" action="<%= base %>/contacts">
+  <input name="q" placeholder="🔍 חיפוש מקורב לפי שם או טלפון…">
+</form>
+
+<section class="card">
+  <h2>השבוע <small class="muted"><%= fmtGreg(weekRange.start).slice(0,-5) %>–<%= fmtGreg(weekRange.end).slice(0,-5) %></small>
+    <% if (open(week)) { %><span class="tag warn"><%= open(week) %> ממתינים לברכה</span><% } %></h2>
+  <% if (!week.length) { %><p class="muted">אין ימי הולדת השבוע.</p><% } %>
+  <% week.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
+</section>
+
+<section class="card">
+  <h2>החודש <small class="muted"><%= monthName %></small></h2>
+  <% if (!month.length) { %><p class="muted">אין ימי הולדת החודש.</p><% } %>
+  <% month.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
+</section>
+
+<section class="card">
+  <h2>30 הימים הקרובים</h2>
+  <% if (!upcoming.length) { %><p class="muted">אין ימי הולדת קרובים.</p><% } %>
+  <% upcoming.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
+</section>
+
+<section class="card">
+  <h3>הקישור שלך לרישום מקורבים</h3>
+  <p class="small muted">שלחו את הקישור למקורבים — כל מי שנרשם דרכו מופיע כאן אוטומטית.</p>
+  <code class="copy"><%= regLink %></code>
+</section>
+<%- include('partials/foot') %>

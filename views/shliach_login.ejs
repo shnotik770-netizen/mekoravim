@@ -1,0 +1,18 @@
+<%- include('partials/head', { title: 'כניסה — ' + shliach.name }) %>
+<div class="narrow card">
+  <h1><%= setup ? 'הפעלת חשבון' : 'כניסה' %></h1>
+  <p class="muted"><%= shliach.name %></p>
+  <% if (error) { %><div class="error"><%= error %></div><% } %>
+  <form method="post">
+    <% if (setup) { %>
+      <label>קוד הפעלה (קיבלת מהמנהל) <input name="code" inputmode="numeric" required autocomplete="one-time-code"></label>
+      <label>בחירת סיסמה (8 תווים לפחות) <input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+      <label>אימות סיסמה <input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
+      <button class="btn wide">הפעלה וכניסה</button>
+    <% } else { %>
+      <label>סיסמה <input type="password" name="password" required autofocus autocomplete="current-password"></label>
+      <button class="btn wide">כניסה</button>
+    <% } %>
+  </form>
+</div>
+<%- include('partials/foot') %>

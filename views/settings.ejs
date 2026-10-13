@@ -1,0 +1,25 @@
+<%- include('partials/head', { title: 'הגדרות', nav: true }) %>
+<h1>הגדרות</h1>
+<% if (error) { %><div class="error"><%= error %></div><% } %>
+<div class="card">
+  <h3>אילו ימי הולדת להציג?</h3>
+  <form method="post">
+    <input type="hidden" name="action" value="mode">
+    <% [['both','גם עברי וגם לועזי'],['hebrew','עברי בלבד'],['gregorian','לועזי בלבד']].forEach(([v,l]) => { %>
+      <label class="check"><input type="radio" name="display_mode" value="<%= v %>" <%= shliach.display_mode === v ? 'checked' : '' %>> <%= l %></label>
+    <% }) %>
+    <p class="small muted">מי שנרשם רק עם תאריך עברי יופיע רק ביום ההולדת העברי. ממי שנרשם עם תאריך לועזי מחושב גם התאריך העברי.</p>
+    <button class="btn">שמירה</button>
+  </form>
+</div>
+<div class="card">
+  <h3>החלפת סיסמה</h3>
+  <form method="post">
+    <input type="hidden" name="action" value="password">
+    <label>סיסמה נוכחית <input type="password" name="current" required autocomplete="current-password"></label>
+    <label>סיסמה חדשה <input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+    <label>אימות <input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
+    <button class="btn">עדכון</button>
+  </form>
+</div>
+<%- include('partials/foot') %>

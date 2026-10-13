@@ -1,0 +1,47 @@
+<%- include('partials/head', { title: 'ניהול שלוחים' }) %>
+<div class="pagehead">
+  <h1>ניהול שלוחים</h1>
+  <form method="post" action="/admin/logout"><button class="btn ghost">יציאה</button></form>
+</div>
+
+<% if (newCode) { %>
+<div class="card highlight">
+  <h3>פרטי הכניסה של <%= newCode.name %></h3>
+  <p>יש להעביר לשליח את הקישור ואת קוד ההפעלה. <b>הקוד מוצג פעם אחת בלבד</b> — בכניסה הראשונה השליח יבחר סיסמה אישית, ומאותו רגע רק לו יש גישה לנתונים.</p>
+  <p>קישור: <code class="copy"><%= base %>/s/<%= newCode.slug %></code></p>
+  <p>כניסה לשליח: <code class="copy"><%= base %>/s/<%= newCode.slug %>/login</code></p>
+  <p>קוד הפעלה: <code class="code-big"><%= newCode.code %></code></p>
+</div>
+<% } %>
+
+<div class="card">
+  <h3>שליח חדש</h3>
+  <form method="post" action="/admin/shluchim" class="inline-form">
+    <input name="name" placeholder="שם השליח / בית חב״ד" required maxlength="80">
+    <button class="btn">יצירת קישור</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>שלוחים (<%= shluchim.length %>)</h3>
+  <% if (!shluchim.length) { %><p class="muted">עדיין אין שלוחים.</p><% } %>
+  <div class="list">
+  <% shluchim.forEach(s => { %>
+    <div class="list-item <%= s.active ? '' : 'disabled' %>">
+      <div class="grow">
+        <b><%= s.name %></b>
+        <span class="tag <%= s.activated ? 'ok' : '' %>"><%= s.activated ? 'פעיל' : 'ממתין להפעלה' %></span>
+        <% if (!s.active) { %><span class="tag off">מושבת</span><% } %>
+        <div class="small muted"><code class="copy"><%= base %>/s/<%= s.slug %></code></div>
+      </div>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/reset" data-confirm="לאפס את הסיסמה של <%= s.name %>? השליח יצטרך קוד הפעלה חדש.">
+        <button class="btn small ghost">קוד הפעלה חדש</button>
+      </form>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/toggle">
+        <button class="btn small ghost"><%= s.active ? 'השבתה' : 'הפעלה' %></button>
+      </form>
+    </div>
+  <% }) %>
+  </div>
+</div>
+<%- include('partials/foot') %>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title><%= typeof title !== 'undefined' ? title : 'ימי הולדת למקורבים' %></title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<% if (typeof nav !== 'undefined' && nav) { %>
+<header class="topbar">
+  <a class="brand" href="<%= base %>/dashboard">🎂 <%= shliach.name %></a>
+  <nav>
+    <a href="<%= base %>/dashboard">דשבורד</a>
+    <a href="<%= base %>/contacts">מקורבים</a>
+    <a href="<%= base %>/contacts/new">+ הוספה</a>
+    <a href="<%= base %>/settings">הגדרות</a>
+    <form method="post" action="<%= base %>/logout" class="inline"><button class="linkbtn">יציאה</button></form>
+  </nav>
+</header>
+<% } %>
+<main class="wrap">
+<% if (flash) { %><div class="flash"><%= flash %></div><% } %>

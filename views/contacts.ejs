@@ -1,0 +1,25 @@
+<%- include('partials/head', { title: 'מקורבים', nav: true }) %>
+<div class="pagehead">
+  <h1>מקורבים (<%= contacts.length %>)</h1>
+  <a class="btn" href="<%= base %>/contacts/new">+ הוספה</a>
+</div>
+<form class="search" method="get">
+  <input name="q" value="<%= term %>" placeholder="🔍 חיפוש לפי שם או טלפון…" autofocus>
+</form>
+<div class="card list">
+  <% if (!contacts.length) { %><p class="muted"><%= term ? 'לא נמצאו תוצאות.' : 'עדיין אין מקורבים. שלחו את קישור הרישום!' %></p><% } %>
+  <% contacts.forEach(c => { %>
+    <a class="list-item link" href="<%= base %>/contacts/<%= c.id %>">
+      <div class="grow">
+        <b><%= c.first_name %> <%= c.last_name %></b>
+        <% if (c.fam_count) { %><span class="small muted">+<%= c.fam_count %> בני משפחה</span><% } %>
+        <div class="small muted"><span dir="ltr"><%= c.phone %></span> · <%= birthText(c) %></div>
+      </div>
+      <div class="small left">
+        <% if (c.next) { %>יום הולדת הבא: <b><%= fmtGreg(c.next.date) %></b><% } %>
+        <% if (c.last_contact) { %><div class="muted">קשר אחרון: <%= new Date(c.last_contact).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) %></div><% } %>
+      </div>
+    </a>
+  <% }) %>
+</div>
+<%- include('partials/foot') %>

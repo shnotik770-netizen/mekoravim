@@ -1,0 +1,14 @@
+<fieldset class="fam-row">
+  <button type="button" class="x" data-remove title="הסרה">✕</button>
+  <div class="row2">
+    <label>קרבה
+      <select name="fam[<%= i %>][relation]">
+        <% RELATIONS.forEach(r => { %><option <%= (f.relation === r) ? 'selected' : '' %>><%= r %></option><% }) %>
+      </select>
+    </label>
+    <label>שם פרטי
+      <input name="fam[<%= i %>][first_name]" value="<%= f.first_name || '' %>" maxlength="60">
+    </label>
+  </div>
+  <%- include('birth_fields', { prefix: `fam[${i}]`, vals: f }) %>
+</fieldset>

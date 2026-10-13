@@ -1,0 +1,95 @@
+<%- include('partials/head', { title: c.first_name + ' ' + c.last_name, nav: true }) %>
+<%
+  const nextStr = (n) => [n.hebrew && `עברי: ${fmtGreg(n.hebrew.date)} (${n.hebrew.label})${n.hebrew.age ? ' · גיל ' + n.hebrew.age : ''}`,
+                          n.gregorian && `לועזי: ${fmtGreg(n.gregorian.date)}${n.gregorian.age ? ' · גיל ' + n.gregorian.age : ''}`].filter(Boolean).join(' | ');
+%>
+<% if (error) { %><div class="error"><%= error %></div><% } %>
+<div class="card">
+  <div class="pagehead">
+    <div>
+      <h1><%= c.first_name %> <%= c.last_name %></h1>
+      <div class="muted"><span dir="ltr"><%= c.phone %></span></div>
+    </div>
+    <div class="actions">
+      <% if (wa) { %><a class="btn ghost" href="<%= wa %>" target="_blank" rel="noopener">💬 וואטסאפ</a><% } %>
+      <a class="btn ghost" href="tel:<%= c.phone %>">📞 חיוג</a>
+    </div>
+  </div>
+  <p>🎂 <b>תאריך לידה:</b> <%= birthText(c) %></p>
+  <p>📅 <b>יום ההולדת הבא:</b> <%= nextStr(c.nextEv) || '—' %></p>
+  <% if (c.notes) { %><p>📝 <%= c.notes %></p><% } %>
+  <p class="small muted">נוסף <%= c.source === 'form' ? 'דרך טופס הרישום' : 'ידנית' %> · <%= new Date(c.created_at).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) %></p>
+</div>
+
+<div class="card" id="log">
+  <h2>יצירת קשר</h2>
+  <form method="post" action="<%= base %>/contacts/<%= c.id %>/log" class="inline-form">
+    <% if (family.length) { %>
+    <select name="family_member_id">
+      <option value="">עם <%= c.first_name %></option>
+      <% family.forEach(f => { %><option value="<%= f.id %>">יום הולדת של <%= f.first_name %> (<%= f.relation %>)</option><% }) %>
+    </select>
+    <% } %>
+    <input name="note" placeholder="הערה (לא חובה)" maxlength="500">
+    <button class="btn">✓ יצרתי קשר</button>
+  </form>
+  <% if (!log.length) { %><p class="muted">עדיין לא נרשמה יצירת קשר.</p><% } %>
+  <div class="list">
+  <% log.forEach(l => { %>
+    <div class="list-item">
+      <div class="grow"><b><%= fmtTime(l.created_at) %></b>
+        <% if (l.member_name) { %><span class="tag">יום הולדת של <%= l.member_name %></span><% } %>
+        <% if (l.note) { %><div class="small"><%= l.note %></div><% } %>
+      </div>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?"><button class="linkbtn small">מחיקה</button></form>
+    </div>
+  <% }) %>
+  </div>
+</div>
+
+<div class="card" id="family">
+  <h2>בני משפחה</h2>
+  <% if (!family.length) { %><p class="muted">לא נרשמו בני משפחה.</p><% } %>
+  <div class="list">
+  <% family.forEach(f => { %>
+    <div class="list-item">
+      <div class="grow"><b><%= f.first_name %></b> <span class="tag"><%= f.relation %></span>
+        <div class="small muted"><%= birthText(f) %></div>
+        <div class="small">הבא: <%= nextStr(f.nextEv) || '—' %></div>
+      </div>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="linkbtn small">מחיקה</button></form>
+    </div>
+  <% }) %>
+  </div>
+  <details>
+    <summary class="btn ghost">+ הוספת בן/בת משפחה</summary>
+    <form method="post" action="<%= base %>/contacts/<%= c.id %>/family" class="sub-form">
+      <div class="row2">
+        <label>קרבה <select name="relation"><% RELATIONS.forEach(r => { %><option><%= r %></option><% }) %></select></label>
+        <label>שם פרטי <input name="first_name" required maxlength="60"></label>
+      </div>
+      <%- include('partials/birth_fields', { prefix: '', vals: { date_type: 'g' } }) %>
+      <button class="btn">הוספה</button>
+    </form>
+  </details>
+</div>
+
+<div class="card" id="edit">
+  <details <%= error ? 'open' : '' %>>
+    <summary class="btn ghost">✏️ עריכת פרטים</summary>
+    <form method="post" action="<%= base %>/contacts/<%= c.id %>" class="sub-form">
+      <div class="row2">
+        <label>שם פרטי <input name="first_name" value="<%= values.first_name %>" required maxlength="60"></label>
+        <label>שם משפחה <input name="last_name" value="<%= values.last_name %>" required maxlength="60"></label>
+      </div>
+      <label>טלפון <input name="phone" type="tel" dir="ltr" value="<%= values.phone %>" required></label>
+      <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
+      <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes %></textarea></label>
+      <button class="btn">שמירה</button>
+    </form>
+  </details>
+  <form method="post" action="<%= base %>/contacts/<%= c.id %>/delete" data-confirm="למחוק את <%= c.first_name %> <%= c.last_name %> וכל בני משפחתו? לא ניתן לשחזר." class="danger-zone">
+    <button class="linkbtn danger">מחיקת מקורב</button>
+  </form>
+</div>
+<%- include('partials/foot') %>
