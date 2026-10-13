@@ -2,26 +2,23 @@
 <section class="bd-card bd-center">
   <%- include('partials/logo', { big: true }) %>
   <h1 class="bd-title"><%= shliach.name %></h1>
+  <% if (shliach.chabad_house) { %><p class="bd-muted"><%= shliach.chabad_house %></p><% } %>
   <% if (error) { %><div class="bd-msg bd-msg--err bd-mt" role="alert"><%= error %></div><% } %>
-  <% if (mode === 'otp' && !otpSent) { %>
-    <% if (canOtp) { %>
-    <p class="bd-sub bd-mb">לכניסה נשלח קוד חד-פעמי ב-SMS לנייד <bdi class="bd-num" dir="ltr"><%= maskedPhone %></bdi></p>
-    <form method="post" action="<%= base %>/otp/send">
-      <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">📱 שליחת קוד ב-SMS</button>
-    </form>
-    <% } else { %>
-    <p class="bd-sub">לא ניתן לשלוח קוד כניסה כרגע. פנו למנהל המערכת.</p>
-    <% } %>
+  <% if (otpSent) { %>
+    <p class="bd-sub bd-mb bd-mt">נשלח קוד חד-פעמי ב-SMS לנייד <bdi class="bd-num" dir="ltr"><%= maskedPhone %></bdi>. הזינו אותו כאן (או את הקוד הקבוע):</p>
   <% } else { %>
-    <p class="bd-sub bd-mb"><%= mode === 'otp' ? 'הזינו את הקוד שנשלח ב-SMS לנייד ' : 'הזינו את קוד הכניסה' %><% if (mode === 'otp') { %><bdi class="bd-num" dir="ltr"><%= maskedPhone %></bdi><% } %></p>
-    <form method="post" action="<%= base %>/login">
-      <div class="bd-field"><input class="bd-input bd-code-input" name="code" required autofocus aria-label="קוד כניסה"
-        <% if (mode === 'otp') { %>type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"<% } else { %>type="password" autocomplete="current-password"<% } %>></div>
-      <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
-    </form>
-    <% if (mode === 'otp' && canOtp) { %>
-    <form method="post" action="<%= base %>/otp/send" class="bd-mt"><button class="bd-link-btn bd-link-btn--accent">לא קיבלתי — שליחת קוד חדש</button></form>
-    <% } %>
+    <p class="bd-sub bd-mb bd-mt">הזינו את קוד הכניסה</p>
+  <% } %>
+  <form method="post" action="<%= base %>/login">
+    <div class="bd-field"><input class="bd-input bd-code-input" name="code" required autofocus aria-label="קוד כניסה" maxlength="32"
+      <% if (otpSent) { %>type="text" inputmode="numeric" autocomplete="one-time-code"<% } else { %>type="password" autocomplete="current-password"<% } %>></div>
+    <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
+  </form>
+  <% if (canOtp) { %>
+  <form method="post" action="<%= base %>/otp/send" class="bd-mt">
+    <button class="bd-btn bd-btn--soft bd-btn--block">📱 <%= otpSent ? 'לא קיבלתי — שליחת קוד חדש' : 'קבלת קוד חד-פעמי ב-SMS' %></button>
+    <% if (!otpSent) { %><p class="bd-help bd-mt">הקוד יישלח לנייד <bdi class="bd-num" dir="ltr"><%= maskedPhone %></bdi></p><% } %>
+  </form>
   <% } %>
 </section>
 <%- include('partials/foot') %>

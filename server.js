@@ -148,7 +148,7 @@ function requireAdmin(req, res, next) {
 
 // המנהל רואה רק שם, קישור וסטטוס — לא את נתוני המקורבים
 app.get('/admin', requireAdmin, async (req, res) => {
-  const { rows } = await q(`SELECT id, name, slug, active, created_at, login_mode, sms_enabled, phone
+  const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, access_code_hash IS NOT NULL AS has_code, sms_enabled, phone
                             FROM shluchim ORDER BY created_at DESC`);
   const info = takeReveal(req.session.reveal);
   req.session.reveal = undefined;
@@ -161,29 +161,26 @@ function validCode(code) {
 }
 const CODE_RULE = 'הקוד צריך להכיל 6–32 תווים, ללא רווחים, ולא רצף או תו חוזר';
 
-// אין כניסה בלי קוד: או קוד חד-פעמי שנשלח לנייד בכל כניסה, או קוד קבוע
-const MODES = ['otp', 'code'];
-const MODE_LABEL = { otp: 'קוד חד-פעמי ב-SMS', code: 'קוד קבוע' };
-
-// שינוי אופן הכניסה / הקוד מעלה את session_version — וכך מנתק את כל הסשנים הקיימים של השליח
-async function setLogin(req, id, mode, code = null) {
+// כניסה תמיד בקוד: לכל שליח קוד קבוע, ובנוסף אפשר לבקש קוד חד-פעמי ב-SMS לנייד שלו.
+// קביעת קוד מעלה את session_version — וכך מנתקת את כל הסשנים הקיימים של השליח
+async function setCode(req, id, code) {
   const { rows } = await q(
-    `UPDATE shluchim SET login_mode=$1, access_code_hash=$2, session_version=session_version+1
-     WHERE id=$3 RETURNING id, name, slug, phone, login_mode`,
-    [mode, mode === 'code' && code ? await bcrypt.hash(code, 12) : null, id]);
-  if (rows[0]) req.session.reveal = storeReveal({ ...rows[0], code: mode === 'code' ? code : null }); // בעוגייה רק מזהה
+    `UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1
+     WHERE id=$2 RETURNING id, name, chabad_house, slug, phone`,
+    [await bcrypt.hash(code, 12), id]);
+  if (rows[0]) req.session.reveal = storeReveal({ ...rows[0], code }); // בעוגייה רק מזהה
   return rows[0];
 }
 
 const shliachUrl = (req, slug) => `${baseUrl(req)}/s/${slug}`;
 
-// SMS עם הקישור האישי לשליח ופרטי הכניסה. הקוד הקבוע נכלל רק ברגע שנקבע (אחר כך הוא לא ידוע לשרת)
+// SMS עם הקישור האישי לשליח. הקוד הקבוע נכלל רק ברגע שנקבע (אחר כך השרת לא יודע אותו)
 function welcomeMessage(s, url, code, isNew) {
-  const how = s.login_mode === 'code'
-    ? `קוד הכניסה שלך: ${code}\n(אפשר להחליף אותו בהגדרות)`
-    : 'בכל כניסה יישלח לנייד הזה קוד חד-פעמי.';
-  const intro = isNew ? 'נפתח עבורך חשבון במערכת "ימי הולדת למקורבים".' : 'פרטי הכניסה שלך למערכת "ימי הולדת למקורבים" עודכנו.';
-  return `שלום ${s.name}! 🎂\n${intro}\nהקישור האישי שלך:\n${url}\n${how}`;
+  const intro = isNew ? 'נפתח עבורך חשבון במערכת "ימי הולדת למקורבים".' : (code ? 'קוד הכניסה שלך למערכת "ימי הולדת למקורבים" עודכן.' : 'הקישור שלך למערכת "ימי הולדת למקורבים":');
+  const lines = [`שלום ${s.name}! 🎂`, intro, isNew || code ? `הקישור האישי שלך:\n${url}` : url];
+  if (code) lines.push(`קוד הכניסה: ${code}`, '(אפשר להחליף אותו בהגדרות)');
+  lines.push('אפשר גם להיכנס עם קוד חד-פעמי שיישלח לנייד הזה.');
+  return lines.join('\n');
 }
 
 async function sendWelcome(req, s, code, isNew = false) {
@@ -196,64 +193,58 @@ async function sendWelcome(req, s, code, isNew = false) {
   }
 }
 
+function codeFrom(req) {
+  const code = String(req.body.code || '').trim() || randomCode();
+  return validCode(code) ? code : null;
+}
+
 app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 80);
   if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect('/admin'); }
+  const house = String(req.body.chabad_house || '').trim().slice(0, 80);
   const phone = normalizePhone(req.body.phone);
   if (!phone) { flashErr(req, 'יש להזין מספר נייד תקין של השליח (05X-XXXXXXX)'); return res.redirect('/admin'); }
-  const mode = MODES.includes(req.body.login_mode) ? req.body.login_mode : 'otp';
-  if (mode === 'otp' && !smsConfigured()) { flashErr(req, 'כניסה בקוד חד-פעמי דורשת SMS (YEMOT_TOKEN)'); return res.redirect('/admin'); }
-  let code = null;
-  if (mode === 'code') {
-    code = String(req.body.code || '').trim() || randomCode();
-    if (!validCode(code)) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
-  }
+  const code = codeFrom(req);
+  if (!code) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
-  const { rows } = await q('INSERT INTO shluchim (name, slug, phone, sms_phone, login_mode) VALUES ($1,$2,$3,$3,$4) RETURNING id', [name, randomToken(9), phone, mode]);
+  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone) VALUES ($1,$2,$3,$4,$4) RETURNING id', [name, house, randomToken(9), phone]);
   const id = rows[0].id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {
     await q('INSERT INTO categories (shliach_id, name, color, sort) VALUES ($1,$2,$3,$4)', [id, n, c, i]);
   }
-  const s = await setLogin(req, id, mode, code);
+  const s = await setCode(req, id, code);
   const sent = await sendWelcome(req, s, code, true);
-  if (sent.ok) flash(req, `החשבון נוצר והקישור נשלח ב-SMS ל-${phone}`);
+  if (sent.ok) flash(req, `החשבון נוצר, והקישור והקוד נשלחו ב-SMS ל-${phone}`);
   else flashErr(req, `החשבון נוצר, אבל ה-SMS לא נשלח (${sent.error}) — אפשר לשלוח בוואטסאפ`);
   res.redirect('/admin');
 });
 
-// שינוי אופן הכניסה: otp / code (עם קוד חדש)
-app.post('/admin/shluchim/:id/login', requireAdmin, async (req, res) => {
-  const mode = MODES.includes(req.body.login_mode) ? req.body.login_mode : null;
-  if (!mode) return res.redirect('/admin');
-  if (mode === 'otp' && !smsConfigured()) { flashErr(req, 'כניסה בקוד חד-פעמי דורשת SMS (YEMOT_TOKEN)'); return res.redirect('/admin'); }
-  let code = null;
-  if (mode === 'code') {
-    code = String(req.body.code || '').trim() || randomCode();
-    if (!validCode(code)) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
-  }
-  const s = await setLogin(req, int(req.params.id), mode, code);
+// קוד קבוע חדש (ריק = אקראי) ושליחתו ב-SMS
+app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
+  const code = codeFrom(req);
+  if (!code) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
+  const s = await setCode(req, int(req.params.id), code);
   if (!s) return res.redirect('/admin');
   const sent = s.phone ? await sendWelcome(req, s, code) : { ok: false, error: 'לשליח אין נייד' };
-  const msg = `אופן הכניסה עודכן: ${MODE_LABEL[mode]}. כל המכשירים המחוברים נותקו.`;
-  if (sent.ok) flash(req, `${msg} הפרטים נשלחו ב-SMS ל-${s.phone}`); else flashErr(req, `${msg} ה-SMS לא נשלח (${sent.error})`);
+  const msg = 'הקוד הוחלף וכל המכשירים המחוברים נותקו.';
+  if (sent.ok) flash(req, `${msg} הקישור והקוד נשלחו ב-SMS ל-${s.phone}`); else flashErr(req, `${msg} ה-SMS לא נשלח (${sent.error})`);
   res.redirect('/admin');
 });
 
-// שליחה חוזרת של הקישור ב-SMS. בקוד קבוע — נקבע קוד חדש ונשלח יחד עם הקישור
-// (השרת שומר רק hash, כך שאת הקוד הישן אי אפשר לשלוח)
+// שליחה חוזרת של הקישור בלבד (את הקוד הקבוע השרת לא יודע — שומר רק hash)
 app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
-  const { rows } = await q('SELECT id, name, slug, phone, login_mode FROM shluchim WHERE id=$1', [int(req.params.id)]);
-  let s = rows[0];
+  const { rows } = await q('SELECT id, name, slug, phone FROM shluchim WHERE id=$1', [int(req.params.id)]);
+  const s = rows[0];
   if (!s) return res.redirect('/admin');
   if (!s.phone) { flashErr(req, 'לשליח אין נייד'); return res.redirect('/admin'); }
-  let code = null;
-  if (s.login_mode === 'code') {
-    code = randomCode();
-    s = await setLogin(req, s.id, 'code', code);
-  }
-  const sent = await sendWelcome(req, s, code);
-  const what = code ? 'הקישור וקוד כניסה חדש נשלחו' : 'הקישור נשלח';
-  if (sent.ok) flash(req, `${what} ב-SMS ל-${s.phone}`); else flashErr(req, `ה-SMS לא נשלח: ${sent.error}`);
+  const sent = await sendWelcome(req, s, null);
+  if (sent.ok) flash(req, `הקישור נשלח ב-SMS ל-${s.phone}`); else flashErr(req, `ה-SMS לא נשלח: ${sent.error}`);
+  res.redirect('/admin');
+});
+
+app.post('/admin/shluchim/:id/house', requireAdmin, async (req, res) => {
+  await q('UPDATE shluchim SET chabad_house=$1 WHERE id=$2', [String(req.body.chabad_house || '').trim().slice(0, 80), int(req.params.id)]);
+  flash(req, 'שם בית חב״ד עודכן');
   res.redirect('/admin');
 });
 
@@ -342,7 +333,6 @@ router.use(async (req, res, next) => {
   req.shliach = res.locals.shliach = s;
   res.locals.base = `/s/${s.slug}`;
   res.locals.manifestUrl = `/s/${s.slug}/manifest.webmanifest`;
-  res.locals.loginMode = s.login_mode;
   const sh = req.session.sh && !Array.isArray(req.session.sh) ? req.session.sh : {};
   req.authorized = sh[s.id] === s.session_version; // תמיד נדרשת כניסה בקוד
   next();
@@ -405,7 +395,7 @@ router.get('/', async (req, res) => {
   });
 });
 
-// מסך הכניסה. ב-otp: שלב 1 — כפתור "שליחת קוד", שלב 2 — הזנת הקוד שנשלח
+// מסך הכניסה: קוד קבוע, או קוד חד-פעמי שנשלח ב-SMS (אותו שדה)
 const OTP_TTL_MIN = 10;
 const OTP_MAX_ATTEMPTS = 5;
 const maskPhone = (p) => (p ? `${p.slice(0, 3)}-•••-${p.slice(-4)}` : '');
@@ -413,13 +403,12 @@ function renderLogin(req, res, error = null, status = 200) {
   const s = req.shliach;
   const otpSent = req.session.otp?.id === s.id && req.session.otp.at > Date.now() - OTP_TTL_MIN * 60 * 1000;
   res.status(status).render('shliach_login', {
-    error, mode: s.login_mode, otpSent, maskedPhone: maskPhone(s.phone), canOtp: !!s.phone && smsConfigured(),
+    error, otpSent, maskedPhone: maskPhone(s.phone), canOtp: !!s.phone && smsConfigured(),
   });
 }
 
 router.post('/otp/send', async (req, res) => {
   const s = req.shliach;
-  if (s.login_mode !== 'otp') return res.redirect(res.locals.base);
   if (!s.phone || !smsConfigured()) return renderLogin(req, res, 'לא ניתן לשלוח קוד כרגע. פנו למנהל המערכת.', 503);
   if (!otpSendByIp.take(`otp:${req.ip}`) || !otpSendByAccount.take(`otp:s${s.id}`)) {
     return renderLogin(req, res, 'נשלחו יותר מדי קודים. נסו שוב בעוד כמה דקות.', 429);
@@ -460,24 +449,23 @@ router.post('/login', async (req, res) => {
     return renderLogin(req, res, 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.', 429);
   }
   const code = String(req.body.code || '').trim();
-  let ok;
-  if (s.login_mode === 'otp') {
-    const r = await checkOtp(s.id, code);
-    if (r === 'expired') {
-      req.session.otp = undefined;
-      return renderLogin(req, res, 'הקוד פג תוקף או שנוצלו כל הניסיונות. שלחו קוד חדש.', 401);
-    }
-    ok = r === 'ok';
-  } else {
-    ok = !!s.access_code_hash && (await bcrypt.compare(code, s.access_code_hash));
-  }
+  // קודם הקוד הקבוע; אם לא תאם — קוד חד-פעמי פעיל (אם נשלח)
+  let ok = !!s.access_code_hash && (await bcrypt.compare(code, s.access_code_hash));
+  let otp = null;
+  if (!ok) { otp = await checkOtp(s.id, code); ok = otp === 'ok'; }
   if (!ok) {
     loginByIp.hit(ipKey);
     loginByAccount.hit(acctKey); // נספר לחשבון מכל IP — החלפת כתובות לא עוקפת
+    if (otp === 'expired' && req.session.otp?.id === s.id) {
+      req.session.otp = undefined;
+      return renderLogin(req, res, 'הקוד שגוי, והקוד החד-פעמי פג תוקף או שנוצלו כל הניסיונות. אפשר לשלוח קוד חדש.', 401);
+    }
     return renderLogin(req, res, 'קוד שגוי', 401);
   }
   loginByIp.reset(ipKey);
   req.session.otp = undefined;
+  // כניסה בקוד חד-פעמי (למשל כששכחו את הקוד) מאפשרת לקבוע קוד חדש ב-15 הדקות הקרובות בלי הקוד הנוכחי
+  req.session.otpLogin = otp === 'ok' ? { id: s.id, at: Date.now() } : undefined;
   req.session.sh = { ...(Array.isArray(req.session.sh) ? {} : req.session.sh), [s.id]: s.session_version };
   res.redirect(res.locals.base);
 });
@@ -657,9 +645,11 @@ router.post('/links/:id/toggle', async (req, res) => {
 
 /* ------------------------------ הגדרות ------------------------------ */
 
+const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.session.otpLogin.at > Date.now() - 15 * 60 * 1000;
+
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
-    error, categories: await loadCategories(req.shliach.id),
+    error, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
     smsOn: smsConfigured(), smsPreview: await weeklyMessageFor(req.shliach), fmtDate,
   });
 }
@@ -695,8 +685,7 @@ router.post('/settings', async (req, res) => {
   const a = req.body.action;
 
   if (a === 'code') {
-    if (s.login_mode !== 'code') return res.redirect(back);
-    if (s.access_code_hash && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) return fail('הקוד הנוכחי שגוי');
+    if (s.access_code_hash && !recentOtp(req) && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) return fail('הקוד הנוכחי שגוי');
     const code = String(req.body.code || '').trim();
     if (!validCode(code)) return fail(CODE_RULE);
     if (code !== String(req.body.code2 || '').trim()) return fail('הקודים אינם תואמים');

@@ -43,16 +43,6 @@ document.querySelectorAll('code.copy').forEach((el) => {
 // שליחה אוטומטית של טופס בשינוי בחירה (במקום onchange inline — חסום ב-CSP)
 document.querySelectorAll('[data-autosubmit]').forEach((el) => el.addEventListener('change', () => el.form.submit()));
 
-// טופס יצירת שליח: שדה קוד רק כשנבחר "עם קוד"
-// טופס אופן כניסה: שדה הקוד מוצג רק ב"קוד קבוע"
-document.querySelectorAll('form[data-login-mode]').forEach((form) => {
-  const field = form.querySelector('.code-field');
-  if (!field) return;
-  const sync = () => { field.hidden = form.querySelector('input[name=login_mode]:checked')?.value !== 'code'; };
-  form.querySelectorAll('input[name=login_mode]').forEach((r) => r.addEventListener('change', sync));
-  sync();
-});
-
 // "שמירה כאפליקציה" (PWA) — כמו בקאפיטל: רישום service worker, שמירת אירוע ההתקנה
 // והפעלתו רק בלחיצה. באייפון אין API להתקנה — מציגים הנחיה (שיתוף ← הוסף למסך הבית).
 (() => {
