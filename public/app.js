@@ -74,3 +74,22 @@ document.querySelectorAll('[data-autosubmit]').forEach((el) => el.addEventListen
     setTimeout(() => t.remove(), 6000);
   }
 })();
+
+// שיתוף האתר (מסכי הכניסה): תפריט השיתוף של הטלפון; במחשב — העתקת הקישור, ואם אי אפשר — וואטסאפ
+document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener('click', async () => {
+  const url = location.origin + '/';
+  const { shareTitle: title, shareText: text } = btn.dataset;
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url }); } catch { /* המשתמש ביטל */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    const t = document.createElement('div');
+    t.className = 'bd-toast'; t.setAttribute('role', 'status'); t.textContent = 'הקישור לאתר הועתק ✓';
+    (document.querySelector('.bd') || document.body).append(t);
+    setTimeout(() => t.remove(), 4000);
+  } catch {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${title}\n${url}`)}`, '_blank', 'noopener');
+  }
+}));

@@ -195,3 +195,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-table tr.is-bad { background: var(--bd-bad-soft); }
 .bd-table tr.is-dup { opacity: .6; }
 .bd-table td.bd-num { white-space: nowrap; }
+
+/* קישורים מתחת למסכי הכניסה */
+.bd-login-links { display: flex; gap: var(--bd-sp-2); justify-content: center; flex-wrap: wrap; margin-top: var(--bd-sp-4); }
+.bd button.bd-btn--ghost { color: var(--bd-fg); }
