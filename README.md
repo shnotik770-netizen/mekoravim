@@ -42,6 +42,9 @@
 ## עיצוב
 מבוסס על חבילת העיצוב של המעצב: `public/css/tokens.css` ו-`public/css/components.css` (כמו שהם), ו-`public/css/app.css` להשלמות במסכים שהחבילה לא עיצבה. כל הצבעים במשתני `--bd-*`, כולל מצב כהה אוטומטי. התאריכים מחושבים בשרת (hebcal); `hebrew-date.js` מהחבילה לא בשימוש.
 
+## גיבוי
+`scripts/backup.mjs` מייצא את כל הטבלאות ל-JSON דחוס ושומר ב-bucket (S3) — רץ כשירות cron יומי, שומר 30 יום. `scripts/restore.mjs` משחזר (דורש `CONFIRM=yes`). להגדרה: [`docs/DEPLOY.md`](docs/DEPLOY.md) סעיף 6. לבדיקה מקומית: `BACKUP_DIR=/tmp/bk`.
+
 ## פריסה ב-Railway
 ראו [`docs/DEPLOY.md`](docs/DEPLOY.md).
 

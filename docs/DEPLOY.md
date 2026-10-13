@@ -41,3 +41,30 @@
    אם מופיע `ADMIN_PASSWORD חלשה מדי` או `SESSION_SECRET קצר מדי` — לתקן את המשתנה.
 3. `<הכתובת>/admin/login` → כניסה → יצירת שליח ניסיון → כניסה לקישור שלו → יצירת קישור רישום → רישום מהטלפון.
 4. אחרי שמוגדר `YEMOT_TOKEN`: בהגדרות השליח → נייד → "שליחת הודעת ניסיון עכשיו".
+
+## 6. גיבוי יומי (חינמי — בלי תוכנית Pro)
+שירות cron נפרד שמייצא את כל הנתונים פעם ביום לקובץ דחוס ב-bucket של Railway, ושומר 30 יום (תמיד לפחות 3 אחרונים).
+
+**מה עושים ב-Railway:**
+1. בפרויקט: **+ Create → Bucket**, בשם `backups`.
+2. **+ Create → GitHub Repo** → `shnotik770-netizen/mekoravim`, שם השירות `backup`, ענף כמו של web.
+3. בשירות `backup` → **Settings**:
+   - **Custom Start Command:** `node scripts/backup.mjs`
+   - **Cron Schedule:** `17 1 * * *` (כל לילה ב-01:17 UTC ≈ 3–4 בלילה בישראל)
+   - **Healthcheck Path:** ריק (לשירות cron אין שרת)
+4. בשירות `backup` → **Variables**:
+
+| שם | ערך |
+|---|---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `BUCKET` | `${{backups.BUCKET}}` |
+| `ENDPOINT` | `${{backups.ENDPOINT}}` |
+| `REGION` | `${{backups.REGION}}` |
+| `ACCESS_KEY_ID` | `${{backups.ACCESS_KEY_ID}}` |
+| `SECRET_ACCESS_KEY` | `${{backups.SECRET_ACCESS_KEY}}` |
+
+(אם ה-bucket נקרא אחרת — להחליף `backups` בשם שלו.)
+
+**בדיקה:** בשירות backup → **Deployments → Run now** (או לחכות ללילה) → בלוג: `גיבוי נשמר: backups/...`.
+
+**שחזור** (מחליף את כל הנתונים!): `node scripts/restore.mjs --list` לרשימה, ואז `CONFIRM=yes node scripts/restore.mjs latest`.
