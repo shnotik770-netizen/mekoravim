@@ -1,0 +1,14 @@
+<%# גרף עמודות מוערם. cols: [{ label, segs: [ערכים] }], colors: מחלקות לכל סגמנט, legend: שמות, aria %>
+<% const max = Math.max(1, ...cols.map(c => c.segs.reduce((a, b) => a + b, 0))); %>
+<div class="bd-bars" role="img" aria-label="<%= aria %>" style="grid-template-columns:repeat(<%= cols.length %>, 1fr)">
+  <% cols.forEach(c => { const tot = c.segs.reduce((a, b) => a + b, 0); %>
+  <div class="bd-bars__col" title="<%= c.label %>: <%= tot %>">
+    <span class="bd-bars__n bd-num"><%= tot || '' %></span>
+    <span class="bd-bars__stack">
+      <% c.segs.forEach((v, i) => { %><span class="bd-bars__seg <%= colors[i] %>" style="height:<%= v / max * 100 %>%"></span><% }) %>
+    </span>
+    <span class="bd-bars__label bd-num"><%= c.label %></span>
+  </div>
+  <% }) %>
+</div>
+<% if (legend.length > 1) { %><p class="bd-help bd-mt"><%- legend.map((l, i) => `<span class="bd-dot ${colors[i]}"></span> ${l}`).join(' · ') %></p><% } %>

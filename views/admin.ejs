@@ -41,7 +41,7 @@
   <% shluchim.forEach(s => { %>
     <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">
-        <div class="bd-item__title"><a href="/admin/shluchim/<%= s.id %>" title="היסטוריה וסטטיסטיקה"><%= s.name %></a>
+        <div class="bd-item__title"><a href="/admin/shluchim/<%= s.id %>" title="דשבורד שליח"><%= s.name %></a>
           <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %>
           <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
           <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
@@ -55,7 +55,7 @@
       <details class="bd-menu">
         <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
         <div class="bd-menu__body">
-          <a class="bd-btn bd-btn--ghost bd-btn--sm" href="/admin/shluchim/<%= s.id %>">📊 היסטוריה וסטטיסטיקה</a>
+          <a class="bd-btn bd-btn--ghost bd-btn--sm" href="/admin/shluchim/<%= s.id %>">📊 דשבורד שליח</a>
           <form method="post" action="/admin/shluchim/<%= s.id %>/send-link">
             <button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button>
           </form>

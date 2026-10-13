@@ -230,10 +230,14 @@ app.get('/admin/log', requireAdmin, async (req, res) => {
   res.render('admin_log', { ...log, page, shliachId, problems, shluchim, OUTCOMES, ACTORS, fmtTime });
 });
 
+// בורר השליח בדשבורד (טופס GET)
+app.get('/admin/shluchim/go', requireAdmin, (req, res) => res.redirect(int(req.query.id) ? `/admin/shluchim/${int(req.query.id)}` : '/admin'));
+
 app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
   const id = int(req.params.id);
   const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, phone, sms_weekly, sms_daily,
-                              sms_quota, sms_used_birthdays, sms_alert_threshold, sms_last_error FROM shluchim WHERE id=$1`, [id]);
+                              sms_quota, sms_used_birthdays, sms_alert_threshold, sms_last_error,
+                              access_code_hash IS NOT NULL AS has_code FROM shluchim WHERE id=$1`, [id]);
   if (!rows[0]) return res.status(404).render('error', { message: 'השליח לא נמצא' });
   const one = async (sql) => (await q(sql, [id])).rows[0];
   const counts = await one(`SELECT
@@ -263,10 +267,55 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
     FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
     LEFT JOIN contacts c ON c.shliach_id=$1 AND date_trunc('month', c.created_at) = m
     GROUP BY m ORDER BY m`, [id]);
+  // ימי הולדת — רק ספירות (השמות נטענים לחישוב ולא מועברים לתצוגה)
+  const today = todayIL();
+  const wk = weekRange(today), hm = hebMonthRange(today);
+  const evs = collectEvents(await loadPeople(id), addDays(today, -30), new Date(Math.max(hm.end, addDays(today, 29))));
+  await markContacted(id, evs);
+  const inR = (e, a, b) => e.date >= a && e.date <= b;
+  const past30 = evs.filter((e) => e.date < today && e.date >= addDays(today, -30));
+  const bdays = {
+    today: evs.filter((e) => e.date.getTime() === today.getTime()).length,
+    week: evs.filter((e) => inR(e, wk.start, wk.end)).length,
+    month: evs.filter((e) => inR(e, hm.start, hm.end)).length,
+    next30: evs.filter((e) => inR(e, today, addDays(today, 29))).length,
+    past30: past30.length,
+    covered30: past30.filter((e) => e.contacted).length,
+    monthName: hm.name.split(' ')[0],
+  };
+  // פעילות השליח לפי שבוע (12 שבועות) ו-SMS לפי חודש (6 חודשים)
+  const { rows: weeks } = await q(`
+    SELECT to_char(w, 'DD/MM') AS label, count(l.id)::int AS n
+    FROM generate_series(date_trunc('week', now()) - interval '11 weeks', date_trunc('week', now()), interval '1 week') w
+    LEFT JOIN activity_log l ON l.shliach_id=$1 AND l.actor='shliach' AND date_trunc('week', l.created_at) = w
+    GROUP BY w ORDER BY w`, [id]);
+  const { rows: smsMonths } = await q(`
+    SELECT to_char(m, 'MM/YY') AS label,
+           coalesce(sum(l.units) FILTER (WHERE l.kind IN ('weekly','daily')), 0)::int AS reminders,
+           coalesce(sum(l.units) FILTER (WHERE l.kind NOT IN ('weekly','daily')), 0)::int AS system
+    FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
+    LEFT JOIN sms_log l ON l.shliach_id=$1 AND date_trunc('month', l.created_at) = m
+    GROUP BY m ORDER BY m`, [id]);
+  // בריאות החשבון: התראות אוטומטיות למנהל
+  const sh = rows[0], quota = quotaStatus(sh), alerts = [];
+  const daysSince = (d) => (d ? Math.floor((Date.now() - new Date(d)) / 86400000) : null);
+  if (!sh.active) alerts.push(['bad', 'החשבון מושבת']);
+  if (!sh.phone) alerts.push(['bad', 'אין נייד לשליח — אין קוד חד-פעמי ואין SMS']);
+  if (!sh.has_code) alerts.push(['warn', 'לא נקבע קוד קבוע — נכנס רק בקוד חד-פעמי']);
+  const idle = daysSince(activity.last_action ?? sh.created_at);
+  if (idle !== null && idle >= 30) alerts.push(['warn', `לא נכנס למערכת ${idle} ימים`]);
+  if (!counts.contacts) alerts.push(['warn', 'עדיין אין מקורבים']);
+  if (!sh.sms_weekly && !sh.sms_daily) alerts.push(['info', 'תזכורות SMS כבויות']);
+  else if (quota.empty) alerts.push(['bad', 'יתרת ה-SMS לתזכורות נגמרה — התזכורות נעצרו']);
+  else if (quota.low) alerts.push(['warn', `יתרת ה-SMS לתזכורות נמוכה (${quota.left})`]);
+  if (sh.sms_last_error) alerts.push(['bad', `שגיאת SMS אחרונה: ${sh.sms_last_error}`]);
+  if (activity.failed30 >= 5) alerts.push(['warn', `${activity.failed30} כניסות שנכשלו ב-30 יום`]);
+  if (bdays.past30 >= 3 && bdays.covered30 / bdays.past30 < 0.3) alerts.push(['info', `סומן "יצרתי קשר" רק ב-${bdays.covered30} מתוך ${bdays.past30} ימי הולדת בחודש האחרון`]);
+  const { rows: all } = await q('SELECT id, name FROM shluchim ORDER BY name');
   const page = Math.max(1, int(req.query.page) || 1);
   const log = await loadLog({ shliachId: id, problems: req.query.o === 'problems', page });
   res.render('admin_shliach', {
-    s: rows[0], counts, activity, sms, months, quota: quotaStatus(rows[0]), ...log, page, problems: req.query.o === 'problems',
+    s: sh, counts, activity, sms, months, weeks, smsMonths, bdays, alerts, all, quota, ...log, page, problems: req.query.o === 'problems',
     OUTCOMES, ACTORS, fmtTime, base: baseUrl(req),
   });
 });

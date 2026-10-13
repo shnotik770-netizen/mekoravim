@@ -1,49 +1,69 @@
-<%- include('partials/head', { title: s.name + ' — היסטוריה וסטטיסטיקה' }) %>
+<%- include('partials/head', { title: s.name + ' — דשבורד' }) %>
 <%
   const ago = (d) => d ? fmtTime(d) : '—';
   const kindName = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
-  const maxMonth = Math.max(1, ...months.map(m => m.links + m.manual));
+  const pct = bdays.past30 ? Math.round(bdays.covered30 / bdays.past30 * 100) : null;
+  const alertCls = { bad: 'bd-msg--err', warn: 'bd-msg--warn', info: 'bd-msg--info' };
 %>
 <header class="bd-appbar">
   <a class="bd-brand" href="/admin"><%- include('partials/logo') %>ניהול שלוחים</a>
   <nav class="bd-nav"><a href="/admin">שלוחים</a><a href="/admin/log">יומן פעולות</a></nav>
 </header>
-<section class="bd-head">
-  <h1 class="bd-title"><%= s.name %></h1>
-  <p class="bd-sub"><%= s.chabad_house || '' %><%= s.chabad_house ? ' · ' : '' %>נפתח <span class="bd-num" dir="ltr"><%= fmtTime(s.created_at) %></span>
-    <% if (!s.active) { %> · <span class="bd-status bd-status--bad">מושבת</span><% } %></p>
-  <p class="bd-help">כאן רק מספרים ופעולות — בלי שמות, טלפונים או פרטים של מקורבים.</p>
+<div class="bd-pagehead">
+  <div>
+    <h1 class="bd-title"><%= s.name %></h1>
+    <p class="bd-sub"><%= s.chabad_house || '' %><%= s.chabad_house ? ' · ' : '' %>נפתח <span class="bd-num" dir="ltr"><%= fmtTime(s.created_at) %></span>
+      <% if (!s.active) { %> · <span class="bd-status bd-status--bad">מושבת</span><% } %></p>
+  </div>
+  <form method="get" action="/admin/shluchim/go" class="bd-inline">
+    <select class="bd-input" name="id" aria-label="מעבר לשליח אחר" data-autosubmit>
+      <% all.forEach(x => { %><option value="<%= x.id %>" <%= x.id === s.id ? 'selected' : '' %>><%= x.name %></option><% }) %>
+    </select>
+    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">מעבר</button></noscript>
+  </form>
+</div>
+<p class="bd-help bd-mb">דשבורד למנהל — רק מספרים ופעולות, בלי שמות, טלפונים או פרטים של מקורבים.</p>
+
+<section class="bd-card bd-mb">
+  <h2 class="bd-section-title">בריאות החשבון</h2>
+  <% if (!alerts.length) { %><div class="bd-msg bd-msg--ok"><span>✓ הכול תקין</span></div><% } %>
+  <div class="bd-stack"><% alerts.forEach(([lvl, text]) => { %><div class="bd-msg <%= alertCls[lvl] %>"><span><%= lvl === 'bad' ? '⛔' : lvl === 'warn' ? '⚠️' : 'ℹ️' %> <%= text %></span></div><% }) %></div>
 </section>
 
 <div class="bd-stats">
+  <div class="bd-stat bd-stat--today"><span class="bd-stat__label">ימי הולדת היום</span><span class="bd-stat__value bd-num"><%= bdays.today %></span>
+    <span class="bd-stat__hint">השבוע <span class="bd-num"><%= bdays.week %></span> · ב<%= bdays.monthName %> <span class="bd-num"><%= bdays.month %></span></span></div>
+  <div class="bd-stat"><span class="bd-stat__label">ב-30 הימים הקרובים</span><span class="bd-stat__value bd-num"><%= bdays.next30 %></span><span class="bd-stat__hint">ימי הולדת</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">כיסוי "יצרתי קשר"</span><span class="bd-stat__value bd-num"><%= pct === null ? '—' : pct + '%' %></span>
+    <span class="bd-stat__hint"><span class="bd-num"><%= bdays.covered30 %></span> מתוך <span class="bd-num"><%= bdays.past30 %></span> ימי הולדת ב-30 יום</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">כניסות ב-30 יום</span><span class="bd-stat__value bd-num"><%= activity.logins30 %></span>
+    <span class="bd-stat__hint">אחרונה: <span class="bd-num" dir="ltr"><%= ago(activity.last_login) %></span></span></div>
   <div class="bd-stat"><span class="bd-stat__label">מקורבים</span><span class="bd-stat__value bd-num"><%= counts.contacts %></span>
     <span class="bd-stat__hint"><span class="bd-num"><%= counts.via_links %></span> דרך קישור · <span class="bd-num"><%= counts.new30 %></span> חדשים ב-30 יום</span></div>
   <div class="bd-stat"><span class="bd-stat__label">בני משפחה</span><span class="bd-stat__value bd-num"><%= counts.family %></span></div>
-  <div class="bd-stat"><span class="bd-stat__label">"יצרתי קשר"</span><span class="bd-stat__value bd-num"><%= counts.contacted %></span>
+  <div class="bd-stat"><span class="bd-stat__label">"יצרתי קשר" (סה״כ)</span><span class="bd-stat__value bd-num"><%= counts.contacted %></span>
     <span class="bd-stat__hint"><span class="bd-num"><%= counts.contacted30 %></span> ב-30 יום</span></div>
-  <div class="bd-stat"><span class="bd-stat__label">כניסות ב-30 יום</span><span class="bd-stat__value bd-num"><%= activity.logins30 %></span>
-    <span class="bd-stat__hint">אחרונה: <span class="bd-num" dir="ltr"><%= ago(activity.last_login) %></span></span></div>
+  <div class="bd-stat"><span class="bd-stat__label">יתרת SMS לתזכורות</span><span class="bd-stat__value bd-num" <%- quota.low ? 'style="color:var(--bd-bad)"' : '' %>><%= quota.left %></span>
+    <span class="bd-stat__hint">מתוך <span class="bd-num"><%= quota.quota %></span></span></div>
+</div>
+
+<div class="bd-grid2 bd-mb">
+  <section class="bd-card">
+    <h2 class="bd-section-title">פעילות השליח לפי שבוע</h2>
+    <%- include('partials/bars', { cols: weeks.map(w => ({ label: w.label, segs: [w.n] })), colors: ['bd-bars__c1'], legend: ['פעולות'], aria: 'פעולות השליח ב-12 השבועות האחרונים' }) %>
+  </section>
+  <section class="bd-card">
+    <h2 class="bd-section-title">מקורבים חדשים לפי חודש</h2>
+    <%- include('partials/bars', { cols: months.map(m => ({ label: m.label, segs: [m.links, m.manual] })), colors: ['bd-bars__c1', 'bd-bars__c2'], legend: ['דרך קישור רישום', 'הוספה ידנית'], aria: 'מקורבים חדשים בחצי השנה האחרונה' }) %>
+  </section>
+  <section class="bd-card">
+    <h2 class="bd-section-title">יחידות SMS לפי חודש</h2>
+    <%- include('partials/bars', { cols: smsMonths.map(m => ({ label: m.label, segs: [m.reminders, m.system] })), colors: ['bd-bars__c1', 'bd-bars__c2'], legend: ['תזכורות (מהמכסה)', 'הודעות מערכת'], aria: 'יחידות SMS בחצי השנה האחרונה' }) %>
+  </section>
 </div>
 
 <div class="bd-layout bd-layout--split">
 <div class="bd-stack">
-  <section class="bd-card">
-    <h2 class="bd-section-title">מקורבים חדשים לפי חודש</h2>
-    <div class="bd-bars" role="img" aria-label="מקורבים חדשים בחצי השנה האחרונה">
-      <% months.forEach(m => { %>
-      <div class="bd-bars__col">
-        <span class="bd-bars__n bd-num"><%= m.links + m.manual %></span>
-        <span class="bd-bars__stack">
-          <span class="bd-bars__seg bd-bars__seg--links" style="height:<%= m.links / maxMonth * 100 %>%"></span>
-          <span class="bd-bars__seg" style="height:<%= m.manual / maxMonth * 100 %>%"></span>
-        </span>
-        <span class="bd-bars__label bd-num"><%= m.label %></span>
-      </div>
-      <% }) %>
-    </div>
-    <p class="bd-help bd-mt"><span class="bd-dot bd-bars__key--links"></span> דרך קישור רישום · <span class="bd-dot bd-bars__key"></span> הוספה ידנית</p>
-  </section>
-
   <section class="bd-card">
     <h2 class="bd-section-title">היסטוריית פעולות</h2>
     <form method="get" class="bd-mb">

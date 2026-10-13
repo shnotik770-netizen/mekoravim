@@ -173,3 +173,13 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 .bd-bars__key--links { background: var(--bd-accent); }
 .bd-bars__key { background: color-mix(in srgb, var(--bd-accent) 45%, var(--bd-surface)); }
 .bd-help .bd-dot { display: inline-block; vertical-align: middle; }
+
+/* דשבורד שליח למנהל */
+.bd-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--bd-sp-4); }
+.bd-bars__c1 { background: var(--bd-accent); }
+.bd-bars__c2 { background: color-mix(in srgb, var(--bd-accent) 40%, var(--bd-surface)); }
+.bd-bars { grid-template-columns: repeat(6, 1fr); }
+.bd-bars__label { overflow: hidden; white-space: nowrap; }
+.bd-msg--info { background: var(--bd-accent-soft); color: var(--bd-fg); }
+div.bd-stat { cursor: default; }
+div.bd-stat:hover { border-color: var(--bd-line); }
