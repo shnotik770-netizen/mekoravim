@@ -183,3 +183,15 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 .bd-msg--info { background: var(--bd-accent-soft); color: var(--bd-fg); }
 div.bd-stat { cursor: default; }
 div.bd-stat:hover { border-color: var(--bd-line); }
+
+/* ייבוא מאקסל */
+.bd textarea.bd-import-text { min-height: 200px; font-size: var(--bd-fs-sm); white-space: pre; overflow-x: auto; tab-size: 16; }
+.bd-import-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--bd-sp-3); }
+.bd-import-map label { display: grid; gap: 4px; }
+.bd-table-wrap { overflow-x: auto; }
+.bd-table { width: 100%; border-collapse: collapse; font-size: var(--bd-fs-sm); }
+.bd-table th, .bd-table td { text-align: start; padding: 6px 8px; border-top: 1px solid var(--bd-line); vertical-align: top; }
+.bd-table th { color: var(--bd-fg-muted); font-weight: var(--bd-fw-medium); border-top: 0; white-space: nowrap; }
+.bd-table tr.is-bad { background: var(--bd-bad-soft); }
+.bd-table tr.is-dup { opacity: .6; }
+.bd-table td.bd-num { white-space: nowrap; }

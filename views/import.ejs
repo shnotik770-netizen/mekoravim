@@ -1,0 +1,80 @@
+<%- include('partials/head', { title: 'ייבוא מקורבים מאקסל', nav: true, active: 'contacts' }) %>
+<% const catName = (id) => (categories.find(c => c.id === id) || {}).name || '—'; %>
+<div class="bd-pagehead">
+  <h1 class="bd-title">ייבוא מקורבים מאקסל</h1>
+  <a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= base %>/contacts">← למקורבים</a>
+</div>
+<% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><span><%= error %></span></div><% } %>
+
+<form method="post" action="<%= base %>/contacts/import" class="bd-stack">
+  <section class="bd-card">
+    <ol class="bd-steps bd-mb">
+      <li><div>באקסל (או Google Sheets) מסמנים את הטבלה — <b>כולל שורת הכותרות</b> — ומעתיקים (Ctrl+C).</div></li>
+      <li><div>מדביקים כאן (Ctrl+V) ולוחצים "תצוגה מקדימה". המערכת מזהה את העמודות לבד, ואפשר לתקן.</div></li>
+      <li><div>בודקים את השורות ולוחצים "ייבוא".</div></li>
+    </ol>
+    <p class="bd-help bd-mb">עמודות מומלצות: <b>שם פרטי, שם משפחה, טלפון, תאריך לידה</b> (ואופציונלי: סיווג, הערות, אחרי השקיעה).
+      תאריך לועזי (14/03/1990) או עברי (ה׳ חשוון תש״נ, או עמודות נפרדות: יום / חודש / שנה). חובה: שם פרטי ותאריך. מקורבים שכבר קיימים (לפי טלפון, או שם + תאריך) מדולגים.</p>
+    <div class="bd-field"><label class="bd-label" for="txt">הדבקה מאקסל</label>
+      <textarea class="bd-input bd-import-text" id="txt" name="text" rows="10" dir="auto" spellcheck="false" placeholder="שם פרטי&#9;שם משפחה&#9;טלפון&#9;תאריך לידה&#10;דוד&#9;כהן&#9;052-1234567&#9;14/03/1990&#10;שרה&#9;לוי&#9;054-7654321&#9;ה׳ חשוון תש״נ" required><%= text %></textarea></div>
+    <div class="bd-field"><label class="bd-label" for="cat">סיווג למקורבים המיובאים <span class="opt">(אם אין עמודת סיווג)</span></label>
+      <select class="bd-input" id="cat" name="category_id">
+        <option value="">ללא סיווג</option>
+        <% categories.forEach(c => { %><option value="<%= c.id %>" <%= defaultCategory === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
+      </select></div>
+    <% if (!rows) { %><button class="bd-btn bd-btn--primary" name="action" value="preview">תצוגה מקדימה</button><% } %>
+  </section>
+
+  <% if (rows) { %>
+  <section class="bd-card">
+    <h2 class="bd-section-title">שיוך עמודות</h2>
+    <div class="bd-field"><label class="bd-check"><input type="hidden" name="has_header" value="0"><input type="checkbox" name="has_header" value="1" <%= hasHeader ? 'checked' : '' %>> השורה הראשונה היא כותרות</label></div>
+    <div class="bd-import-map">
+      <% for (let i = 0; i < width; i++) { %>
+      <label class="bd-small"><span class="bd-muted"><%= header && header[i] ? header[i] : 'עמודה ' + (i + 1) %></span>
+        <select class="bd-input" name="col<%= i %>">
+          <% Object.entries(IMPORT_FIELDS).forEach(([k, l]) => { %><option value="<%= k %>" <%= mapping[i] === k ? 'selected' : '' %>><%= l %></option><% }) %>
+        </select></label>
+      <% } %>
+    </div>
+    <button class="bd-btn bd-btn--ghost bd-btn--sm bd-mt" name="action" value="preview">עדכון התצוגה</button>
+  </section>
+
+  <section class="bd-card">
+    <% const bad = rows.filter(r => r.error).length, dups = rows.filter(r => r.dup).length; %>
+    <h2 class="bd-section-title">תצוגה מקדימה</h2>
+    <p class="bd-mb">
+      <span class="bd-status bd-status--ok"><span>✓ מוכנים לייבוא: <b class="bd-num"><%= okCount %></b></span></span>
+      <% if (bad) { %><span class="bd-status bd-status--bad"><span>שגיאות: <b class="bd-num"><%= bad %></b></span></span><% } %>
+      <% if (dups) { %><span class="bd-status"><span>כפילויות: <b class="bd-num"><%= dups %></b></span></span><% } %>
+    </p>
+    <div class="bd-table-wrap">
+      <table class="bd-table">
+        <thead><tr><th>#</th><th>מצב</th><th>שם</th><th>טלפון</th><th>תאריך לידה</th><th>סיווג</th></tr></thead>
+        <tbody>
+        <% rows.slice(0, 500).forEach(r => { %>
+          <tr class="<%= r.error ? 'is-bad' : r.dup ? 'is-dup' : '' %>">
+            <td class="bd-num"><%= r.n %></td>
+            <% if (r.error) { %>
+              <td><span class="bd-status bd-status--bad">שגיאה</span></td><td colspan="4"><%= r.error %> <span class="bd-muted">· <%= r.cells.join(' | ').slice(0, 80) %></span></td>
+            <% } else { %>
+              <td><% if (r.dup) { %><span class="bd-status">כבר קיים</span><% } else { %><span class="bd-status bd-status--ok">✓</span><% } %></td>
+              <td><%= r.value.first_name %> <%= r.value.last_name %></td>
+              <td class="bd-num" dir="ltr"><%= r.value.phone %></td>
+              <td><%= birthText(r.value) %></td>
+              <td><%= catName(r.value.category_id) %><% if (r.warning) { %> <span class="bd-err bd-small">(<%= r.warning %>)</span><% } %></td>
+            <% } %>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% if (rows.length > 500) { %><p class="bd-help bd-mt">מוצגות 500 השורות הראשונות מתוך <%= rows.length %>.</p><% } %>
+    <div class="bd-actions bd-mt">
+      <button class="bd-btn bd-btn--primary" name="action" value="save" <%= okCount ? '' : 'disabled' %>>ייבוא <%= okCount %> מקורבים</button>
+      <span class="bd-help">שורות עם שגיאה או כפילות לא ייובאו. אפשר לתקן באקסל ולהדביק שוב.</span>
+    </div>
+  </section>
+  <% } %>
+</form>
+<%- include('partials/foot') %>

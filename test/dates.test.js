@@ -124,3 +124,22 @@ test('יומן: מיסוך מספרי טלפון', async () => {
   assert.equal(scrub('052-123-4567 נכשל'), '\u206605•••••567\u2069 נכשל');
   assert.equal(scrub('3 יחידות'), '3 יחידות');
 });
+
+test('ייבוא מאקסל: טבלה, זיהוי עמודות ותאריכים', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { splitTable, guessMapping, parseRow, parseDateCell, dupKey } = await import('../lib/import.js');
+  const rows = splitTable('שם פרטי\tשם משפחה\tנייד\tתאריך לידה\nדוד\tכהן\t052-1234567\t14/03/1990\nשרה\tלוי\t\tה\' חשוון תש"נ\n');
+  const g = guessMapping(rows);
+  assert.deepEqual(g, { hasHeader: true, mapping: ['first_name', 'last_name', 'phone', 'date'] });
+  const a = parseRow(rows[1], g.mapping).value;
+  assert.equal(a.g_date, '1990-03-14');
+  const b = parseRow(rows[2], g.mapping).value;
+  assert.deepEqual([b.h_day, b.h_month, b.h_year, b.g_date], [5, 8, 5750, null]);
+  // בלי כותרות, CSV, שם מלא בעמודה אחת
+  const r2 = splitTable('יוסי לוי,0521112233,12/12/1985\nרחל כהן,0529998888,3.7.85\n');
+  assert.deepEqual(guessMapping(r2).mapping, ['full_name', 'phone', 'date']);
+  assert.equal(parseDateCell('32946').g_date, '1990-03-14'); // מספר סידורי של אקסל
+  assert.deepEqual(parseDateCell('כ"ט באדר א\' תשמ"ד'), { date_type: 'h', h_day: '29', h_month: '12', h_year: 'תשמ"ד' });
+  assert.ok(parseRow(['', 'כהן', '', '1.1.2000'], ['first_name', 'last_name', 'phone', 'date']).error);
+  assert.equal(dupKey({ phone: '+972-52-1234567', first_name: 'x' }), dupKey({ phone: '0521234567', first_name: 'y' }));
+});

@@ -14,7 +14,7 @@
   <h1 class="bd-title">שלום, <%= shliach.name %></h1>
   <p class="bd-sub">היום יום <%= DAY_NAMES[today.getDay()] %>, <%= hebToday %> · <span class="bd-num"><%= fmtGreg(today) %></span></p>
   <p class="bd-takeaway">
-    <% if (!total) { %>עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a> או <a href="<%= base %>/contacts/new">הוסיפו מקורב</a>.
+    <% if (!total) { %>עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a>, <a href="<%= base %>/contacts/new">הוסיפו מקורב</a> או <a href="<%= base %>/contacts/import">ייבאו רשימה מאקסל</a>.
     <% } else if (lists.today.length) { %>🎂 היום יום ההולדת של <b><%= lists.today.map(e => e.name).join(', ') %></b>
     <% } else { %>אין ימי הולדת היום<% if (next) { %> · הבא: <b><%= next.name %></b> ב<%= next.label %><% } %><% } %>
     <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
