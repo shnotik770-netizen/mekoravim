@@ -40,24 +40,23 @@
   <section class="bd-card" id="sms">
     <h2 class="bd-section-title">📱 תזכורות SMS</h2>
     <p class="bd-help bd-mb">תזכורת בבוקר עם ימי ההולדת (מקורבים ובני משפחה). בשבת ובחג לא נשלחות הודעות — ההודעה נשלחת ביום החול שלפני וכוללת גם את ימי השבת/החג.</p>
-    <p class="bd-mb"><span class="bd-status <%= quota.left ? 'bd-status--accent' : 'bd-status--bad' %>"><span>מכסה החודש: נוצלו <bdi class="bd-num"><%= quota.used %></bdi> מתוך <bdi class="bd-num"><%= quota.quota %></bdi> יחידות</span></span></p>
+    <p class="bd-mb"><span class="bd-status <%= quota.low ? 'bd-status--bad' : 'bd-status--accent' %>"><span>יחידות לתזכורות: הוקצו <bdi class="bd-num"><%= quota.quota %></bdi> · נוצלו <bdi class="bd-num"><%= quota.used %></bdi> · יתרה <bdi class="bd-num"><%= quota.left %></bdi></span></span></p>
+    <p class="bd-help bd-mb">רק התזכורות יורדות מהיתרה (הודעה ארוכה = כמה יחידות). קודי כניסה והודעות ניסיון על חשבון המערכת. לחידוש המכסה פנו למנהל.</p>
     <% if (!smsOn) { %><div class="bd-msg bd-msg--err">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</div><% } %>
     <form method="post" action="<%= base %>/sms">
       <div class="bd-field"><label class="bd-label" for="sms-ph">מספר נייד לקבלת ההודעה</label><input class="bd-input" id="sms-ph" name="sms_phone" type="tel" dir="ltr" style="text-align:right" inputmode="tel" value="<%= shliach.sms_phone %>" placeholder="050-0000000"></div>
-      <fieldset class="bd-field"><legend class="bd-label">מתי לשלוח</legend>
-      <div class="bd-toggle" role="radiogroup" aria-label="תדירות">
-        <% Object.entries(FREQUENCIES).forEach(([k, label]) => { %><input type="radio" name="sms_frequency" id="fq-<%= k %>" value="<%= k %>" <%= shliach.sms_frequency === k ? 'checked' : '' %>><label for="fq-<%= k %>"><%= label %></label><% }) %>
-      </div>
-      <span class="bd-help">שבועי: כל ימי ההולדת של השבוע, ביום ראשון. יומי: ימי ההולדת של היום, רק בימים שיש בהם ימי הולדת.</span>
+      <fieldset class="bd-field"><legend class="bd-label">אילו תזכורות לשלוח (אפשר את שתיהן)</legend>
+        <label class="bd-check"><input type="checkbox" name="sms_weekly" <%= shliach.sms_weekly ? 'checked' : '' %>> <span><b>שבועי</b> — ביום ראשון: כל ימי ההולדת של השבוע</span></label>
+        <label class="bd-check bd-mt"><input type="checkbox" name="sms_daily" <%= shliach.sms_daily ? 'checked' : '' %>> <span><b>יומי</b> — כל בוקר: ימי ההולדת של היום (רק בימים שיש)</span></label>
       </fieldset>
-      <label class="bd-check"><input type="checkbox" name="sms_enabled" <%= shliach.sms_enabled ? 'checked' : '' %>> לשלוח לי תזכורות SMS</label>
       <button class="bd-btn bd-btn--primary bd-mt">שמירה</button>
     </form>
-    <% if (shliach.sms_last_sent) { %><p class="bd-help bd-mt">נשלח לאחרונה: <span class="bd-num"><%= shliach.sms_last_sent.split('-').reverse().join('.') %></span></p><% } %>
+    <% const dmy = (d) => d.split('-').reverse().join('.'); %>
+    <% if (shliach.sms_last_sent || shliach.sms_last_daily) { %><p class="bd-help bd-mt">טופל לאחרונה:<% if (shliach.sms_last_sent) { %> שבועי <span class="bd-num"><%= dmy(shliach.sms_last_sent) %></span><% } %><% if (shliach.sms_last_daily) { %> · יומי <span class="bd-num"><%= dmy(shliach.sms_last_daily) %></span><% } %></p><% } %>
     <% if (shliach.sms_last_error) { %><p class="bd-err bd-mt">שגיאה אחרונה: <%= shliach.sms_last_error %></p><% } %>
     <details class="bd-mt">
       <summary class="bd-link-btn bd-link-btn--accent">תצוגה מקדימה של ההודעה</summary>
-      <pre class="bd-sms-preview"><%= smsPreview %></pre>
+      <% Object.entries(previews).forEach(([label, text]) => { %><% if (label) { %><p class="bd-label bd-mt"><%= label %></p><% } %><pre class="bd-sms-preview"><%= text %></pre><% }) %>
     </details>
     <% if (smsOn && shliach.sms_phone) { %>
     <form method="post" action="<%= base %>/sms" class="bd-mt">

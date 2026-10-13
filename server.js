@@ -12,7 +12,7 @@ import {
 
 const hebFromGregObj = (iso) => { const h = hebFromGreg(parseISO(iso), false); return { h_day: h.day, h_month: h.month, h_year: h.year }; };
 import { loadPeople, collectEvents } from './lib/events.js';
-import { smsConfigured, normalizePhone, sendToShliach, sendWeekly, weeklyMessageFor, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota, USAGE_SQL, FREQUENCIES } from './lib/sms.js';
+import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
 import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
 
@@ -149,14 +149,14 @@ function requireAdmin(req, res, next) {
 // המנהל רואה רק שם, קישור וסטטוס — לא את נתוני המקורבים
 app.get('/admin', requireAdmin, async (req, res) => {
   const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, access_code_hash IS NOT NULL AS has_code,
-                              sms_enabled, sms_frequency, sms_quota, phone, ${USAGE_SQL} AS sms_used
+                              sms_weekly, sms_daily, sms_quota, sms_used_birthdays, sms_alert_threshold, phone
                             FROM shluchim ORDER BY created_at DESC`);
   const info = takeReveal(req.session.reveal);
   req.session.reveal = undefined;
-  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), FREQUENCIES });
+  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus });
 });
 
-// מכסת SMS חודשית: ברירת מחדל מערכתית, ולכל שליח מכסה פרטנית (ריק = ברירת המחדל)
+// מכסת יחידות SMS לתזכורות ימי הולדת: ברירת מחדל לשלוחים חדשים, ולכל שליח מכסה משלו שהמנהל מוסיף לה
 const MAX_QUOTA = 100000;
 function parseQuota(v) {
   const t = String(v ?? '').trim();
@@ -169,15 +169,23 @@ app.post('/admin/sms-quota', requireAdmin, async (req, res) => {
   const { value, error } = parseQuota(req.body.quota);
   if (error || value === null) { flashErr(req, error || 'יש להזין מכסה'); return res.redirect('/admin'); }
   await setDefaultQuota(value);
-  flash(req, `ברירת המחדל עודכנה: ${value} יחידות SMS בחודש לכל שליח`);
+  flash(req, `ברירת המחדל עודכנה: ${value} יחידות SMS לכל שליח חדש`);
   res.redirect('/admin');
 });
 
+// הוספת יחידות למכסה, קביעת מכסה כוללת, וסף התראה (ריק = 10% מהמכסה)
 app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
-  const { value, error } = parseQuota(req.body.quota);
-  if (error) { flashErr(req, error); return res.redirect('/admin'); }
-  await q('UPDATE shluchim SET sms_quota=$1 WHERE id=$2', [value, int(req.params.id)]);
-  flash(req, value === null ? 'המכסה הוחזרה לברירת המחדל' : `המכסה עודכנה: ${value} יחידות בחודש`);
+  const id = int(req.params.id);
+  const add = parseQuota(req.body.add), set = parseQuota(req.body.quota), th = parseQuota(req.body.threshold);
+  const err = add.error || set.error || th.error;
+  if (err) { flashErr(req, err); return res.redirect('/admin'); }
+  if (add.value) await q('UPDATE shluchim SET sms_quota = least(sms_quota + $1, $3) WHERE id=$2', [add.value, id, MAX_QUOTA]);
+  if (set.value !== null) await q('UPDATE shluchim SET sms_quota=$1 WHERE id=$2', [set.value, id]);
+  if (req.body.threshold !== undefined) await q('UPDATE shluchim SET sms_alert_threshold=$1 WHERE id=$2', [th.value, id]);
+  // יחידות חדשות — מנקים את שגיאת "המכסה נגמרה"
+  await q(`UPDATE shluchim SET sms_last_error=NULL WHERE id=$1 AND sms_used_birthdays < sms_quota AND sms_last_error LIKE 'יתרת ה-SMS%'`, [id]);
+  const { rows } = await q('SELECT sms_quota, sms_used_birthdays, sms_alert_threshold FROM shluchim WHERE id=$1', [id]);
+  if (rows[0]) { const st = quotaStatus(rows[0]); flash(req, `המכסה עודכנה: ${st.quota} יחידות, נוצלו ${st.used}, יתרה ${st.left} (התראה מתחת ל-${st.threshold})`); }
   res.redirect('/admin');
 });
 
@@ -212,7 +220,7 @@ function welcomeMessage(s, url, code, isNew) {
 async function sendWelcome(req, s, code, isNew = false) {
   if (!smsConfigured()) return { ok: false, error: 'SMS לא מוגדר' };
   try {
-    await sendToShliach(s, s.phone, welcomeMessage(s, shliachUrl(req, s.slug), code, isNew), 'admin', { enforce: false });
+    await sendToShliach(s, s.phone, welcomeMessage(s, shliachUrl(req, s.slug), code, isNew), 'admin');
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -234,6 +242,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   if (!code) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
   const quota = parseQuota(req.body.sms_quota);
   if (quota.error) { flashErr(req, quota.error); return res.redirect('/admin'); }
+  if (quota.value === null) quota.value = await getDefaultQuota();
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
   const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota) VALUES ($1,$2,$3,$4,$4,$5) RETURNING id', [name, house, randomToken(9), phone, quota.value]);
   const id = rows[0].id;
@@ -416,6 +425,7 @@ router.get('/', async (req, res) => {
   const next = all.find((e) => e.date > today);
   const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
   res.render('dashboard', {
+    sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
     lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, end30,
     total: people.contacts.length, familyTotal: people.family.length,
@@ -448,7 +458,7 @@ router.post('/otp/send', async (req, res) => {
     [s.id, await bcrypt.hash(code, 10), OTP_TTL_MIN]);
   await q(`DELETE FROM login_codes WHERE created_at < now() - interval '1 day'`);
   try {
-    await sendToShliach(s, s.phone, `קוד הכניסה שלך ל"ימי הולדת למקורבים": ${code}\nבתוקף ${OTP_TTL_MIN} דקות. אין למסור אותו לאף אחד.`, 'otp', { enforce: false });
+    await sendToShliach(s, s.phone, `קוד הכניסה שלך ל"ימי הולדת למקורבים": ${code}\nבתוקף ${OTP_TTL_MIN} דקות. אין למסור אותו לאף אחד.`, 'otp');
   } catch (e) {
     console.error(`OTP לשליח ${s.id} נכשל:`, e.message);
     return renderLogin(req, res, 'שליחת ה-SMS נכשלה. נסו שוב בעוד רגע.', 502);
@@ -678,7 +688,10 @@ const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.se
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
     error, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
-    smsOn: smsConfigured(), smsPreview: await weeklyMessageFor(req.shliach), fmtDate, quota: await quotaStatus(req.shliach), FREQUENCIES,
+    smsOn: smsConfigured(), fmtDate, quota: quotaStatus(req.shliach),
+    previews: req.shliach.sms_weekly && req.shliach.sms_daily
+      ? { 'שבועי': await weeklyMessageFor(req.shliach, undefined, 'weekly'), 'יומי': await weeklyMessageFor(req.shliach, undefined, 'daily') }
+      : { '': await weeklyMessageFor(req.shliach) },
   });
 }
 
@@ -693,19 +706,18 @@ router.post('/sms', async (req, res) => {
     if (!smsConfigured()) return renderSettings(req, res, 'שליחת SMS עדיין לא הוגדרה במערכת', 400);
     if (Date.now() - (lastTest.get(s.id) || 0) < 60 * 1000) return renderSettings(req, res, 'אפשר לשלוח הודעת ניסיון פעם בדקה', 429);
     lastTest.set(s.id, Date.now());
-    const r = await sendWeekly(s, undefined, { test: true });
+    const r = await sendReminder(s, previewKind(s), undefined, { test: true });
     if (r.ok) flash(req, 'הודעת הניסיון נשלחה'); else flashErr(req, `השליחה נכשלה: ${r.error}`);
     return res.redirect(back);
   }
-  const enabled = req.body.sms_enabled === 'on';
+  const weekly = req.body.sms_weekly === 'on', daily = req.body.sms_daily === 'on';
   const phone = String(req.body.sms_phone || '').trim();
   if (phone && !normalizePhone(phone)) return renderSettings(req, res, 'מספר הנייד לקבלת SMS אינו תקין', 400);
-  if (enabled && !phone) return renderSettings(req, res, 'כדי להפעיל SMS יש להזין מספר נייד', 400);
-  const freq = req.body.sms_frequency in FREQUENCIES ? req.body.sms_frequency : 'weekly';
-  await q('UPDATE shluchim SET sms_phone=$1, sms_enabled=$2, sms_frequency=$3 WHERE id=$4', [normalizePhone(phone) || '', enabled, freq, s.id]);
-  flash(req, !enabled ? 'ההגדרה נשמרה'
-    : freq === 'daily' ? 'נשמר — בכל יום חול בבוקר שבו יש ימי הולדת תקבלו SMS (בערב שבת/חג — כולל ימי השבת/החג)'
-      : 'נשמר — תקבלו SMS בכל יום ראשון בבוקר (כשיום ראשון חג — ביום החול שלפניו)');
+  if ((weekly || daily) && !phone) return renderSettings(req, res, 'כדי להפעיל SMS יש להזין מספר נייד', 400);
+  await q('UPDATE shluchim SET sms_phone=$1, sms_weekly=$2, sms_daily=$3, sms_enabled=$4 WHERE id=$5',
+    [normalizePhone(phone) || '', weekly, daily, weekly || daily, s.id]);
+  const what = [weekly && 'בכל יום ראשון — ימי ההולדת של השבוע', daily && 'בכל יום חול שיש בו ימי הולדת — ימי ההולדת של היום'].filter(Boolean);
+  flash(req, what.length ? `נשמר — תקבלו SMS ${what.join(', וגם ')}` : 'נשמר — התזכורות כבויות');
   res.redirect(back);
 });
 

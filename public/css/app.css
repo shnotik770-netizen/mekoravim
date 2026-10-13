@@ -141,3 +141,17 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 /* ".bd button { color: inherit }" בחבילה גובר על צבע הכפתור — מחזירים */
 .bd button.bd-btn--primary { color: var(--bd-accent-fg); }
 .bd button.bd-btn--soft { color: var(--bd-accent); }
+
+/* ניצול יחידות SMS לתזכורות (דשבורד) */
+.bd a.bd-sms-usage { display: grid; gap: 6px; padding: var(--bd-sp-3) var(--bd-sp-4); margin-bottom: var(--bd-sp-5); border: 1px solid var(--bd-line);
+  border-radius: var(--bd-r-md); background: var(--bd-surface); color: var(--bd-fg); }
+.bd a.bd-sms-usage:hover { border-color: color-mix(in srgb, var(--bd-accent) 40%, var(--bd-line)); }
+.bd-sms-usage__title { font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium); }
+.bd-sms-usage__nums { display: flex; gap: var(--bd-sp-4); flex-wrap: wrap; font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); }
+.bd-sms-usage__nums b { color: var(--bd-fg); }
+.bd-sms-usage__bar { height: 6px; border-radius: 3px; background: var(--bd-surface-2); overflow: hidden; }
+.bd-sms-usage__bar > span { display: block; height: 100%; background: var(--bd-accent); border-radius: 3px; }
+.bd-sms-usage--low .bd-sms-usage__bar > span { background: var(--bd-bad); }
+.bd-sms-usage--low { border-color: var(--bd-bad) !important; }
+.bd-msg--warn { background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); color: var(--bd-fg); }
+.bd-sms-alert { margin-bottom: var(--bd-sp-4); }

@@ -6,7 +6,7 @@
 <div class="bd-pagehead">
   <span class="bd-status <%= smsOn ? 'bd-status--ok' : 'bd-status--bad' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span>
   <form method="post" action="/admin/sms-quota" class="bd-inline">
-    <label class="bd-small bd-muted" for="dq">מכסת SMS חודשית לשליח (ברירת מחדל):</label>
+    <label class="bd-small bd-muted" for="dq">מכסת SMS התחלתית לשליח חדש:</label>
     <input class="bd-input bd-num" id="dq" name="quota" type="number" min="0" max="100000" value="<%= defaultQuota %>" required style="flex:0 0 90px">
     <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
   </form>
@@ -36,8 +36,8 @@
         <div class="bd-item__title"><%= s.name %>
           <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %>
           <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
-          <% const q = s.sms_quota ?? defaultQuota; %>
-          <span class="bd-status <%= s.sms_used >= q ? 'bd-status--bad' : (s.sms_enabled ? 'bd-status--accent' : '') %>" title="יחידות SMS שנוצלו החודש מתוך המכסה">📱 <%= s.sms_enabled ? (s.sms_frequency === 'daily' ? 'יומי · ' : 'שבועי · ') : '' %><bdi class="bd-num"><%= s.sms_used %>/<%= q %></bdi></span>
+          <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
+          <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות: נוצלו מתוך המכסה"><span>📱 <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
           <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
         <div class="bd-item__sub">
           <% if (s.phone) { %><a href="https://wa.me/972<%= s.phone.replace(/^0/, '') %>" target="_blank" rel="noopener" class="bd-num">📱 <%= s.phone %></a> · <% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span> <% } %>
@@ -55,8 +55,19 @@
             <button class="bd-btn bd-btn--primary bd-btn--sm">קוד חדש ושליחה ב-SMS</button>
           </form>
           <form method="post" action="/admin/shluchim/<%= s.id %>/quota" class="bd-stack">
-            <input class="bd-input" name="quota" type="number" min="0" max="100000" value="<%= s.sms_quota ?? '' %>" placeholder="מכסת SMS חודשית (ריק = <%= defaultQuota %>)" aria-label="מכסת SMS חודשית">
-            <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון מכסת SMS</button>
+            <p class="bd-small bd-muted">SMS לתזכורות: הוקצו <b class="bd-num"><%= st.quota %></b> · נוצלו <b class="bd-num"><%= st.used %></b> · יתרה <b class="bd-num"><%= st.left %></b></p>
+            <div class="bd-inline">
+              <input class="bd-input" name="add" type="number" min="1" max="100000" placeholder="הוספת יחידות" aria-label="הוספת יחידות">
+              <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
+            </div>
+            <details>
+              <summary class="bd-link-btn bd-link-btn--accent">הגדרות מתקדמות</summary>
+              <div class="bd-stack">
+                <label class="bd-small">מכסה כוללת<input class="bd-input" name="quota" type="number" min="0" max="100000" placeholder="<%= st.quota %>"></label>
+                <label class="bd-small">סף התראה (ריק = 10%)<input class="bd-input" name="threshold" type="number" min="0" max="100000" value="<%= s.sms_alert_threshold ?? '' %>" placeholder="<%= st.threshold %>"></label>
+                <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
+              </div>
+            </details>
           </form>
           <form method="post" action="/admin/shluchim/<%= s.id %>/house" class="bd-stack">
             <input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80" placeholder="שם בית חב״ד" aria-label="שם בית חב״ד">
@@ -80,7 +91,7 @@
     <div class="bd-field"><label class="bd-label" for="sh">שם בית חב״ד <span class="opt">(לא חובה)</span></label><input class="bd-input" id="sh" name="chabad_house" maxlength="80"></div>
     <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required autocomplete="tel"><span class="bd-help">הקישור ופרטי הכניסה יישלחו לנייד הזה ב-SMS מיד עם יצירת החשבון</span></div>
     <div class="bd-field"><label class="bd-label" for="sc">קוד כניסה קבוע <span class="opt">(ריק = 6 ספרות אקראיות)</span></label><input class="bd-input" id="sc" name="code" maxlength="32" autocomplete="off"><span class="bd-help">השליח יוכל להיכנס עם הקוד הזה, או עם קוד חד-פעמי שיישלח לנייד שלו ב-SMS.</span></div>
-    <div class="bd-field"><label class="bd-label" for="sq">מכסת SMS חודשית <span class="opt">(ריק = ברירת המחדל, <%= defaultQuota %>)</span></label><input class="bd-input" id="sq" name="sms_quota" type="number" min="0" max="100000" inputmode="numeric"><span class="bd-help">יחידות SMS לחודש לתזכורות, קודי כניסה והודעות ניסיון. הודעה ארוכה נחשבת כמה יחידות. הודעות פרטי הכניסה שאתה שולח לא נספרות.</span></div>
+    <div class="bd-field"><label class="bd-label" for="sq">מכסת SMS לתזכורות <span class="opt">(ריק = <%= defaultQuota %>)</span></label><input class="bd-input" id="sq" name="sms_quota" type="number" min="0" max="100000" inputmode="numeric"><span class="bd-help">רק תזכורות ימי הולדת יורדות מהמכסה (הודעה ארוכה = כמה יחידות). קודי כניסה והודעות מערכת לא נספרים. אפשר להוסיף יחידות בכל עת מתפריט הפעולות.</span></div>
     <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת חשבון ושליחה ב-SMS</button>
   </form>
 </aside>

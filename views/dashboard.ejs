@@ -7,6 +7,9 @@
   const back = qs({});
   const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord], ['30', '30 יום']];
 %>
+<% if (sms.on && sms.low) { %>
+<div class="bd-msg bd-msg--warn bd-sms-alert" role="alert"><span>⚠️ <b>שימו לב:</b> <% if (sms.empty) { %>יתרת ה-SMS לתזכורות ימי הולדת נגמרה — התזכורות האוטומטיות הופסקו.<% } else { %>יתרת ה-SMS לתזכורות ימי הולדת עומדת להסתיים (נותרו עוד <bdi class="bd-num"><%= sms.left %></bdi> יחידות).<% } %> לחידוש המכסה פנו למנהל.</span></div>
+<% } %>
 <section class="bd-head">
   <h1 class="bd-title">שלום, <%= shliach.name %></h1>
   <p class="bd-sub">היום יום <%= DAY_NAMES[today.getDay()] %>, <%= hebToday %> · <span class="bd-num"><%= fmtGreg(today) %></span></p>
@@ -35,6 +38,16 @@
     <span class="bd-stat__hint"><%= familyTotal ? '+ ' + familyTotal + ' בני משפחה' : '' %></span>
   </a>
 </div>
+
+<a class="bd-sms-usage <%= sms.on && sms.low ? 'bd-sms-usage--low' : '' %>" href="<%= base %>/settings#sms" aria-label="יחידות SMS לתזכורות ימי הולדת">
+  <span class="bd-sms-usage__title">📱 SMS לתזכורות<% if (!sms.on) { %> <span class="bd-muted">(כבוי)</span><% } else { %> <span class="bd-muted">(<%= [sms.weekly && 'שבועי', sms.daily && 'יומי'].filter(Boolean).join(' + ') %>)</span><% } %></span>
+  <span class="bd-sms-usage__nums">
+    <span>הוקצו <b class="bd-num"><%= sms.quota %></b></span>
+    <span>נוצלו <b class="bd-num"><%= sms.used %></b></span>
+    <span>יתרה <b class="bd-num"><%= sms.left %></b></span>
+  </span>
+  <span class="bd-sms-usage__bar" aria-hidden="true"><span style="width:<%= sms.quota ? Math.min(100, Math.round(sms.used / sms.quota * 100)) : 100 %>%"></span></span>
+</a>
 
 <div class="bd-tools">
   <form class="bd-search" method="get" action="<%= base %>/contacts" role="search">
