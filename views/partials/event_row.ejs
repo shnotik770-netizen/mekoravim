@@ -1,30 +1,46 @@
 <%
   const isToday = e.date.getTime() === today.getTime();
   const past = e.date < today;
-  const wa = e.contact.phone ? ('https://wa.me/' + e.contact.phone.replace(/\D/g,'').replace(/^0/,'972')) : '';
+  const done = e.contacted;
+  const digits = String(e.contact.phone || '').replace(/\D/g, '');
+  const intl = digits ? '972' + digits.replace(/^0/, '') : '';
+  const first = e.member ? e.member.first_name : e.contact.first_name;
+  const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : '';
+  const cls = ['bd-row', isToday && 'bd-row--today', past && !done && 'bd-row--overdue', done && 'bd-row--done'].filter(Boolean).join(' ');
+  const iso = e.date.getFullYear() + '-' + String(e.date.getMonth() + 1).padStart(2, '0') + '-' + String(e.date.getDate()).padStart(2, '0');
+  const cat = catById.get(e.contact.category_id);
 %>
-<div class="ev <%= isToday ? 'today' : '' %> <%= past ? 'past' : '' %> <%= e.contacted ? 'done' : '' %>">
-  <div class="ev-date">
-    <div class="dn"><%= isToday ? 'היום' : 'יום ' + DAY_NAMES[e.date.getDay()] %></div>
-    <div class="dd"><%= e.label %></div>
-    <div class="dg"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></div>
+<li class="<%= cls %>">
+  <div class="bd-row__date">
+    <span class="bd-row__dow"><%= isToday ? 'היום' : 'יום ' + DAY_NAMES[e.date.getDay()] %></span>
+    <span class="bd-row__heb"><%= e.label %></span>
+    <span class="bd-row__greg bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span>
   </div>
-  <div class="ev-main">
-    <a class="ev-name" href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a>
-    <%- include('cat_chip', { cat: catById.get(e.contact.category_id) }) %>
-    <% if (e.sub) { %><div class="small muted"><%= e.sub %></div><% } %>
-    <% if (e.age) { %><div class="age">🎂 גיל <%= e.age %></div><% } %>
+  <div class="bd-row__who">
+    <div class="bd-row__line">
+      <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a></span>
+      <%- include('cat_chip', { cat }) %>
+    </div>
+    <div class="bd-row__meta">
+      <% if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
+      <% if (e.member) { %><span><%= e.member.relation %> של <%= e.contact.first_name %> <%= e.contact.last_name %></span><% } %>
+      <% if (past && !done) { %><span style="color:var(--bd-bad);font-weight:500">טרם נוצר קשר</span><% } %>
+    </div>
   </div>
-  <div class="ev-actions">
-    <% if (wa) { %><a class="icon-btn" href="<%= wa %>" target="_blank" rel="noopener" title="וואטסאפ">💬</a><a class="icon-btn" href="tel:<%= e.contact.phone %>" title="חיוג">📞</a><% } %>
-    <% if (e.contacted) { %>
-      <span class="tag ok">✓ נוצר קשר</span>
-    <% } else { %>
-      <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log">
-        <input type="hidden" name="back" value="dashboard">
-        <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
-        <button class="btn small">יצרתי קשר</button>
-      </form>
+  <div class="bd-row__actions">
+    <% if (wa) { %>
+      <a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
+      <a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a>
     <% } %>
+    <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>">
+      <input type="hidden" name="back" value="<%= back %>">
+      <input type="hidden" name="date" value="<%= iso %>">
+      <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
+      <% if (done) { %>
+        <button class="bd-done-pill" aria-label="בטל סימון נוצר קשר"><%- include('icons', { name: 'check' }) %>נוצר קשר</button>
+      <% } else { %>
+        <button class="bd-btn bd-btn--sm <%= isToday || past ? 'bd-btn--primary' : 'bd-btn--ghost' %>">יצרתי קשר</button>
+      <% } %>
+    </form>
   </div>
-</div>
+</li>

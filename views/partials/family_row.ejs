@@ -1,14 +1,10 @@
-<fieldset class="fam-row">
-  <button type="button" class="x" data-remove title="הסרה">✕</button>
-  <div class="row2">
-    <label>קרבה
-      <select name="fam[<%= i %>][relation]">
-        <% RELATIONS.forEach(r => { %><option <%= (f.relation === r) ? 'selected' : '' %>><%= r %></option><% }) %>
-      </select>
-    </label>
-    <label>שם פרטי
-      <input name="fam[<%= i %>][first_name]" value="<%= f.first_name || '' %>" maxlength="60">
-    </label>
+<div class="bd-family fam-row">
+  <div class="bd-family__head"><span>בן/בת משפחה</span><button type="button" class="bd-link-btn" data-remove>הסרה</button></div>
+  <div class="bd-family__grid bd-mb">
+    <select class="bd-input" name="fam[<%= i %>][relation]" aria-label="קרבה">
+      <% RELATIONS.forEach(r => { %><option <%= (f.relation === r) ? 'selected' : '' %>><%= r %></option><% }) %>
+    </select>
+    <input class="bd-input" name="fam[<%= i %>][first_name]" value="<%= f.first_name || '' %>" maxlength="60" placeholder="שם פרטי" aria-label="שם פרטי">
   </div>
-  <%- include('birth_fields', { prefix: `fam[${i}]`, vals: f }) %>
-</fieldset>
+  <%- include('birth_fields', { prefix: `fam[${i}]`, vals: f, uid: `fam${i}` }) %>
+</div>

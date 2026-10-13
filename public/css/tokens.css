@@ -1,0 +1,83 @@
+/* =========================================================
+   ימי הולדת למקורבים — Design tokens
+   כל הצבעים, הריווחים והפינות של המערכת במקום אחד.
+   מצב בהיר כברירת מחדל, מצב כהה אוטומטי לפי מערכת ההפעלה,
+   ואפשר לכפות עם <html data-theme="light|dark">.
+   ========================================================= */
+
+:root {
+  /* ---- צבעי בסיס ---- */
+  --bd-bg:            #F7F4EE;   /* רקע הדף — קרם חם */
+  --bd-surface:       #FFFFFF;   /* כרטיסים */
+  --bd-surface-2:     #F1ECE3;   /* אזורים משניים, שדות מקובצים */
+  --bd-line:          #E6DFD3;   /* קווי מסגרת */
+  --bd-fg:            #1F2430;   /* טקסט ראשי */
+  --bd-fg-muted:      #6B6F7B;   /* טקסט משני */
+  --bd-fg-subtle:     #9A9DA6;   /* טקסט שלישוני / placeholder */
+
+  /* ---- מותג ---- */
+  --bd-accent:        #2F5BD3;   /* כחול — פעולה ראשית, קישורים, נבחר */
+  --bd-accent-fg:     #FFFFFF;
+  --bd-accent-soft:   #E8EEFC;
+  --bd-gold:          #C98A1A;   /* זהב חם — "היום", חגיגי */
+  --bd-today-bg:      #FDF4E3;
+  --bd-today-line:    #F0D9A8;
+
+  /* ---- סטטוס ---- */
+  --bd-ok:            #1F8A5B;
+  --bd-ok-soft:       #E5F4EC;
+  --bd-bad:           #C2410C;
+  --bd-bad-soft:      #FDEDE4;
+  --bd-wa:            #1E9E57;   /* כפתור וואטסאפ */
+
+  /* ---- טיפוגרפיה ---- */
+  --bd-font:          "Heebo", "Assistant", "Rubik", system-ui, sans-serif;
+  --bd-font-num:      "Heebo", system-ui, sans-serif;
+  --bd-fs-xs:   0.75rem;   /* 12 — תגיות, תאריך לועזי */
+  --bd-fs-sm:   0.875rem;  /* 14 — טקסט משני */
+  --bd-fs-md:   1rem;      /* 16 — גוף, שדות (מינימום 16 במובייל — מונע zoom ב-iOS) */
+  --bd-fs-lg:   1.125rem;  /* 18 — שם בשורה */
+  --bd-fs-xl:   1.375rem;  /* 22 — כותרת כרטיס */
+  --bd-fs-2xl:  1.75rem;   /* 28 — כותרת עמוד */
+  --bd-fs-num:  2.25rem;   /* 36 — מספר בכרטיס סטטיסטיקה */
+  --bd-fw-regular: 400;
+  --bd-fw-medium:  500;
+  --bd-fw-bold:    700;
+
+  /* ---- ריווח (בסיס 4px) ---- */
+  --bd-sp-1: 4px;
+  --bd-sp-2: 8px;
+  --bd-sp-3: 12px;
+  --bd-sp-4: 16px;
+  --bd-sp-5: 20px;
+  --bd-sp-6: 24px;
+  --bd-sp-8: 32px;
+
+  /* ---- פינות וצללים ---- */
+  --bd-r-sm:   8px;     /* שדות, כפתורים */
+  --bd-r-md:   14px;    /* כרטיסים */
+  --bd-r-pill: 999px;   /* צ'יפים, תגיות, כפתורים עגולים */
+  --bd-shadow: 0 1px 2px rgb(31 36 48 / .05), 0 4px 14px rgb(31 36 48 / .05);
+
+  /* ---- מגע ---- */
+  --bd-tap: 44px;       /* גובה/רוחב מינימלי לכל אלמנט לחיץ */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bd-bg: #15171C; --bd-surface: #1E2128; --bd-surface-2: #262A33; --bd-line: #333845;
+    --bd-fg: #ECEDEF; --bd-fg-muted: #A3A7B1; --bd-fg-subtle: #737884;
+    --bd-accent: #7C9BF0; --bd-accent-fg: #0E1220; --bd-accent-soft: #232C47;
+    --bd-gold: #E3B157; --bd-today-bg: #2B2518; --bd-today-line: #5A4920;
+    --bd-ok: #5CC596; --bd-ok-soft: #18302A; --bd-bad: #F08A5D; --bd-bad-soft: #3A2219; --bd-wa: #4CC985;
+    --bd-shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bd-bg: #15171C; --bd-surface: #1E2128; --bd-surface-2: #262A33; --bd-line: #333845;
+  --bd-fg: #ECEDEF; --bd-fg-muted: #A3A7B1; --bd-fg-subtle: #737884;
+  --bd-accent: #7C9BF0; --bd-accent-fg: #0E1220; --bd-accent-soft: #232C47;
+  --bd-gold: #E3B157; --bd-today-bg: #2B2518; --bd-today-line: #5A4920;
+  --bd-ok: #5CC596; --bd-ok-soft: #18302A; --bd-bad: #F08A5D; --bd-bad-soft: #3A2219; --bd-wa: #4CC985;
+  --bd-shadow: none;
+}

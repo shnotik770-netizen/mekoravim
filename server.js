@@ -36,10 +36,11 @@ if (PROD && SESSION_SECRET.length < 32) {
 }
 const ADMIN_SESSION_MS = 12 * 3600 * 1000;
 
+// פלטת הסיווגים מחבילת העיצוב (styleguide)
 const DEFAULT_CATEGORIES = [
-  ['מקורב קרוב', '#2f5bd3'], ['משתתף בשיעורים', '#1f8a4c'], ['תורם', '#b45309'], ['חדש', '#7c3aed'],
+  ['מקורב קרוב', '#4F6BD8'], ['משתתף בשיעורים', '#2E9E6B'], ['תורם', '#C98A1A'], ['חדש', '#9A5BC9'],
 ];
-const COLORS = ['#2f5bd3', '#1f8a4c', '#b45309', '#7c3aed', '#c0392b', '#0e7490', '#be185d', '#4b5563'];
+const COLORS = ['#4F6BD8', '#2E9E6B', '#C98A1A', '#9A5BC9', '#D2475B', '#1A93A8', '#6B6F7B'];
 
 // סקריפטים רק מהאתר עצמו (בלי inline); style-attribute נדרש לצבעי הסיווגים
 const CSP = [
@@ -216,7 +217,7 @@ app.use('/r/:token', async (req, res, next) => {
   next();
 });
 
-app.get('/r/:token', (req, res) => res.render('register', { values: { date_type: 'g' }, family: [], error: null, internal: false }));
+app.get('/r/:token', (req, res) => res.render('register', { values: { date_type: 'h' }, family: [], error: null, internal: false }));
 
 app.post('/r/:token', async (req, res) => {
   if (req.body.website) return res.render('register_done'); // מלכודת לבוטים
@@ -269,25 +270,37 @@ async function markContacted(shliachId, events) {
 }
 
 // דשבורד (או מסך קוד כניסה)
+const VIEWS = ['today', 'week', 'month', '30'];
 router.get('/', async (req, res) => {
   if (!req.authorized) return res.render('shliach_login', { error: null });
   const s = req.shliach;
   const categories = await loadCategories(s.id);
   const cat = int(req.query.cat);
+  const view = VIEWS.includes(req.query.view) ? req.query.view : 'week';
   const people = await loadPeople(s.id);
-  if (cat) {
-    people.contacts = people.contacts.filter((c) => c.category_id === cat);
-  }
   const today = todayIL();
-  const w = weekRange(today), m = hebMonthRange(today);
-  const week = collectEvents(people, w.start, w.end);
-  const month = collectEvents(people, m.start, m.end);
-  const upcoming = collectEvents(people, today, addDays(today, 30));
-  await markContacted(s.id, [...week, ...month, ...upcoming]);
-  const links = (await q('SELECT count(*)::int AS n FROM reg_links WHERE shliach_id=$1 AND active', [s.id])).rows[0].n;
+  const w = weekRange(today), m = hebMonthRange(today), end30 = addDays(today, 29);
+  const from = new Date(Math.min(w.start, m.start, addDays(today, -14)));
+  const to = new Date(Math.max(w.end, m.end, end30));
+  const all = collectEvents(people, from, to);
+  await markContacted(s.id, all);
+  const inR = (e, a, b) => e.date >= a && e.date <= b;
+  const same = (e) => e.date.getTime() === today.getTime();
+  const lists = {
+    today: all.filter(same),
+    week: all.filter((e) => inR(e, w.start, w.end)),
+    month: all.filter((e) => inR(e, m.start, m.end)),
+    30: all.filter((e) => inR(e, today, end30)),
+  };
+  const overdue = all.filter((e) => e.date < today && e.date >= addDays(today, -14) && !e.contacted);
+  const upcoming = all.filter((e) => e.date > w.end).slice(0, 5);
+  const next = all.find((e) => e.date > today);
+  const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
   res.render('dashboard', {
-    today, week, month, upcoming, weekRange: w, monthRange: m, hebToday: hebToday(today),
-    total: people.contacts.length, categories, cat, catById: new Map(categories.map((c) => [c.id, c])), links,
+    today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
+    lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, end30,
+    total: people.contacts.length, familyTotal: people.family.length,
+    qs: (o) => { const p = new URLSearchParams({ view, ...(cat ? { cat } : {}), ...o }); for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k); return `?${p}`; },
   });
 });
 
@@ -339,7 +352,7 @@ router.get('/contacts', async (req, res) => {
 });
 
 router.get('/contacts/new', async (req, res) => {
-  res.render('register', { values: { date_type: 'g' }, family: [], error: null, internal: true, categories: await loadCategories(req.shliach.id) });
+  res.render('register', { values: { date_type: 'h' }, family: [], error: null, internal: true, categories: await loadCategories(req.shliach.id) });
 });
 
 router.post('/contacts/new', async (req, res) => {
@@ -426,8 +439,22 @@ router.post('/contacts/:id/log', loadContact, async (req, res) => {
   await q('INSERT INTO contact_log (contact_id, family_member_id, note) VALUES ($1,$2,$3)',
     [req.contact.id, fid, String(req.body.note || '').trim().slice(0, 500)]);
   flash(req, 'נרשם שנוצר קשר ✓');
-  const back = req.body.back === 'dashboard' ? res.locals.base : `${res.locals.base}/contacts/${req.contact.id}#log`;
+  const qsBack = String(req.body.back || '');
+  const back = qsBack === 'dashboard' || qsBack.startsWith('?')
+    ? res.locals.base + (qsBack.startsWith('?') ? qsBack.slice(0, 200) : '')
+    : `${res.locals.base}/contacts/${req.contact.id}#log`;
   res.redirect(back);
+});
+
+// ביטול "נוצר קשר" מהדשבורד: מוחק את הרישומים לאותו אדם מ-14 יום לפני יום ההולדת
+router.post('/contacts/:id/unlog', loadContact, async (req, res) => {
+  const d = parseISO(String(req.body.date || ''));
+  if (d) {
+    await q(`DELETE FROM contact_log WHERE contact_id=$1 AND family_member_id IS NOT DISTINCT FROM $2 AND created_at >= $3`,
+      [req.contact.id, int(req.body.family_member_id), addDays(d, -14)]);
+    flash(req, 'הסימון בוטל');
+  }
+  res.redirect(res.locals.base + (String(req.body.back || '').startsWith('?') ? String(req.body.back).slice(0, 200) : ''));
 });
 
 router.post('/contacts/:id/log/:lid/delete', loadContact, async (req, res) => {

@@ -1,52 +1,48 @@
 <%- include('partials/head', { title: 'ימי הולדת למקורבים' }) %>
-<section class="hero">
-  <div class="hero-icon">🎂</div>
-  <h1>ימי הולדת למקורבים</h1>
-  <p class="lead">מערכת פרטית לשלוחים, למעקב אחרי ימי ההולדת העבריים של המקורבים ובני משפחותיהם — כדי שאף יום הולדת לא יעבור בלי ברכה, שיחה ופרק תהילים.</p>
+<section class="bd-hero">
+  <%- include('partials/logo', { big: true }) %>
+  <h1 class="bd-title" style="font-size:2.25rem">ימי הולדת למקורבים</h1>
+  <p class="bd-sub">מערכת פרטית לשלוחים, למעקב אחרי ימי ההולדת העבריים של המקורבים ובני משפחותיהם — כדי שאף יום הולדת לא יעבור בלי ברכה ושיחה.</p>
 </section>
 
-<section class="card">
-  <h2>איך זה עובד</h2>
-  <ol class="steps">
+<section class="bd-card bd-mb">
+  <h2 class="bd-h2">איך זה עובד</h2>
+  <ol class="bd-steps">
     <li><div><b>כל שליח מקבל קישור קבוע</b> לחשבון שלו — עם קוד כניסה או בלעדיו. את הקוד השליח יכול להחליף בעצמו.</div></li>
-    <li><div><b>מוסיפים מקורבים בשתי דרכים:</b> ממלאים בעצמכם מתוך הדשבורד, או יוצרים קישור רישום ושולחים למקורבים בוואטסאפ, בקבוצה או בשיעור.</div></li>
-    <li><div><b>המערכת ממירה הכל לתאריך עברי</b> — מקורב יכול למלא תאריך לועזי מלא (שמומר אוטומטית, כולל "נולד אחרי השקיעה") או תאריך עברי, גם בלי שנה.</div></li>
-    <li><div><b>בדשבורד רואים מי חוגג היום, השבוע והחודש</b>, עם גיל, כפתור וואטסאפ וחיוג, וסימון "יצרתי קשר".</div></li>
+    <li><div><b>מוסיפים מקורבים בשתי דרכים:</b> ממלאים בעצמכם מהדשבורד, או יוצרים קישורי רישום (כמה שרוצים, כל אחד עם סיווג משלו) ושולחים למקורבים.</div></li>
+    <li><div><b>הכל מחושב לפי התאריך העברי.</b> מי שממלא תאריך לועזי — מומר אוטומטית, כולל "נולד אחרי השקיעה". אפשר גם תאריך עברי בלי שנה.</div></li>
+    <li><div><b>בדשבורד רואים מי חוגג היום, השבוע והחודש</b>, מי ממתין לברכה, כפתורי וואטסאפ וחיוג, וסימון "יצרתי קשר". ובכל יום ראשון — SMS עם ימי ההולדת של השבוע.</div></li>
   </ol>
 </section>
 
-<h2 class="center">צילומי מסך</h2>
-<div class="shots">
+<h2 class="bd-h2 bd-center">צילומי מסך</h2>
+<div class="bd-shots bd-mb">
   <figure><img src="/img/dashboard.png" alt="דשבורד ימי הולדת" loading="lazy"><figcaption>הדשבורד — ימי הולדת השבוע והחודש</figcaption></figure>
   <figure><img src="/img/register.png" alt="טופס רישום למקורבים" loading="lazy"><figcaption>טופס הרישום שהמקורב ממלא</figcaption></figure>
   <figure><img src="/img/contact.png" alt="כרטיס מקורב" loading="lazy"><figcaption>כרטיס מקורב — סיווג, משפחה ויצירת קשר</figcaption></figure>
   <figure><img src="/img/links.png" alt="קישורי רישום" loading="lazy"><figcaption>קישורי רישום לשליחה למקורבים</figcaption></figure>
 </div>
 
-<section class="card">
-  <h2>דוגמאות לחישוב התאריכים</h2>
+<section class="bd-card bd-mb">
+  <h2 class="bd-h2">דוגמאות לחישוב התאריכים</h2>
   <% const [a, b, c] = examples; %>
-  <div class="example">
-    <b>מקורב שמילא תאריך לועזי:</b> 20.10.1990 → <b><%= a.text.split(' (')[0] %></b>.
-    <% if (a.next) { %>יום ההולדת הבא: <%= a.next.label %>, <%= fmtGreg(a.next.date) %> — ימלאו לו <%= a.next.age %>.<% } %>
+  <div class="bd-stack">
+    <div class="bd-example"><b>מקורב שמילא תאריך לועזי:</b> <span class="bd-num">20.10.1990</span> ← <b><%= a.text.split(' (')[0] %></b>.
+      <% if (a.next) { %>יום ההולדת הבא: <%= a.next.label %>, <span class="bd-num"><%= fmtGreg(a.next.date) %></span> — ימלאו לו <%= a.next.age %>.<% } %></div>
+    <div class="bd-example"><b>נולד באדר בשנה פשוטה</b> (<%= b.text %>): בשנה מעוברת חוגגים באדר ב׳.
+      <% if (b.next) { %>הפעם הבאה: <%= b.next.label %>, <span class="bd-num"><%= fmtGreg(b.next.date) %></span>.<% } %></div>
+    <div class="bd-example"><b>ל׳ בחודש שלא תמיד קיים</b> (<%= c.text %>): בשנה שבה לחשוון יש רק 29 ימים — יום ההולדת עובר לא׳ כסלו.
+      <% if (c.next) { %>הפעם הבאה: <%= c.next.label %>, <span class="bd-num"><%= fmtGreg(c.next.date) %></span>.<% } %></div>
   </div>
-  <div class="example">
-    <b>נולד באדר בשנה פשוטה</b> (<%= b.text %>): בשנה מעוברת חוגגים באדר ב׳.
-    <% if (b.next) { %>הפעם הבאה: <%= b.next.label %>, <%= fmtGreg(b.next.date) %>.<% } %>
-  </div>
-  <div class="example">
-    <b>ל׳ בחודש שלא תמיד קיים</b> (<%= c.text %>): בשנה שבה לחשוון יש רק 29 ימים — יום ההולדת עובר לא׳ כסלו.
-    <% if (c.next) { %>הפעם הבאה: <%= c.next.label %>, <%= fmtGreg(c.next.date) %>.<% } %>
-  </div>
-  <p class="small muted">תאריך שלא קיים כלל (למשל ל׳ טבת) לא יתקבל בטופס.</p>
+  <p class="bd-help bd-mt">תאריך שלא קיים כלל (למשל ל׳ טבת) לא יתקבל בטופס.</p>
 </section>
 
-<section class="cards3">
-  <div class="card"><h3>🏷️ סיווג מקורבים</h3><p>"מקורב קרוב", "משתתף בשיעורים", "תורם" — או כל סיווג אחר. אפשר לסנן לפיו את הדשבורד, ולקבוע סיווג אוטומטי לכל קישור רישום.</p></div>
-  <div class="card"><h3>👨‍👩‍👧 בני משפחה</h3><p>לכל מקורב אפשר לרשום את בני המשפחה ותאריכי הלידה שלהם — וגם הם יופיעו בדשבורד.</p></div>
-  <div class="card"><h3>🔒 פרטיות</h3><p>המידע של כל שליח נגיש רק לו, בכניסה עם הקישור האישי (ואם הוגדר — גם קוד). מנהל המערכת לא צופה ברשימות המקורבים, ושינוי קוד מנתק את כל המכשירים המחוברים.</p></div>
-</section>
+<div class="bd-grid3 bd-mb">
+  <div class="bd-card"><h3 class="bd-section-title">🏷️ סיווג מקורבים</h3><p class="bd-help">"מקורב קרוב", "משתתף בשיעורים", "תורם" — או כל סיווג אחר, בצבע לבחירה. מסננים לפיו, ולכל קישור רישום אפשר סיווג אוטומטי.</p></div>
+  <div class="bd-card"><h3 class="bd-section-title">👨‍👩‍👧 בני משפחה</h3><p class="bd-help">לכל מקורב אפשר לרשום את בני המשפחה ותאריכי הלידה שלהם — וגם הם מופיעים בדשבורד.</p></div>
+  <div class="bd-card"><h3 class="bd-section-title">🔒 פרטיות</h3><p class="bd-help">המידע של כל שליח נגיש רק לו, בכניסה עם הקישור האישי (ואם הוגדר — גם קוד). מנהל המערכת לא צופה ברשימות המקורבים, ושינוי קוד מנתק את כל המכשירים המחוברים.</p></div>
+</div>
 
-<p class="muted center">מעוניינים בחשבון? פנו למנהל המערכת.</p>
-<p class="center"><a class="muted small" href="/admin/login">כניסת מנהל</a></p>
+<p class="bd-center bd-muted">מעוניינים בחשבון? פנו למנהל המערכת.</p>
+<p class="bd-center bd-small"><a href="/admin/login" class="bd-muted">כניסת מנהל</a></p>
 <%- include('partials/foot') %>

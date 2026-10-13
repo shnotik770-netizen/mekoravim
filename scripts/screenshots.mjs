@@ -9,6 +9,7 @@ const OUT = new URL('../public/img/', import.meta.url).pathname;
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 420, height: 900 }, deviceScaleFactor: 2, locale: 'he-IL' });
+const wide = await browser.newContext({ viewport: { width: 1280, height: 1000 }, deviceScaleFactor: 1, locale: 'he-IL' });
 const page = await ctx.newPage();
 const post = (url, form) => page.request.post(B + url, { form, maxRedirects: 0 });
 
@@ -57,10 +58,13 @@ await shot('/r/' + token, 'register.png', async () => {
   await page.fill('input[name=first_name]', 'משה');
   await page.fill('input[name=last_name]', 'כהן');
   await page.fill('input[name=phone]', '052-1234567');
-  await page.click('input[name=date_type][value=h]');
   await page.selectOption('select[name=h_day]', '15');
   await page.selectOption('select[name=h_month]', '7');
   await page.fill('input[name=h_year]', 'תש"נ');
 });
+// דשבורד בדסקטופ
+const wp = await wide.newPage();
+await wp.goto(B + base);
+await wp.screenshot({ path: OUT + 'dashboard-desktop.png', fullPage: false });
 await browser.close();
 console.log('saved to', OUT);

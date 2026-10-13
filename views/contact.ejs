@@ -1,103 +1,111 @@
-<%- include('partials/head', { title: c.first_name + ' ' + c.last_name, nav: true }) %>
+<%- include('partials/head', { title: c.first_name + ' ' + c.last_name, nav: true, active: 'contacts' }) %>
 <%
-  const nextStr = (n) => n ? `${n.label} — ${DAY_NAMES[n.date.getDay()]}, ${fmtGreg(n.date)}${n.age ? ' · ימלאו ' + n.age : ''}` : '—';
+  const nextStr = (n) => n ? `${n.label} — יום ${DAY_NAMES[n.date.getDay()]}, ${fmtGreg(n.date)}${n.age ? ' · ימלאו ' + n.age : ''}` : '—';
 %>
-<% if (error) { %><div class="error"><%= error %></div><% } %>
-<div class="card">
-  <div class="pagehead">
-    <div>
-      <h1><%= c.first_name %> <%= c.last_name %></h1>
-      <div class="muted"><span dir="ltr"><%= c.phone %></span></div>
+<% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
+<div class="bd-layout bd-layout--split">
+<div class="bd-stack">
+  <section class="bd-card">
+    <div class="bd-pagehead" style="margin-bottom:0">
+      <div>
+        <h1 class="bd-title"><%= c.first_name %> <%= c.last_name %></h1>
+        <p class="bd-sub bd-num"><%= c.phone %></p>
+      </div>
+      <div class="bd-actions">
+        <% if (wa) { %><a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="וואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
+        <a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a>
+      </div>
     </div>
-    <div class="actions">
-      <% if (wa) { %><a class="btn ghost" href="<%= wa %>" target="_blank" rel="noopener">💬 וואטסאפ</a><% } %>
-      <a class="btn ghost" href="tel:<%= c.phone %>">📞 חיוג</a>
+    <div class="bd-facts">
+      <div class="bd-fact"><b>תאריך לידה</b><span><%= birthText(c) %></span></div>
+      <div class="bd-fact"><b>יום ההולדת הבא</b><span><%= nextStr(c.next) %></span></div>
+      <% if (c.notes) { %><div class="bd-fact"><b>הערות</b><span><%= c.notes %></span></div><% } %>
     </div>
-  </div>
-  <p>🎂 <b>תאריך לידה:</b> <%= birthText(c) %></p>
-  <p>📅 <b>יום ההולדת הבא:</b> <%= nextStr(c.next) %></p>
-  <% if (c.notes) { %><p>📝 <%= c.notes %></p><% } %>
-  <form method="post" action="<%= base %>/contacts/<%= c.id %>/category" class="inline-form cat-form">
-    <span>🏷️ <b>סיווג:</b></span>
-    <select name="category_id" data-autosubmit>
-      <option value="">— ללא סיווג —</option>
-      <% categories.forEach(k => { %><option value="<%= k.id %>" <%= c.category_id === k.id ? 'selected' : '' %>><%= k.name %></option><% }) %>
-    </select>
-    <noscript><button class="btn small">שמירה</button></noscript>
-  </form>
-  <p class="small muted">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <%= fmtDate(c.created_at) %></p>
+    <form method="post" action="<%= base %>/contacts/<%= c.id %>/category" class="bd-inline">
+      <label class="bd-label" for="cat-quick">סיווג</label>
+      <select class="bd-input" id="cat-quick" name="category_id" data-autosubmit style="max-width:260px">
+        <option value="">— ללא סיווג —</option>
+        <% categories.forEach(k => { %><option value="<%= k.id %>" <%= c.category_id === k.id ? 'selected' : '' %>><%= k.name %></option><% }) %>
+      </select>
+      <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+    </form>
+    <p class="bd-help bd-mt">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <span class="bd-num"><%= fmtDate(c.created_at) %></span></p>
+  </section>
+
+  <section class="bd-card" id="family">
+    <h2 class="bd-section-title">בני משפחה</h2>
+    <% if (!family.length) { %><p class="bd-help bd-mb">לא נרשמו בני משפחה.</p><% } %>
+    <ul class="bd-items bd-mb">
+    <% family.forEach(f => { %>
+      <li class="bd-item">
+        <div class="bd-item__main">
+          <div class="bd-item__title"><%= f.first_name %> <span class="bd-status"><%= f.relation %></span></div>
+          <div class="bd-item__sub"><%= birthText(f) %></div>
+          <div class="bd-item__sub">הבא: <%= nextStr(f.next) %></div>
+        </div>
+        <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="bd-link-btn">מחיקה</button></form>
+      </li>
+    <% }) %>
+    </ul>
+    <details>
+      <summary class="bd-add">+ הוספת בן/בת משפחה</summary>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>/family">
+        <div class="bd-family__grid bd-mb">
+          <select class="bd-input" name="relation" aria-label="קרבה"><% RELATIONS.forEach(r => { %><option><%= r %></option><% }) %></select>
+          <input class="bd-input" name="first_name" required maxlength="60" placeholder="שם פרטי" aria-label="שם פרטי">
+        </div>
+        <%- include('partials/birth_fields', { prefix: '', vals: { date_type: 'h' }, uid: 'addfam' }) %>
+        <button class="bd-btn bd-btn--primary bd-mt">הוספה</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="bd-card" id="edit">
+    <details <%= error ? 'open' : '' %>>
+      <summary class="bd-btn bd-btn--ghost">✏️ עריכת פרטים</summary>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>">
+        <div class="bd-row2">
+          <div class="bd-field"><label class="bd-label" for="e-fn">שם פרטי</label><input class="bd-input" id="e-fn" name="first_name" value="<%= values.first_name %>" required maxlength="60"></div>
+          <div class="bd-field"><label class="bd-label" for="e-ln">שם משפחה</label><input class="bd-input" id="e-ln" name="last_name" value="<%= values.last_name %>" required maxlength="60"></div>
+        </div>
+        <div class="bd-field"><label class="bd-label" for="e-ph">טלפון</label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>" required></div>
+        <fieldset class="bd-field"><legend class="bd-label">תאריך לידה</legend><%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'edit' }) %></fieldset>
+        <%- include('partials/cat_select', { selected: values.category_id }) %>
+        <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea></div>
+        <button class="bd-btn bd-btn--primary">שמירה</button>
+      </form>
+    </details>
+    <form method="post" action="<%= base %>/contacts/<%= c.id %>/delete" data-confirm="למחוק את <%= c.first_name %> <%= c.last_name %> וכל בני משפחתו? לא ניתן לשחזר." class="bd-mt">
+      <button class="bd-link-btn">מחיקת מקורב</button>
+    </form>
+  </section>
 </div>
 
-<div class="card" id="log">
-  <h2>יצירת קשר</h2>
-  <form method="post" action="<%= base %>/contacts/<%= c.id %>/log" class="inline-form">
+<aside class="bd-card" id="log">
+  <h2 class="bd-section-title">יצירת קשר</h2>
+  <form method="post" action="<%= base %>/contacts/<%= c.id %>/log" class="bd-stack">
     <% if (family.length) { %>
-    <select name="family_member_id">
+    <select class="bd-input" name="family_member_id" aria-label="עם מי">
       <option value="">עם <%= c.first_name %></option>
       <% family.forEach(f => { %><option value="<%= f.id %>">יום הולדת של <%= f.first_name %> (<%= f.relation %>)</option><% }) %>
     </select>
     <% } %>
-    <input name="note" placeholder="הערה (לא חובה)" maxlength="500">
-    <button class="btn">✓ יצרתי קשר</button>
+    <input class="bd-input" name="note" placeholder="הערה (לא חובה)" maxlength="500" aria-label="הערה">
+    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)"><%- include('partials/icons', { name: 'check' }) %>יצרתי קשר</button>
   </form>
-  <% if (!log.length) { %><p class="muted">עדיין לא נרשמה יצירת קשר.</p><% } %>
-  <div class="list">
+  <% if (!log.length) { %><p class="bd-help bd-mt">עדיין לא נרשמה יצירת קשר.</p><% } %>
+  <ul class="bd-items bd-mt">
   <% log.forEach(l => { %>
-    <div class="list-item">
-      <div class="grow"><b><%= fmtTime(l.created_at) %></b>
-        <% if (l.member_name) { %><span class="tag">יום הולדת של <%= l.member_name %></span><% } %>
-        <% if (l.note) { %><div class="small"><%= l.note %></div><% } %>
+    <li class="bd-item">
+      <div class="bd-item__main">
+        <div class="bd-item__title bd-num" style="font-weight:500"><%= fmtTime(l.created_at) %></div>
+        <% if (l.member_name) { %><div class="bd-item__sub">יום הולדת של <%= l.member_name %></div><% } %>
+        <% if (l.note) { %><div class="bd-item__sub"><%= l.note %></div><% } %>
       </div>
-      <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?"><button class="linkbtn small">מחיקה</button></form>
-    </div>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?"><button class="bd-link-btn">מחיקה</button></form>
+    </li>
   <% }) %>
-  </div>
-</div>
-
-<div class="card" id="family">
-  <h2>בני משפחה</h2>
-  <% if (!family.length) { %><p class="muted">לא נרשמו בני משפחה.</p><% } %>
-  <div class="list">
-  <% family.forEach(f => { %>
-    <div class="list-item">
-      <div class="grow"><b><%= f.first_name %></b> <span class="tag"><%= f.relation %></span>
-        <div class="small muted"><%= birthText(f) %></div>
-        <div class="small">הבא: <%= nextStr(f.next) %></div>
-      </div>
-      <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="linkbtn small">מחיקה</button></form>
-    </div>
-  <% }) %>
-  </div>
-  <details>
-    <summary class="btn ghost">+ הוספת בן/בת משפחה</summary>
-    <form method="post" action="<%= base %>/contacts/<%= c.id %>/family" class="sub-form">
-      <div class="row2">
-        <label>קרבה <select name="relation"><% RELATIONS.forEach(r => { %><option><%= r %></option><% }) %></select></label>
-        <label>שם פרטי <input name="first_name" required maxlength="60"></label>
-      </div>
-      <%- include('partials/birth_fields', { prefix: '', vals: { date_type: 'g' } }) %>
-      <button class="btn">הוספה</button>
-    </form>
-  </details>
-</div>
-
-<div class="card" id="edit">
-  <details <%= error ? 'open' : '' %>>
-    <summary class="btn ghost">✏️ עריכת פרטים</summary>
-    <form method="post" action="<%= base %>/contacts/<%= c.id %>" class="sub-form">
-      <div class="row2">
-        <label>שם פרטי <input name="first_name" value="<%= values.first_name %>" required maxlength="60"></label>
-        <label>שם משפחה <input name="last_name" value="<%= values.last_name %>" required maxlength="60"></label>
-      </div>
-      <label>טלפון <input name="phone" type="tel" dir="ltr" value="<%= values.phone %>" required></label>
-      <%- include('partials/cat_select', { selected: values.category_id }) %>
-      <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
-      <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes %></textarea></label>
-      <button class="btn">שמירה</button>
-    </form>
-  </details>
-  <form method="post" action="<%= base %>/contacts/<%= c.id %>/delete" data-confirm="למחוק את <%= c.first_name %> <%= c.last_name %> וכל בני משפחתו? לא ניתן לשחזר." class="danger-zone">
-    <button class="linkbtn danger">מחיקת מקורב</button>
-  </form>
+  </ul>
+</aside>
 </div>
 <%- include('partials/foot') %>

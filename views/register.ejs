@@ -1,41 +1,46 @@
-<%- include('partials/head', { title: internal ? 'מקורב חדש' : 'רישום — ' + link.shliach_name, nav: internal }) %>
-<div class="narrow">
-  <% if (!internal) { %>
-  <div class="center">
-    <div class="hero-icon">🎂</div>
-    <h1><%= link.shliach_name %></h1>
-    <p class="lead">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
+<%- include('partials/head', internal
+  ? { title: 'מקורב חדש', nav: true, active: 'new' }
+  : { title: 'רישום — ' + link.shliach_name, narrow: true }) %>
+<% if (!internal) { %>
+<div class="bd-center bd-mb" style="margin-bottom:24px">
+  <%- include('partials/logo', { big: true }) %>
+  <h1 class="bd-title"><%= link.shliach_name %></h1>
+  <p class="bd-sub" style="font-size:var(--bd-fs-md)">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
+</div>
+<% } else { %>
+<div class="bd-head"><h1 class="bd-title">הוספת מקורב</h1></div>
+<% } %>
+<% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
+<form method="post" class="bd-card" novalidate style="<%= internal ? 'max-width:640px' : '' %>">
+  <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div class="<%= internal ? 'bd-row2' : '' %>">
+    <div class="bd-field"><label class="bd-label" for="fn">שם פרטי<span class="req">*</span></label><input class="bd-input" id="fn" name="first_name" value="<%= values.first_name || '' %>" autocomplete="given-name" required maxlength="60"></div>
+    <div class="bd-field"><label class="bd-label" for="ln">שם משפחה<span class="req">*</span></label><input class="bd-input" id="ln" name="last_name" value="<%= values.last_name || '' %>" autocomplete="family-name" required maxlength="60"></div>
   </div>
-  <% } else { %>
-  <h1>הוספת מקורב</h1>
-  <% } %>
-  <% if (error) { %><div class="error"><%= error %></div><% } %>
-  <form method="post" class="card" novalidate>
-    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
-    <div class="row2">
-      <label>שם פרטי * <input name="first_name" value="<%= values.first_name || '' %>" required maxlength="60"></label>
-      <label>שם משפחה * <input name="last_name" value="<%= values.last_name || '' %>" required maxlength="60"></label>
-    </div>
-    <label>טלפון * <input name="phone" type="tel" inputmode="tel" dir="ltr" value="<%= values.phone || '' %>" required maxlength="30"></label>
-    <h3>תאריך לידה *</h3>
-    <p class="small muted">אפשר למלא תאריך לועזי מלא, או תאריך עברי (שנת הלידה אינה חובה).</p>
-    <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
-    <% if (internal) { %>
-      <%- include('partials/cat_select', { selected: values.category_id }) %>
-      <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes || '' %></textarea></label>
-    <% } %>
+  <div class="bd-field"><label class="bd-label" for="ph">טלפון<span class="req">*</span></label><input class="bd-input" id="ph" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" autocomplete="tel" placeholder="050-0000000" value="<%= values.phone || '' %>" required maxlength="30"></div>
 
-    <h3>בני משפחה <small class="muted">(לא חובה)</small></h3>
+  <fieldset class="bd-field">
+    <legend class="bd-label">תאריך לידה<span class="req">*</span></legend>
+    <%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'main' }) %>
+  </fieldset>
+
+  <% if (internal) { %>
+    <%- include('partials/cat_select', { selected: values.category_id }) %>
+    <div class="bd-field"><label class="bd-label" for="notes">הערות <span class="opt">(רשות)</span></label><textarea class="bd-input" id="notes" name="notes" maxlength="1000"><%= values.notes || '' %></textarea></div>
+  <% } %>
+
+  <div class="bd-field">
+    <span class="bd-label">בני משפחה <span class="opt">(לא חובה)</span></span>
     <div id="fam-list">
       <% family.forEach((f, i) => { %><%- include('partials/family_row', { i, f }) %><% }) %>
     </div>
-    <button type="button" class="btn ghost" id="add-fam">+ הוספת בן/בת משפחה</button>
-    <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'g' } }) %></template>
+    <button type="button" class="bd-add" id="add-fam">+ הוספת בן/בת משפחה</button>
+    <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'h' } }) %></template>
+  </div>
 
-    <button class="btn wide"><%= internal ? 'שמירה' : 'שליחה' %></button>
-    <% if (!internal) { %>
-    <p class="small muted privacy">🔒 הפרטים נשמרים אצל <%= link.shliach_name %> בלבד, לצורך ברכה ביום ההולדת, ואינם מועברים לאף אחד אחר. כשאתם רושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת.</p>
-    <% } %>
-  </form>
-</div>
+  <button class="bd-btn bd-btn--primary bd-btn--block"><%= internal ? 'שמירה' : 'שליחה' %></button>
+  <% if (!internal) { %>
+  <p class="bd-help bd-center" style="margin-top:12px">🔒 הפרטים נשמרים רק אצל <%= link.shliach_name %>, לצורך ברכה ביום ההולדת, ולא מועברים לאף אחד. כשרושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת.</p>
+  <% } %>
+</form>
 <%- include('partials/foot') %>

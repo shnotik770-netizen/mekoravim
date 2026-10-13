@@ -1,0 +1,232 @@
+/* =========================================================
+   ימי הולדת למקורבים — Components
+   דורש tokens.css. כל הרכיבים תחת המחלקה .bd (שורש האפליקציה)
+   כדי שלא ידרסו סגנונות אחרים. CSS רגיל, בלי build.
+   ========================================================= */
+
+.bd {
+  direction: rtl;
+  font-family: var(--bd-font);
+  font-size: var(--bd-fs-md);
+  line-height: 1.5;
+  color: var(--bd-fg);
+  -webkit-font-smoothing: antialiased;
+}
+.bd *, .bd *::before, .bd *::after { box-sizing: border-box; }
+.bd :is(h1, h2, h3, p) { margin: 0; }
+.bd button { font: inherit; color: inherit; }
+.bd :focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd .bd-num { font-family: var(--bd-font-num); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.bd-wrap { max-width: 1080px; margin-inline: auto; }
+.bd-visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- סרגל עליון ---------- */
+.bd-appbar {
+  display: flex; align-items: center; gap: var(--bd-sp-4); flex-wrap: wrap;
+  padding: var(--bd-sp-3) 0; border-bottom: 1px solid var(--bd-line); margin-bottom: var(--bd-sp-6);
+}
+.bd-brand { display: flex; align-items: center; gap: var(--bd-sp-2); font-weight: var(--bd-fw-bold); font-size: var(--bd-fs-md); }
+.bd-logo { width: 32px; height: 32px; border-radius: 10px; background: var(--bd-gold); color: #fff; display: grid; place-items: center; flex: none; }
+.bd-nav { display: flex; gap: var(--bd-sp-1); overflow-x: auto; scrollbar-width: none; margin-inline-start: auto; }
+.bd-nav::-webkit-scrollbar { display: none; }
+.bd-nav a {
+  white-space: nowrap; text-decoration: none; color: var(--bd-fg-muted); font-size: var(--bd-fs-sm);
+  padding: var(--bd-sp-2) var(--bd-sp-3); border-radius: var(--bd-r-pill); min-height: 36px; display: inline-flex; align-items: center;
+}
+.bd-nav a:hover { background: var(--bd-surface-2); color: var(--bd-fg); }
+.bd-nav a[aria-current="page"] { background: var(--bd-accent-soft); color: var(--bd-accent); font-weight: var(--bd-fw-medium); }
+@media (max-width: 560px) { .bd-nav { margin-inline-start: 0; width: 100%; } }
+
+/* ---------- כותרת עמוד ---------- */
+.bd-head { margin-bottom: var(--bd-sp-5); }
+.bd-title { font-size: var(--bd-fs-2xl); font-weight: var(--bd-fw-bold); letter-spacing: -.01em; line-height: 1.25; }
+.bd-sub { color: var(--bd-fg-muted); font-size: var(--bd-fs-sm); margin-top: var(--bd-sp-1); }
+.bd-takeaway { margin-top: var(--bd-sp-3); font-size: var(--bd-fs-md); }
+.bd-takeaway b { font-weight: var(--bd-fw-bold); }
+
+/* ---------- כרטיסי סטטיסטיקה ---------- */
+.bd-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--bd-sp-3); margin-bottom: var(--bd-sp-5); }
+@media (max-width: 640px) { .bd-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bd-stat {
+  all: unset; box-sizing: border-box; cursor: pointer; text-align: start;
+  background: var(--bd-surface); border: 1px solid var(--bd-line); border-radius: var(--bd-r-md); box-shadow: var(--bd-shadow);
+  padding: var(--bd-sp-4); display: flex; flex-direction: column; gap: var(--bd-sp-1); min-height: 96px;
+  transition: border-color .15s, background .15s;
+}
+.bd-stat:hover { border-color: color-mix(in srgb, var(--bd-accent) 40%, var(--bd-line)); }
+.bd-stat[aria-pressed="true"] { border-color: var(--bd-accent); background: var(--bd-accent-soft); }
+.bd-stat:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-stat__label { color: var(--bd-fg-muted); font-size: var(--bd-fs-sm); }
+.bd-stat__value { font-size: var(--bd-fs-num); font-weight: var(--bd-fw-bold); line-height: 1.1; color: var(--bd-fg); }
+.bd-stat--today .bd-stat__value { color: var(--bd-gold); }
+.bd-stat__hint { font-size: var(--bd-fs-xs); color: var(--bd-fg-subtle); }
+.bd-stat--static { cursor: default; }
+
+/* ---------- חיפוש וסינון ---------- */
+.bd-tools { display: flex; flex-direction: column; gap: var(--bd-sp-3); margin-bottom: var(--bd-sp-4); }
+.bd-search { position: relative; }
+.bd-search svg { position: absolute; inset-inline-start: 14px; top: 50%; translate: 0 -50%; color: var(--bd-fg-subtle); pointer-events: none; }
+.bd-input {
+  width: 100%; min-height: 48px; font: inherit; font-size: var(--bd-fs-md); color: var(--bd-fg);
+  background: var(--bd-surface); border: 1px solid var(--bd-line); border-radius: var(--bd-r-sm);
+  padding: var(--bd-sp-3) var(--bd-sp-4);
+}
+.bd-search .bd-input { padding-inline-start: 44px; }
+.bd-input::placeholder { color: var(--bd-fg-subtle); }
+.bd-input:focus { outline: none; border-color: var(--bd-accent); box-shadow: 0 0 0 3px var(--bd-accent-soft); }
+
+.bd-chips { display: flex; gap: var(--bd-sp-2); flex-wrap: wrap; }
+.bd-chip {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: var(--bd-sp-2);
+  min-height: 40px; padding: 0 var(--bd-sp-4); border-radius: var(--bd-r-pill);
+  background: var(--bd-surface); border: 1px solid var(--bd-line); font-size: var(--bd-fs-sm); color: var(--bd-fg);
+}
+.bd-chip:hover { background: var(--bd-surface-2); }
+.bd-chip[aria-pressed="true"] { background: var(--bd-fg); color: var(--bd-bg); border-color: var(--bd-fg); }
+.bd-chip:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tag, var(--bd-fg-subtle)); flex: none; }
+
+/* ---------- טאבים מקטעיים (השבוע / החודש / 30 יום) ---------- */
+.bd-seg { display: inline-flex; background: var(--bd-surface-2); border-radius: var(--bd-r-pill); padding: 4px; gap: 2px; max-width: 100%; overflow-x: auto; }
+.bd-seg button {
+  all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; min-height: 36px; padding: 0 var(--bd-sp-4);
+  border-radius: var(--bd-r-pill); font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); display: inline-flex; align-items: center;
+}
+.bd-seg button[aria-selected="true"] { background: var(--bd-surface); color: var(--bd-fg); font-weight: var(--bd-fw-medium); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
+.bd-seg button:focus-visible { outline: 2px solid var(--bd-accent); }
+
+/* ---------- כרטיס ---------- */
+.bd-card { background: var(--bd-surface); border: 1px solid var(--bd-line); border-radius: var(--bd-r-md); box-shadow: var(--bd-shadow); padding: var(--bd-sp-5); }
+.bd-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--bd-sp-3); flex-wrap: wrap; margin-bottom: var(--bd-sp-3); }
+.bd-card__title { font-size: var(--bd-fs-xl); font-weight: var(--bd-fw-bold); display: flex; align-items: baseline; gap: var(--bd-sp-2); flex-wrap: wrap; }
+.bd-card__title small { font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-regular); color: var(--bd-fg-muted); }
+@media (max-width: 520px) { .bd-card { padding: var(--bd-sp-4); } }
+
+.bd-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--bd-sp-4); }
+@media (min-width: 900px) { .bd-layout--split { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); align-items: start; } }
+
+/* ---------- רשימת ימי הולדת ---------- */
+.bd-list { list-style: none; margin: 0; padding: 0; container-type: inline-size; }
+.bd-day-sep { font-size: var(--bd-fs-xs); color: var(--bd-fg-subtle); padding: var(--bd-sp-4) var(--bd-sp-1) var(--bd-sp-1); font-weight: var(--bd-fw-medium); }
+
+.bd-row {
+  display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; grid-template-areas: "date who actions";
+  align-items: center; gap: var(--bd-sp-2) var(--bd-sp-4);
+  padding: var(--bd-sp-4) var(--bd-sp-3); border-radius: var(--bd-r-sm); border: 1px solid transparent;
+  position: relative;
+}
+.bd-row + .bd-row { border-top-color: var(--bd-line); border-radius: 0; }
+.bd-row__date { grid-area: date; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+.bd-row__dow { font-size: var(--bd-fs-xs); color: var(--bd-fg-muted); }
+.bd-row__heb { font-size: var(--bd-fs-lg); font-weight: var(--bd-fw-bold); margin: 2px 0; white-space: nowrap; }
+.bd-row__greg { font-size: var(--bd-fs-xs); color: var(--bd-fg-subtle); }
+.bd-row__who { grid-area: who; min-width: 0; }
+.bd-row__line { display: flex; align-items: center; gap: var(--bd-sp-2); flex-wrap: wrap; }
+.bd-row__name { font-size: var(--bd-fs-lg); font-weight: var(--bd-fw-bold); }
+.bd-row__meta { font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); margin-top: 2px; display: flex; gap: var(--bd-sp-3); flex-wrap: wrap; }
+.bd-row__actions { grid-area: actions; display: flex; align-items: center; gap: var(--bd-sp-2); }
+
+@container (max-width: 560px) {
+  .bd-row { grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "date who" "date actions"; gap: var(--bd-sp-3); padding: var(--bd-sp-4) var(--bd-sp-2); }
+  .bd-row__actions { justify-content: flex-start; }
+}
+
+/* מצב: היום */
+.bd-row--today { background: var(--bd-today-bg); border: 1px solid var(--bd-today-line) !important; border-radius: var(--bd-r-sm) !important; }
+.bd-row--today .bd-row__dow { color: var(--bd-gold); font-weight: var(--bd-fw-bold); }
+.bd-row--today + .bd-row { border-top-color: transparent; }
+/* מצב: עבר וטרם נוצר קשר */
+.bd-row--overdue::before { content: ""; position: absolute; inset-inline-start: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 3px; background: var(--bd-bad); }
+.bd-row--overdue .bd-row__heb { color: var(--bd-bad); }
+/* מצב: נוצר קשר */
+.bd-row--done .bd-row__date, .bd-row--done .bd-row__who { opacity: .55; }
+
+/* ---------- תגית סיווג ---------- */
+.bd-tag {
+  --tag: var(--bd-fg-muted);
+  display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: var(--bd-r-pill);
+  font-size: var(--bd-fs-xs); font-weight: var(--bd-fw-medium); white-space: nowrap;
+  color: color-mix(in srgb, var(--tag) 85%, var(--bd-fg));
+  background: color-mix(in srgb, var(--tag) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag) 28%, transparent);
+}
+
+/* ---------- כפתורים ---------- */
+.bd-btn {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: var(--bd-sp-2);
+  min-height: var(--bd-tap); padding: 0 var(--bd-sp-5); border-radius: var(--bd-r-sm); font-size: var(--bd-fs-md); font-weight: var(--bd-fw-medium);
+  text-decoration: none; white-space: nowrap;
+}
+.bd-btn:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-btn--primary { background: var(--bd-accent); color: var(--bd-accent-fg); }
+.bd-btn--primary:hover { background: color-mix(in srgb, var(--bd-accent) 88%, #000); }
+.bd-btn--soft { background: var(--bd-accent-soft); color: var(--bd-accent); }
+.bd-btn--ghost { border: 1px solid var(--bd-line); background: var(--bd-surface); color: var(--bd-fg); }
+.bd-btn--ghost:hover { background: var(--bd-surface-2); }
+.bd-btn--sm { min-height: 40px; padding: 0 var(--bd-sp-4); font-size: var(--bd-fs-sm); border-radius: var(--bd-r-pill); }
+.bd-btn--block { width: 100%; min-height: 52px; font-size: var(--bd-fs-lg); }
+
+.bd-icon-btn {
+  all: unset; box-sizing: border-box; cursor: pointer; width: var(--bd-tap); height: var(--bd-tap); border-radius: 50%;
+  display: inline-grid; place-items: center; background: var(--bd-surface-2); color: var(--bd-fg); flex: none;
+}
+.bd-icon-btn:hover { background: color-mix(in srgb, var(--bd-surface-2) 80%, var(--bd-fg)); }
+.bd-icon-btn:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-icon-btn--wa { background: color-mix(in srgb, var(--bd-wa) 14%, transparent); color: var(--bd-wa); }
+
+.bd-done-pill {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 var(--bd-sp-4);
+  border-radius: var(--bd-r-pill); background: var(--bd-ok-soft); color: var(--bd-ok); font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium); white-space: nowrap;
+}
+.bd-done-pill:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+
+/* ---------- התראה / ממתינים ---------- */
+.bd-alert { border: 1px solid color-mix(in srgb, var(--bd-bad) 30%, transparent); background: var(--bd-bad-soft); border-radius: var(--bd-r-md); padding: var(--bd-sp-4); }
+.bd-alert__title { font-weight: var(--bd-fw-bold); color: var(--bd-bad); display: flex; align-items: center; gap: var(--bd-sp-2); margin-bottom: var(--bd-sp-2); }
+.bd-mini { list-style: none; margin: 0; padding: 0; }
+.bd-mini li { display: flex; align-items: center; gap: var(--bd-sp-3); padding: var(--bd-sp-2) 0; }
+.bd-mini li + li { border-top: 1px solid color-mix(in srgb, var(--bd-bad) 18%, transparent); }
+.bd-mini__name { font-weight: var(--bd-fw-medium); flex: 1; min-width: 0; }
+.bd-mini__date { font-size: var(--bd-fs-xs); color: var(--bd-fg-muted); }
+
+.bd-side-card .bd-mini li + li { border-top-color: var(--bd-line); }
+.bd-ok-note { color: var(--bd-ok); font-size: var(--bd-fs-sm); display: flex; gap: var(--bd-sp-2); align-items: center; }
+
+/* ---------- הודעות ---------- */
+.bd-msg { display: flex; gap: var(--bd-sp-3); align-items: flex-start; padding: var(--bd-sp-3) var(--bd-sp-4); border-radius: var(--bd-r-sm); font-size: var(--bd-fs-sm); }
+.bd-msg--ok { background: var(--bd-ok-soft); color: var(--bd-ok); }
+.bd-msg--err { background: var(--bd-bad-soft); color: var(--bd-bad); }
+.bd-toast {
+  position: fixed; inset-inline: 16px; bottom: 16px; margin-inline: auto; max-width: 420px; z-index: 50;
+  background: var(--bd-fg); color: var(--bd-bg); border-radius: var(--bd-r-md); padding: var(--bd-sp-3) var(--bd-sp-4);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--bd-sp-3); box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+}
+.bd-toast button { all: unset; cursor: pointer; color: var(--bd-accent-soft); font-weight: var(--bd-fw-bold); min-height: 36px; display: inline-flex; align-items: center; }
+
+.bd-empty { text-align: center; color: var(--bd-fg-muted); padding: var(--bd-sp-8) var(--bd-sp-4); }
+.bd-empty__icon { font-size: 28px; margin-bottom: var(--bd-sp-2); }
+
+/* ---------- טפסים (טופס רישום / הוספת מקורב) ---------- */
+.bd-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--bd-sp-4); }
+.bd-label { font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-md); }
+.bd-label .req { color: var(--bd-bad); margin-inline-start: 2px; }
+.bd-label .opt { color: var(--bd-fg-subtle); font-weight: var(--bd-fw-regular); font-size: var(--bd-fs-sm); }
+.bd-help { font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); }
+.bd-err { font-size: var(--bd-fs-sm); color: var(--bd-bad); }
+.bd-input[aria-invalid="true"] { border-color: var(--bd-bad); }
+select.bd-input { appearance: none; -webkit-appearance: none; padding-left: 36px; padding-right: var(--bd-sp-3); background: var(--bd-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6F7B' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 12px center; }
+.bd-group { background: var(--bd-surface-2); border-radius: var(--bd-r-md); padding: var(--bd-sp-4); }
+.bd-toggle { display: grid; grid-template-columns: 1fr 1fr; background: var(--bd-surface); border: 1px solid var(--bd-line); border-radius: var(--bd-r-pill); padding: 4px; margin-bottom: var(--bd-sp-4); }
+.bd-toggle label { display: flex; align-items: center; justify-content: center; min-height: 40px; border-radius: var(--bd-r-pill); cursor: pointer; font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); }
+.bd-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.bd-toggle input:checked + label { background: var(--bd-accent); color: var(--bd-accent-fg); font-weight: var(--bd-fw-medium); }
+.bd-toggle input:focus-visible + label { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-row3 { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: var(--bd-sp-2); }
+.bd-check { display: flex; align-items: center; gap: var(--bd-sp-2); min-height: var(--bd-tap); font-size: var(--bd-fs-sm); }
+.bd-check input { width: 20px; height: 20px; accent-color: var(--bd-accent); }
+.bd-family { border: 1px solid var(--bd-line); border-radius: var(--bd-r-md); padding: var(--bd-sp-4); margin-bottom: var(--bd-sp-3); background: var(--bd-surface); }
+.bd-family__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--bd-sp-3); font-weight: var(--bd-fw-medium); }
+.bd-family__grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: var(--bd-sp-2); }
+.bd-link-btn { all: unset; cursor: pointer; color: var(--bd-bad); font-size: var(--bd-fs-sm); min-height: 36px; display: inline-flex; align-items: center; }
+.bd-add { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; min-height: 52px; border: 1.5px dashed color-mix(in srgb, var(--bd-accent) 45%, var(--bd-line)); border-radius: var(--bd-r-md); color: var(--bd-accent); display: flex; align-items: center; justify-content: center; gap: var(--bd-sp-2); font-weight: var(--bd-fw-medium); }
+.bd-add:hover { background: var(--bd-accent-soft); }

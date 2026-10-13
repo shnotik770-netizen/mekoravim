@@ -1,71 +1,67 @@
 <%- include('partials/head', { title: 'ניהול שלוחים' }) %>
-<div class="pagehead">
-  <h1>ניהול שלוחים</h1>
-  <form method="post" action="/admin/logout"><button class="btn ghost">יציאה</button></form>
-</div>
+<header class="bd-appbar">
+  <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
+  <nav class="bd-nav"><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
+</header>
+<p class="bd-mb"><span class="bd-status <%= smsOn ? 'bd-status--ok' : 'bd-status--bad' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span></p>
 
 <% if (info) { %>
-<div class="card highlight">
-  <h3>פרטי הכניסה של <%= info.name %></h3>
-  <p>קישור קבוע: <code class="copy"><%= base %>/s/<%= info.slug %></code></p>
+<section class="bd-card bd-highlight bd-mb">
+  <h2 class="bd-section-title">פרטי הכניסה של <%= info.name %></h2>
+  <p class="bd-mb">קישור קבוע: <code class="bd-code copy"><%= base %>/s/<%= info.slug %></code></p>
   <% if (info.code) { %>
-    <p>קוד כניסה: <code class="code-big copy"><%= info.code %></code></p>
-    <p class="small muted">הקוד מוצג עכשיו בלבד — שמרו אותו והעבירו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
+    <p>קוד כניסה: <code class="bd-code bd-code--big copy"><%= info.code %></code></p>
+    <p class="bd-help bd-mt">הקוד מוצג עכשיו בלבד — העבירו אותו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
   <% } else { %>
-    <p class="small muted">כניסה ללא קוד — כל מי שמחזיק בקישור נכנס לחשבון.</p>
+    <p class="bd-help">כניסה ללא קוד — כל מי שמחזיק בקישור נכנס לחשבון.</p>
   <% } %>
-  <a class="btn small ghost" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ</a>
-</div>
+  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ</a>
+</section>
 <% } %>
 
-<p class="small"><span class="tag <%= smsOn ? 'ok' : 'warn' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span></p>
-
-<div class="card">
-  <h3>שליח חדש</h3>
-  <form method="post" action="/admin/shluchim">
-    <label>שם השליח / בית חב״ד <input name="name" required maxlength="80"></label>
-    <div class="seg">
-      <label><input type="radio" name="with_code" value="yes" checked> עם קוד כניסה</label>
-      <label><input type="radio" name="with_code" value="no"> ללא קוד (קישור בלבד)</label>
-    </div>
-    <label class="code-field">קוד <small class="muted">(השאירו ריק לקוד אקראי בן 6 ספרות)</small> <input name="code" maxlength="32" autocomplete="off"></label>
-    <button class="btn">יצירת קישור</button>
-  </form>
-</div>
-
-<div class="card">
-  <h3>שלוחים (<%= shluchim.length %>)</h3>
-  <p class="small muted">המנהל רואה רק את השם והקישור — הנתונים של כל שליח פרטיים לו.</p>
-  <% if (!shluchim.length) { %><p class="muted">עדיין אין שלוחים.</p><% } %>
-  <div class="list">
+<div class="bd-layout bd-layout--split">
+<section class="bd-card">
+  <h2 class="bd-section-title">שלוחים <span class="bd-muted bd-num" style="font-weight:400">(<%= shluchim.length %>)</span></h2>
+  <p class="bd-help bd-mb">כאן רואים רק שם וקישור. רשימות המקורבים לא מוצגות למנהל.</p>
+  <% if (!shluchim.length) { %><div class="bd-empty">עדיין אין שלוחים.</div><% } %>
+  <ul class="bd-items">
   <% shluchim.forEach(s => { %>
-    <div class="list-item <%= s.active ? '' : 'disabled' %>">
-      <div class="grow">
-        <b><%= s.name %></b>
-        <span class="tag <%= s.has_code ? 'ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
-        <% if (s.sms_enabled) { %><span class="tag">📱 SMS</span><% } %>
-        <% if (!s.active) { %><span class="tag off">מושבת</span><% } %>
-        <div class="small muted"><code class="copy"><%= base %>/s/<%= s.slug %></code></div>
+    <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
+      <div class="bd-item__main">
+        <div class="bd-item__title"><%= s.name %>
+          <span class="bd-status <%= s.has_code ? 'bd-status--ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
+          <% if (s.sms_enabled) { %><span class="bd-status bd-status--accent">📱 SMS</span><% } %>
+          <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
+        <div class="bd-item__sub"><code class="bd-code copy"><%= base %>/s/<%= s.slug %></code></div>
       </div>
-      <details class="menu">
-        <summary class="btn small ghost">פעולות ▾</summary>
-        <div class="menu-body">
-          <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="inline-form">
-            <input name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off">
-            <button class="btn small"><%= s.has_code ? 'החלפת קוד' : 'הוספת קוד' %></button>
+      <details class="bd-menu">
+        <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
+        <div class="bd-menu__body">
+          <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-stack">
+            <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
+            <button class="bd-btn bd-btn--primary bd-btn--sm"><%= s.has_code ? 'החלפת קוד' : 'הוספת קוד' %></button>
           </form>
           <% if (s.has_code) { %>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/nocode" data-confirm="להסיר את הקוד? כל מי שמחזיק בקישור יוכל להיכנס.">
-            <button class="linkbtn small">הסרת קוד</button>
-          </form>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/nocode" data-confirm="להסיר את הקוד? כל מי שמחזיק בקישור יוכל להיכנס."><button class="bd-link-btn bd-link-btn--accent">הסרת קוד</button></form>
           <% } %>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/toggle">
-            <button class="linkbtn small <%= s.active ? 'danger' : '' %>"><%= s.active ? 'השבתת החשבון' : 'הפעלת החשבון' %></button>
-          </form>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/toggle"><button class="bd-link-btn <%= s.active ? '' : 'bd-link-btn--accent' %>"><%= s.active ? 'השבתת החשבון' : 'הפעלת החשבון' %></button></form>
         </div>
       </details>
-    </div>
+    </li>
   <% }) %>
-  </div>
+  </ul>
+</section>
+<aside class="bd-card">
+  <h2 class="bd-section-title">שליח חדש</h2>
+  <form method="post" action="/admin/shluchim">
+    <div class="bd-field"><label class="bd-label" for="sn">שם השליח / בית חב״ד</label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>
+    <div class="bd-toggle" role="radiogroup" aria-label="סוג כניסה">
+      <input type="radio" name="with_code" id="wc-yes" value="yes" checked><label for="wc-yes">עם קוד</label>
+      <input type="radio" name="with_code" id="wc-no" value="no"><label for="wc-no">קישור בלבד</label>
+    </div>
+    <div class="bd-field code-field"><label class="bd-label" for="sc">קוד <span class="opt">(ריק = 6 ספרות אקראיות)</span></label><input class="bd-input" id="sc" name="code" maxlength="32" autocomplete="off"></div>
+    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת קישור</button>
+  </form>
+</aside>
 </div>
 <%- include('partials/foot') %>

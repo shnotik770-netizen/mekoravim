@@ -1,69 +1,76 @@
-<%- include('partials/head', { title: 'הגדרות', nav: true }) %>
-<h1>הגדרות</h1>
-<% if (error) { %><div class="error"><%= error %></div><% } %>
+<%- include('partials/head', { title: 'הגדרות', nav: true, active: 'settings' }) %>
+<div class="bd-head"><h1 class="bd-title">הגדרות</h1></div>
+<% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
+<div class="bd-layout bd-layout--split">
+<div class="bd-stack">
+  <section class="bd-card">
+    <h2 class="bd-section-title">סיווגי מקורבים</h2>
+    <ul class="bd-items bd-mb">
+    <% categories.forEach(c => { %>
+      <li class="bd-item">
+        <form method="post" class="bd-item__main bd-stack">
+          <input type="hidden" name="action" value="cat_update"><input type="hidden" name="id" value="<%= c.id %>">
+          <div class="bd-inline">
+            <input class="bd-input" name="name" value="<%= c.name %>" maxlength="40" required aria-label="שם הסיווג">
+            <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
+          </div>
+          <div class="bd-swatches" role="radiogroup" aria-label="צבע">
+            <% COLORS.forEach(col => { %><label><input type="radio" name="color" value="<%= col %>" <%= col === c.color ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
+          </div>
+        </form>
+        <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
+          <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
+          <button class="bd-link-btn">מחיקה</button>
+        </form>
+      </li>
+    <% }) %>
+    </ul>
+    <form method="post" class="bd-group bd-stack">
+      <input type="hidden" name="action" value="cat_add">
+      <div class="bd-inline">
+        <input class="bd-input" name="name" placeholder="סיווג חדש" maxlength="40" required aria-label="סיווג חדש">
+        <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
+      </div>
+      <div class="bd-swatches" role="radiogroup" aria-label="צבע">
+        <% COLORS.forEach((col, i) => { %><label><input type="radio" name="color" value="<%= col %>" <%= i === 0 ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
+      </div>
+    </form>
+  </section>
 
-<div class="card" id="sms">
-  <h3>📱 SMS שבועי</h3>
-  <p class="small muted">בכל יום ראשון בבוקר תקבלו SMS עם כל ימי ההולדת של השבוע (מקורבים ובני משפחה).</p>
-  <% if (!smsOn) { %><p class="tag warn">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</p><% } %>
-  <form method="post" action="<%= base %>/sms">
-    <label>מספר נייד לקבלת ההודעה <input name="sms_phone" type="tel" dir="ltr" inputmode="tel" value="<%= shliach.sms_phone %>" placeholder="05X-XXXXXXX"></label>
-    <label class="check"><input type="checkbox" name="sms_enabled" <%= shliach.sms_enabled ? 'checked' : '' %>> לשלוח לי SMS בכל יום ראשון</label>
-    <button class="btn">שמירה</button>
-  </form>
-  <% if (shliach.sms_last_sent) { %><p class="small muted">נשלח לאחרונה: <%= shliach.sms_last_sent.split('-').reverse().join('.') %></p><% } %>
-  <% if (shliach.sms_last_error) { %><p class="small error">שגיאה אחרונה: <%= shliach.sms_last_error %></p><% } %>
-  <details>
-    <summary class="linkbtn small">תצוגה מקדימה של ההודעה</summary>
-    <pre class="sms-preview"><%= smsPreview %></pre>
-  </details>
-  <% if (smsOn && shliach.sms_phone) { %>
-  <form method="post" action="<%= base %>/sms" style="margin-top:10px">
-    <input type="hidden" name="action" value="test">
-    <button class="btn small ghost">שליחת הודעת ניסיון עכשיו</button>
-  </form>
-  <% } %>
+  <section class="bd-card" id="sms">
+    <h2 class="bd-section-title">📱 SMS שבועי</h2>
+    <p class="bd-help bd-mb">בכל יום ראשון בבוקר תקבלו SMS עם כל ימי ההולדת של השבוע (מקורבים ובני משפחה).</p>
+    <% if (!smsOn) { %><div class="bd-msg bd-msg--err">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</div><% } %>
+    <form method="post" action="<%= base %>/sms">
+      <div class="bd-field"><label class="bd-label" for="sms-ph">מספר נייד לקבלת ההודעה</label><input class="bd-input" id="sms-ph" name="sms_phone" type="tel" dir="ltr" style="text-align:right" inputmode="tel" value="<%= shliach.sms_phone %>" placeholder="050-0000000"></div>
+      <label class="bd-check"><input type="checkbox" name="sms_enabled" <%= shliach.sms_enabled ? 'checked' : '' %>> לשלוח לי SMS בכל יום ראשון</label>
+      <button class="bd-btn bd-btn--primary bd-mt">שמירה</button>
+    </form>
+    <% if (shliach.sms_last_sent) { %><p class="bd-help bd-mt">נשלח לאחרונה: <span class="bd-num"><%= shliach.sms_last_sent.split('-').reverse().join('.') %></span></p><% } %>
+    <% if (shliach.sms_last_error) { %><p class="bd-err bd-mt">שגיאה אחרונה: <%= shliach.sms_last_error %></p><% } %>
+    <details class="bd-mt">
+      <summary class="bd-link-btn bd-link-btn--accent">תצוגה מקדימה של ההודעה</summary>
+      <pre class="bd-sms-preview"><%= smsPreview %></pre>
+    </details>
+    <% if (smsOn && shliach.sms_phone) { %>
+    <form method="post" action="<%= base %>/sms" class="bd-mt">
+      <input type="hidden" name="action" value="test">
+      <button class="bd-btn bd-btn--ghost bd-btn--sm">שליחת הודעת ניסיון עכשיו</button>
+    </form>
+    <% } %>
+  </section>
 </div>
 
-<div class="card">
-  <h3>סיווגי מקורבים</h3>
-  <div class="list">
-  <% categories.forEach(c => { %>
-    <div class="list-item">
-      <form method="post" class="inline-form grow">
-        <input type="hidden" name="action" value="cat_update"><input type="hidden" name="id" value="<%= c.id %>">
-        <input name="name" value="<%= c.name %>" maxlength="40" required>
-        <select name="color" class="color-select" style="--c: <%= c.color %>">
-          <% COLORS.forEach(col => { %><option value="<%= col %>" <%= col === c.color ? 'selected' : '' %> style="color: <%= col %>">● <%= col %></option><% }) %>
-        </select>
-        <button class="btn small ghost">שמירה</button>
-      </form>
-      <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
-        <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
-        <button class="linkbtn danger small">מחיקה</button>
-      </form>
-    </div>
-  <% }) %>
-  </div>
-  <form method="post" class="inline-form" style="margin-top:12px">
-    <input type="hidden" name="action" value="cat_add">
-    <input name="name" placeholder="סיווג חדש" maxlength="40" required>
-    <select name="color"><% COLORS.forEach(col => { %><option value="<%= col %>" style="color: <%= col %>">● <%= col %></option><% }) %></select>
-    <button class="btn">הוספה</button>
-  </form>
-</div>
-
-<div class="card">
-  <h3><%= hasCode ? 'החלפת קוד כניסה' : 'הוספת קוד כניסה' %></h3>
-  <p class="small muted"><%= hasCode ? 'הקוד נדרש בכל כניסה מדפדפן חדש.' : 'כרגע הכניסה לחשבון היא דרך הקישור בלבד, ללא קוד. אפשר להוסיף קוד להגנה נוספת.' %></p>
+<aside class="bd-card">
+  <h2 class="bd-section-title"><%= hasCode ? 'החלפת קוד כניסה' : 'הוספת קוד כניסה' %></h2>
+  <p class="bd-help bd-mb"><%= hasCode ? 'החלפת הקוד מנתקת את כל שאר המכשירים המחוברים.' : 'כרגע הכניסה היא דרך הקישור בלבד. מומלץ להוסיף קוד להגנה נוספת.' %></p>
   <form method="post">
     <input type="hidden" name="action" value="code">
-    <% if (hasCode) { %><label>קוד נוכחי <input type="password" name="current" required autocomplete="current-password"></label><% } %>
-    <div class="row2">
-      <label>קוד חדש <input type="password" name="code" required minlength="6" autocomplete="new-password"></label>
-      <label>אימות <input type="password" name="code2" required minlength="6" autocomplete="new-password"></label>
-    </div>
-    <button class="btn">שמירה</button>
+    <% if (hasCode) { %><div class="bd-field"><label class="bd-label" for="cur">קוד נוכחי</label><input class="bd-input" id="cur" type="password" name="current" required autocomplete="current-password"></div><% } %>
+    <div class="bd-field"><label class="bd-label" for="nc">קוד חדש</label><input class="bd-input" id="nc" type="password" name="code" required minlength="6" autocomplete="new-password"><span class="bd-help">6 תווים לפחות, לא רצף ולא תו חוזר</span></div>
+    <div class="bd-field"><label class="bd-label" for="nc2">אימות</label><input class="bd-input" id="nc2" type="password" name="code2" required minlength="6" autocomplete="new-password"></div>
+    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">שמירה</button>
   </form>
+</aside>
 </div>
 <%- include('partials/foot') %>

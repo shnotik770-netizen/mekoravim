@@ -1,34 +1,41 @@
-<%- include('partials/head', { title: 'מקורבים', nav: true }) %>
-<div class="pagehead">
-  <h1>מקורבים (<%= contacts.length %>)</h1>
-  <a class="btn" href="<%= base %>/contacts/new">+ הוספה</a>
+<%- include('partials/head', { title: 'מקורבים', nav: true, active: 'contacts' }) %>
+<div class="bd-pagehead">
+  <h1 class="bd-title">מקורבים <span class="bd-muted bd-num" style="font-weight:400">(<%= contacts.length %>)</span></h1>
+  <a class="bd-btn bd-btn--primary bd-btn--sm" href="<%= base %>/contacts/new">+ הוספה</a>
 </div>
-<form class="search row-search" method="get">
-  <input name="q" value="<%= term %>" placeholder="🔍 חיפוש לפי שם או טלפון…">
-  <select name="cat" data-autosubmit>
-    <option value="">כל הסיווגים</option>
-    <% categories.forEach(c => { %><option value="<%= c.id %>" <%= cat === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
-  </select>
-  <select name="sort" data-autosubmit>
-    <option value="">לפי שם</option>
-    <option value="next" <%= sort === 'next' ? 'selected' : '' %>>לפי יום הולדת קרוב</option>
-  </select>
+<form method="get" class="bd-tools" role="search">
+  <label class="bd-search">
+    <span class="bd-visually-hidden">חיפוש</span>
+    <%- include('partials/icons', { name: 'search' }) %>
+    <input class="bd-input" type="search" name="q" value="<%= term %>" placeholder="חיפוש לפי שם או טלפון…" autocomplete="off">
+  </label>
+  <div class="bd-row2">
+    <select class="bd-input" name="cat" data-autosubmit aria-label="סיווג">
+      <option value="">כל הסיווגים</option>
+      <% categories.forEach(c => { %><option value="<%= c.id %>" <%= cat === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
+    </select>
+    <select class="bd-input" name="sort" data-autosubmit aria-label="מיון">
+      <option value="">מיון לפי שם</option>
+      <option value="next" <%= sort === 'next' ? 'selected' : '' %>>לפי יום הולדת קרוב</option>
+    </select>
+  </div>
 </form>
-<div class="card list">
-  <% if (!contacts.length) { %><p class="muted"><%= term || cat ? 'לא נמצאו תוצאות.' : 'עדיין אין מקורבים.' %></p><% } %>
+<section class="bd-card">
+  <% if (!contacts.length) { %><div class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= term || cat ? 'לא נמצאו מקורבים בחיפוש הזה' : 'עדיין אין מקורבים' %></div><% } %>
+  <ul class="bd-items">
   <% contacts.forEach(c => { %>
-    <a class="list-item link" href="<%= base %>/contacts/<%= c.id %>">
-      <div class="grow">
-        <b><%= c.first_name %> <%= c.last_name %></b>
-        <%- include('partials/cat_chip', { cat: catById.get(c.category_id) }) %>
-        <% if (c.fam_count) { %><span class="small muted">+<%= c.fam_count %> בני משפחה</span><% } %>
-        <div class="small muted"><span dir="ltr"><%= c.phone %></span> · <%= birthText(c) %></div>
+    <li><a class="bd-item bd-item--link" href="<%= base %>/contacts/<%= c.id %>">
+      <div class="bd-item__main">
+        <div class="bd-item__title"><%= c.first_name %> <%= c.last_name %> <%- include('partials/cat_chip', { cat: catById.get(c.category_id) }) %>
+          <% if (c.fam_count) { %><span class="bd-small bd-muted" style="font-weight:400">+<%= c.fam_count %> בני משפחה</span><% } %></div>
+        <div class="bd-item__sub"><span class="bd-num"><%= c.phone %></span> · <%= birthText(c) %></div>
       </div>
-      <div class="small left">
-        <% if (c.next) { %>🎂 <b><%= c.next.label %></b> (<%= fmtGreg(c.next.date) %>)<% } %>
-        <% if (c.last_contact) { %><div class="muted">קשר אחרון: <%= fmtDate(c.last_contact) %></div><% } %>
+      <div class="bd-item__side">
+        <% if (c.next) { %>🎂 <b><%= c.next.label %></b> <span class="bd-muted bd-num">(<%= fmtGreg(c.next.date) %>)</span><% } %>
+        <% if (c.last_contact) { %><div class="bd-muted">קשר אחרון: <span class="bd-num"><%= fmtDate(c.last_contact) %></span></div><% } %>
       </div>
-    </a>
+    </a></li>
   <% }) %>
-</div>
+  </ul>
+</section>
 <%- include('partials/foot') %>

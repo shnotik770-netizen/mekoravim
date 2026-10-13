@@ -1,4 +1,4 @@
-// החלפת תאריך לועזי/עברי
+// החלפת תאריך עברי/לועזי (רכיב bd-toggle)
 function bindDatebox(box) {
   const sync = () => {
     const h = box.querySelector('input[type=radio][value=h]').checked;
@@ -24,7 +24,7 @@ if (list && tpl && addBtn) {
     row.querySelector('input[name$="[first_name]"]').focus();
   });
   list.addEventListener('click', (e) => {
-    if (e.target.matches('[data-remove]')) e.target.closest('.fam-row').remove();
+    if (e.target.closest('[data-remove]')) e.target.closest('.fam-row').remove();
   });
 }
 
@@ -40,12 +40,13 @@ document.querySelectorAll('code.copy').forEach((el) => {
   });
 });
 
-// טופס יצירת שליח: שדה קוד רק כשנבחר "עם קוד"
-document.querySelectorAll('input[name=with_code]').forEach((r) => {
-  const field = document.querySelector('.code-field');
-  const sync = () => { field.hidden = document.querySelector('input[name=with_code]:checked').value !== 'yes'; };
-  r.addEventListener('change', sync); sync();
-});
-
 // שליחה אוטומטית של טופס בשינוי בחירה (במקום onchange inline — חסום ב-CSP)
 document.querySelectorAll('[data-autosubmit]').forEach((el) => el.addEventListener('change', () => el.form.submit()));
+
+// טופס יצירת שליח: שדה קוד רק כשנבחר "עם קוד"
+const codeField = document.querySelector('.code-field');
+if (codeField) {
+  const sync = () => { codeField.hidden = document.querySelector('input[name=with_code]:checked').value !== 'yes'; };
+  document.querySelectorAll('input[name=with_code]').forEach((r) => r.addEventListener('change', sync));
+  sync();
+}

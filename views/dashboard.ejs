@@ -1,57 +1,114 @@
-<%- include('partials/head', { title: 'דשבורד', nav: true }) %>
+<%- include('partials/head', { title: 'דשבורד', nav: true, active: 'dashboard' }) %>
 <%
-  const todays = week.filter(e => e.date.getTime() === today.getTime());
-  const open = (list) => list.filter(e => !e.contacted && e.date <= today).length;
+  const fmt = (d) => d.getDate() + '.' + (d.getMonth() + 1);
+  const monthWord = monthRange.name.split(' ')[0];
+  const titles = { today: ['היום', hebToday], week: ['השבוע', fmt(weekRange.start) + '–' + fmt(weekRange.end)],
+    month: ['חודש ' + monthWord, fmt(monthRange.start) + '–' + fmt(monthRange.end)], 30: ['30 הימים הקרובים', fmt(today) + '–' + fmt(end30)] };
+  const back = qs({});
+  const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord], ['30', '30 יום']];
 %>
-<div class="pagehead">
-  <div>
-    <h1>שלום, <%= shliach.name %></h1>
-    <div class="muted">היום <%= hebToday %> · <%= fmtGreg(today) %></div>
+<section class="bd-head">
+  <h1 class="bd-title">שלום, <%= shliach.name %></h1>
+  <p class="bd-sub">היום יום <%= DAY_NAMES[today.getDay()] %>, <%= hebToday %> · <span class="bd-num"><%= fmtGreg(today) %></span></p>
+  <p class="bd-takeaway">
+    <% if (!total) { %>עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a> או <a href="<%= base %>/contacts/new">הוסיפו מקורב</a>.
+    <% } else if (lists.today.length) { %>🎂 היום יום ההולדת של <b><%= lists.today.map(e => e.name).join(', ') %></b>
+    <% } else { %>אין ימי הולדת היום<% if (next) { %> · הבא: <b><%= next.name %></b> ב<%= next.label %><% } %><% } %>
+    <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
+  </p>
+</section>
+
+<div class="bd-stats">
+  <a class="bd-stat bd-stat--today" href="<%= qs({ view: 'today' }) %>" aria-pressed="<%= view === 'today' %>">
+    <span class="bd-stat__label">היום</span><span class="bd-stat__value bd-num"><%= lists.today.length %></span>
+  </a>
+  <a class="bd-stat" href="<%= qs({ view: 'week' }) %>" aria-pressed="<%= view === 'week' %>">
+    <span class="bd-stat__label">השבוע</span><span class="bd-stat__value bd-num"><%= lists.week.length %></span>
+    <span class="bd-stat__hint bd-num"><%= titles.week[1] %></span>
+  </a>
+  <a class="bd-stat" href="<%= qs({ view: 'month' }) %>" aria-pressed="<%= view === 'month' %>">
+    <span class="bd-stat__label">בחודש <%= monthWord %></span><span class="bd-stat__value bd-num"><%= lists.month.length %></span>
+    <span class="bd-stat__hint bd-num"><%= titles.month[1] %></span>
+  </a>
+  <a class="bd-stat" href="<%= base %>/contacts">
+    <span class="bd-stat__label">מקורבים</span><span class="bd-stat__value bd-num"><%= total %></span>
+    <span class="bd-stat__hint"><%= familyTotal ? '+ ' + familyTotal + ' בני משפחה' : '' %></span>
+  </a>
+</div>
+
+<div class="bd-tools">
+  <form class="bd-search" method="get" action="<%= base %>/contacts" role="search">
+    <span class="bd-visually-hidden">חיפוש מקורב</span>
+    <%- include('partials/icons', { name: 'search' }) %>
+    <input class="bd-input" type="search" name="q" placeholder="חיפוש מקורב לפי שם או טלפון…" autocomplete="off" aria-label="חיפוש מקורב">
+  </form>
+  <% if (categories.length) { %>
+  <div class="bd-chips" role="group" aria-label="סינון לפי סיווג">
+    <a class="bd-chip" href="<%= qs({ cat: '' }) %>" aria-pressed="<%= !cat %>">הכל</a>
+    <% categories.forEach(c => { %><a class="bd-chip" href="<%= qs({ cat: cat === c.id ? '' : c.id }) %>" aria-pressed="<%= cat === c.id %>" style="--tag:<%= c.color %>"><span class="bd-dot"></span><%= c.name %></a><% }) %>
   </div>
+  <% } %>
 </div>
 
-<div class="stats">
-  <div class="stat"><div class="num"><%= todays.length %></div><div>היום</div></div>
-  <div class="stat"><div class="num"><%= week.length %></div><div>השבוע</div></div>
-  <div class="stat"><div class="num"><%= month.length %></div><div>בחודש <%= monthRange.name.split(' ')[0] %></div></div>
-  <a class="stat" href="<%= base %>/contacts"><div class="num"><%= total %></div><div>מקורבים</div></a>
+<div class="bd-layout bd-layout--split">
+  <section class="bd-card" aria-labelledby="bd-list-title">
+    <div class="bd-card__head">
+      <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %><small class="bd-num"><%= titles[view][1] %></small></h2>
+      <div class="bd-seg" role="tablist" aria-label="טווח">
+        <% segs.forEach(([k, l]) => { %><a role="tab" href="<%= qs({ view: k }) %>" aria-selected="<%= view === k %>"><%= l %></a><% }) %>
+      </div>
+    </div>
+    <ul class="bd-list">
+      <% if (!list.length) { %>
+        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
+      <% } %>
+      <% list.forEach(e => { %><%- include('partials/event_row', { e, back }) %><% }) %>
+    </ul>
+  </section>
+
+  <aside>
+    <% if (total) { %>
+      <% if (overdue.length) { %>
+      <div class="bd-alert" role="region" aria-label="ממתינים לברכה">
+        <div class="bd-alert__title"><%- include('partials/icons', { name: 'bell' }) %>ממתינים לברכה</div>
+        <p class="bd-help" style="margin-bottom:8px">ימי הולדת מהשבועיים האחרונים שעוד לא סומנו "נוצר קשר"</p>
+        <ul class="bd-mini">
+          <% overdue.forEach(e => { const d = String(e.contact.phone || '').replace(/\D/g, ''); %>
+          <li>
+            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date"><%= e.label %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
+            <% if (d) { %><a class="bd-icon-btn bd-icon-btn--wa" href="https://wa.me/972<%= d.replace(/^0/, '') %>" target="_blank" rel="noopener" aria-label="וואטסאפ ל<%= e.name %>"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
+            <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log">
+              <input type="hidden" name="back" value="<%= back %>">
+              <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
+              <button class="bd-btn bd-btn--ghost bd-btn--sm">יצרתי קשר</button>
+            </form>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+      <% } else { %>
+      <div class="bd-card bd-side-card"><div class="bd-ok-note"><%- include('partials/icons', { name: 'check' }) %>כל הברכות מהשבועיים האחרונים נשלחו</div></div>
+      <% } %>
+      <% if (upcoming.length) { %>
+      <div class="bd-card bd-side-card" style="margin-top:16px">
+        <div class="bd-card__head" style="margin-bottom:4px"><h3 class="bd-label">בשבוע הבא ואחריו</h3></div>
+        <ul class="bd-mini">
+          <% upcoming.forEach(e => { %>
+          <li>
+            <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date">יום <%= DAY_NAMES[e.date.getDay()] %> · <%= e.label %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
+            <%- include('partials/cat_chip', { cat: catById.get(e.contact.category_id) }) %>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+      <% } %>
+    <% } else { %>
+      <div class="bd-card bd-side-card">
+        <h3 class="bd-label" style="margin-bottom:8px">👋 מתחילים</h3>
+        <p class="bd-help bd-mb">צרו קישור רישום ושלחו למקורבים — כל מי שנרשם מופיע כאן אוטומטית.</p>
+        <div class="bd-actions"><a class="bd-btn bd-btn--primary bd-btn--sm" href="<%= base %>/links">קישור רישום</a><a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= base %>/contacts/new">+ מקורב</a></div>
+      </div>
+    <% } %>
+  </aside>
 </div>
-
-<form class="search" method="get" action="<%= base %>/contacts">
-  <input name="q" placeholder="🔍 חיפוש מקורב לפי שם או טלפון…">
-</form>
-
-<% if (categories.length) { %>
-<div class="filters">
-  <a class="fchip <%= !cat ? 'on' : '' %>" href="<%= base %>">הכל</a>
-  <% categories.forEach(c => { %><a class="fchip <%= cat === c.id ? 'on' : '' %>" style="--c: <%= c.color %>" href="<%= base %>?cat=<%= c.id %>"><%= c.name %></a><% }) %>
-</div>
-<% } %>
-
-<% if (!total && !cat) { %>
-<div class="card highlight">
-  <h3>👋 מתחילים</h3>
-  <p>הוסיפו מקורב ידנית, או צרו <a href="<%= base %>/links">קישור רישום</a> ושלחו אותו למקורבים — כל מי שנרשם יופיע כאן אוטומטית.</p>
-  <div class="actions"><a class="btn" href="<%= base %>/contacts/new">+ הוספת מקורב</a><a class="btn ghost" href="<%= base %>/links">יצירת קישור רישום</a></div>
-</div>
-<% } %>
-
-<section class="card">
-  <h2>השבוע <small class="muted"><%= fmtGreg(weekRange.start).slice(0,-5) %>–<%= fmtGreg(weekRange.end).slice(0,-5) %></small>
-    <% if (open(week)) { %><span class="tag warn"><%= open(week) %> ממתינים לברכה</span><% } %></h2>
-  <% if (!week.length) { %><p class="muted">אין ימי הולדת השבוע.</p><% } %>
-  <% week.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
-</section>
-
-<section class="card">
-  <h2>חודש <%= monthRange.name %></h2>
-  <% if (!month.length) { %><p class="muted">אין ימי הולדת החודש.</p><% } %>
-  <% month.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
-</section>
-
-<section class="card">
-  <h2>30 הימים הקרובים</h2>
-  <% if (!upcoming.length) { %><p class="muted">אין ימי הולדת קרובים.</p><% } %>
-  <% upcoming.forEach(e => { %><%- include('partials/event_row', { e }) %><% }) %>
-</section>
 <%- include('partials/foot') %>

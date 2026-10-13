@@ -1,12 +1,10 @@
-<%- include('partials/head', { title: 'כניסה — ' + shliach.name }) %>
-<div class="narrow card center">
-  <div class="hero-icon">🔒</div>
-  <h1><%= shliach.name %></h1>
-  <p class="muted">הזינו את קוד הכניסה</p>
-  <% if (error) { %><div class="error"><%= error %></div><% } %>
-  <form method="post" action="<%= base %>/login">
-    <input name="code" type="password" class="code-input" required autofocus autocomplete="current-password" aria-label="קוד כניסה">
-    <button class="btn wide">כניסה</button>
-  </form>
-</div>
+<%- include('partials/head', { title: 'כניסה — ' + shliach.name, narrow: true }) %>
+<form method="post" action="<%= base %>/login" class="bd-card bd-center">
+  <%- include('partials/logo', { big: true }) %>
+  <h1 class="bd-title"><%= shliach.name %></h1>
+  <p class="bd-sub bd-mb">הזינו את קוד הכניסה</p>
+  <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
+  <div class="bd-field"><input class="bd-input bd-code-input" name="code" type="password" required autofocus autocomplete="current-password" aria-label="קוד כניסה"></div>
+  <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
+</form>
 <%- include('partials/foot') %>

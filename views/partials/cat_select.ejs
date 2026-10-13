@@ -1,6 +1,7 @@
-<label>סיווג
-  <select name="category_id">
+<div class="bd-field">
+  <label class="bd-label" for="cat-sel">סיווג</label>
+  <select class="bd-input" id="cat-sel" name="category_id">
     <option value="">— ללא סיווג —</option>
     <% categories.forEach(c => { %><option value="<%= c.id %>" <%= String(selected) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %>
   </select>
-</label>
+</div>

@@ -1,10 +1,8 @@
-<%- include('partials/head', { title: 'כניסת מנהל' }) %>
-<div class="narrow card">
-  <h1>כניסת מנהל</h1>
-  <% if (error) { %><div class="error"><%= error %></div><% } %>
-  <form method="post" action="/admin/login">
-    <label>סיסמה <input type="password" name="password" required autofocus autocomplete="current-password"></label>
-    <button class="btn">כניסה</button>
-  </form>
-</div>
+<%- include('partials/head', { title: 'כניסת מנהל', narrow: true }) %>
+<form method="post" action="/admin/login" class="bd-card">
+  <h1 class="bd-title bd-mb">כניסת מנהל</h1>
+  <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
+  <div class="bd-field"><label class="bd-label" for="pw">סיסמה</label><input class="bd-input" id="pw" type="password" name="password" required autofocus autocomplete="current-password"></div>
+  <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
+</form>
 <%- include('partials/foot') %>

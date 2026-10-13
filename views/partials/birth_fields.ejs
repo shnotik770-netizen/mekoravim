@@ -1,39 +1,35 @@
 <%
-  // prefix: '' או 'fam[3]'; vals: ערכים קיימים
+  // prefix: '' או 'fam[3]'; vals: ערכים קיימים; uid: מזהה ייחודי ל-id של השדות
   const n = (k) => prefix ? `${prefix}[${k}]` : k;
   const v = vals || {};
-  const t = v.date_type === 'h' ? 'h' : 'g';
+  const t = v.date_type === 'g' ? 'g' : 'h';
+  const id = (k) => `${uid}-${k}`;
 %>
-<div class="datebox">
-  <div class="seg">
-    <label><input type="radio" name="<%= n('date_type') %>" value="g" <%= t === 'g' ? 'checked' : '' %>> תאריך לועזי</label>
-    <label><input type="radio" name="<%= n('date_type') %>" value="h" <%= t === 'h' ? 'checked' : '' %>> תאריך עברי</label>
-  </div>
-  <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
-    <label>תאריך לידה לועזי מלא
-      <input type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= new Date().toISOString().slice(0,10) %>">
-    </label>
-    <label class="check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> נולד/ה אחרי השקיעה</label>
-    <p class="hint">התאריך העברי יחושב אוטומטית — יום ההולדת נחגג לפי התאריך העברי.</p>
+<div class="bd-group datebox">
+  <div class="bd-toggle" role="radiogroup" aria-label="סוג תאריך">
+    <input type="radio" name="<%= n('date_type') %>" id="<%= id('th') %>" value="h" <%= t === 'h' ? 'checked' : '' %>><label for="<%= id('th') %>">תאריך עברי</label>
+    <input type="radio" name="<%= n('date_type') %>" id="<%= id('tg') %>" value="g" <%= t === 'g' ? 'checked' : '' %>><label for="<%= id('tg') %>">תאריך לועזי</label>
   </div>
   <div class="h-fields" <%= t === 'g' ? 'hidden' : '' %>>
-    <div class="row3">
-      <label>יום
-        <select name="<%= n('h_day') %>">
-          <option value="">—</option>
+    <div class="bd-row3">
+      <div class="bd-field"><label class="bd-help" for="<%= id('hd') %>">יום</label>
+        <select class="bd-input" id="<%= id('hd') %>" name="<%= n('h_day') %>">
+          <option value="">יום</option>
           <% HEB_DAYS.forEach(d => { %><option value="<%= d.v %>" <%= String(v.h_day) === String(d.v) ? 'selected' : '' %>><%= d.n %></option><% }) %>
-        </select>
-      </label>
-      <label>חודש
-        <select name="<%= n('h_month') %>">
-          <option value="">—</option>
+        </select></div>
+      <div class="bd-field"><label class="bd-help" for="<%= id('hm') %>">חודש</label>
+        <select class="bd-input" id="<%= id('hm') %>" name="<%= n('h_month') %>">
+          <option value="">חודש</option>
           <% HEB_MONTHS.forEach(m => { %><option value="<%= m.v %>" <%= String(v.h_month) === String(m.v) ? 'selected' : '' %>><%= m.n %></option><% }) %>
-        </select>
-      </label>
-      <label>שנה <small class="muted">(רשות)</small>
-        <input name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder='תש"נ'>
-      </label>
+        </select></div>
+      <div class="bd-field"><label class="bd-help" for="<%= id('hy') %>">שנה <span class="opt">(רשות)</span></label>
+        <input class="bd-input" id="<%= id('hy') %>" name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder="תש״נ"></div>
     </div>
-    <p class="hint">בלי שנת לידה לא נוכל לחשב גיל.</p>
+    <p class="bd-help">בלי שנת לידה לא נוכל לחשב גיל — וזה בסדר גמור.</p>
+  </div>
+  <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
+    <input class="bd-input" type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= new Date().toISOString().slice(0,10) %>" aria-label="תאריך לידה לועזי">
+    <label class="bd-check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> נולד/ה אחרי השקיעה</label>
+    <p class="bd-help">התאריך העברי מתחלף בשקיעה, ולכן זה משנה את יום ההולדת העברי. נמיר אוטומטית.</p>
   </div>
 </div>

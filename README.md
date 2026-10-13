@@ -23,11 +23,13 @@
 - "נוצר קשר" בדשבורד = נרשמה יצירת קשר לאותו אדם החל מ-14 יום לפני יום ההולדת.
 
 ## משתני סביבה
+הוראות מלאות להגדרה ב-Railway: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 | משתנה | תיאור |
 |---|---|
 | `DATABASE_URL` | חיבור ל-PostgreSQL (ב-Railway: `${{Postgres.DATABASE_URL}}`) |
-| `ADMIN_PASSWORD` | סיסמת המנהל |
-| `SESSION_SECRET` | מחרוזת אקראית ארוכה |
+| `ADMIN_PASSWORD` | סיסמת המנהל. בפרודקשן: 8 תווים לפחות, לא רצף ולא תו חוזר — אחרת השרת לא עולה |
+| `SESSION_SECRET` | מחרוזת אקראית, 32 תווים לפחות בפרודקשן |
 | `NODE_ENV` | `production` |
 | `PUBLIC_URL` | כתובת האתר (לקישורים, וגם לקישור לדשבורד בתוך ה-SMS) |
 | `YEMOT_TOKEN` | מפתח API של ימות המשיח (`apik_...`; גם `מספר_מערכת:סיסמה` עובד). בלי זה ה-SMS כבוי |
@@ -35,13 +37,13 @@
 | `SMS_HOUR` | (לא חובה) שעת השליחה ביום ראשון, שעון ישראל. ברירת מחדל 8 |
 | `YEMOT_API_URL` | (לא חובה) ברירת מחדל `https://www.call2all.co.il/ym/api` |
 
-הטבלאות נוצרות אוטומטית בעלייה.
+הטבלאות נוצרות ומתעדכנות אוטומטית בעלייה. **שירות אחד בלבד** (replicas=1) — הגבלות הקצב נשמרות בזיכרון.
+
+## עיצוב
+מבוסס על חבילת העיצוב של המעצב: `public/css/tokens.css` ו-`public/css/components.css` (כמו שהם), ו-`public/css/app.css` להשלמות במסכים שהחבילה לא עיצבה. כל הצבעים במשתני `--bd-*`, כולל מצב כהה אוטומטי. התאריכים מחושבים בשרת (hebcal); `hebrew-date.js` מהחבילה לא בשימוש.
 
 ## פריסה ב-Railway
-1. New Project → Deploy from GitHub repo → לבחור את הריפו.
-2. Add → Database → PostgreSQL.
-3. בשירות האפליקציה להגדיר את משתני הסביבה למעלה.
-4. Settings → Networking → Generate Domain.
+ראו [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## פיתוח מקומי
 ```

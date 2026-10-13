@@ -1,0 +1,121 @@
+/* =========================================================
+   השלמות לחבילת העיצוב (tokens.css + components.css) עבור המסכים
+   שהחבילה לא עיצבה במלואם. רק משתני --bd-*, באותה שפה.
+   ========================================================= */
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bd-bg); color: var(--bd-fg); }
+.bd-page { padding: 0 16px 48px; }
+.bd-narrow { max-width: 520px; margin-inline: auto; padding-top: 24px; }
+.bd a:not([class]) { color: var(--bd-accent); text-decoration: none; }
+.bd a:not([class]):hover { text-decoration: underline; }
+.bd a[class] { text-decoration: none; }
+.bd .bd-seg a { all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; min-height: 36px; padding: 0 var(--bd-sp-4); border-radius: var(--bd-r-pill); font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); display: inline-flex; align-items: center; }
+.bd .bd-seg a[aria-selected="true"] { background: var(--bd-surface); color: var(--bd-fg); font-weight: var(--bd-fw-medium); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
+.bd .bd-seg a:focus-visible { outline: 2px solid var(--bd-accent); }
+.bd .bd-row__name a, .bd .bd-mini__name a { color: inherit; }
+.bd .bd-row__name a:hover, .bd .bd-mini__name a:hover { text-decoration: underline; }
+.bd-logo--lg { width: 56px; height: 56px; border-radius: 18px; margin: 0 auto 12px; }
+.bd-center { text-align: center; }
+.bd-muted { color: var(--bd-fg-muted); }
+.bd-small { font-size: var(--bd-fs-sm); }
+.bd-stack > * + * { margin-top: var(--bd-sp-4); }
+.bd-mt { margin-top: var(--bd-sp-4); }
+.bd-mb { margin-bottom: var(--bd-sp-4); }
+[hidden] { display: none !important; }
+.hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); opacity: 0; pointer-events: none; }
+
+/* כותרת עמוד עם פעולה */
+.bd-pagehead { display: flex; align-items: center; justify-content: space-between; gap: var(--bd-sp-3); flex-wrap: wrap; margin-bottom: var(--bd-sp-5); }
+.bd-actions { display: flex; gap: var(--bd-sp-2); flex-wrap: wrap; align-items: center; }
+
+/* הודעות */
+.bd-msg { margin-bottom: var(--bd-sp-4); }
+
+/* שורות טופס */
+.bd-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--bd-sp-3); }
+@media (max-width: 520px) { .bd-row2 { grid-template-columns: 1fr; } }
+.bd-inline { display: flex; gap: var(--bd-sp-2); flex-wrap: wrap; align-items: center; }
+.bd-inline .bd-input { flex: 1 1 200px; width: auto; }
+.bd textarea.bd-input { min-height: 80px; resize: vertical; }
+.bd-section-title { font-size: var(--bd-fs-lg); font-weight: var(--bd-fw-bold); margin-bottom: var(--bd-sp-3); }
+fieldset.bd-field { border: 0; padding: 0; margin: 0 0 var(--bd-sp-4); min-width: 0; }
+fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
+.bd-group .bd-field { margin-bottom: 0; }
+.bd-group .bd-help { margin-top: var(--bd-sp-2); }
+.bd-family { position: relative; }
+
+/* רשימות כלליות (מקורבים, קישורים, שלוחים, היסטוריה) */
+.bd-items { list-style: none; margin: 0; padding: 0; }
+.bd-item { display: flex; align-items: center; gap: var(--bd-sp-3); padding: var(--bd-sp-3) var(--bd-sp-1); border-top: 1px solid var(--bd-line); flex-wrap: wrap; }
+.bd-item:first-child { border-top: 0; }
+.bd-item__main { flex: 1; min-width: 0; }
+.bd-item__title { font-weight: var(--bd-fw-bold); display: flex; gap: var(--bd-sp-2); align-items: center; flex-wrap: wrap; }
+.bd-item__sub { font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); margin-top: 2px; }
+.bd-item--link { color: var(--bd-fg); border-radius: var(--bd-r-sm); }
+.bd .bd-item--link:hover { background: var(--bd-surface-2); }
+.bd-item--off { opacity: .55; }
+.bd-item__side { font-size: var(--bd-fs-sm); text-align: start; }
+
+.bd-status { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: var(--bd-r-pill); font-size: var(--bd-fs-xs); font-weight: var(--bd-fw-medium); background: var(--bd-surface-2); color: var(--bd-fg-muted); white-space: nowrap; }
+.bd-status--ok { background: var(--bd-ok-soft); color: var(--bd-ok); }
+.bd-status--bad { background: var(--bd-bad-soft); color: var(--bd-bad); }
+.bd-status--accent { background: var(--bd-accent-soft); color: var(--bd-accent); }
+
+/* קוד/קישור להעתקה */
+.bd-code { font-family: ui-monospace, monospace; font-size: var(--bd-fs-sm); background: var(--bd-surface-2); padding: 2px 8px; border-radius: 6px; direction: ltr; unicode-bidi: isolate; word-break: break-all; cursor: copy; }
+.bd-code.copied { background: var(--bd-ok-soft); color: var(--bd-ok); }
+.bd-code--big { font-size: 1.5rem; letter-spacing: 4px; }
+.bd-highlight { border-color: var(--bd-today-line); background: var(--bd-today-bg); }
+
+/* כרטיס מקורב */
+.bd-facts { display: grid; gap: var(--bd-sp-2); margin: var(--bd-sp-4) 0; }
+.bd-fact { display: flex; gap: var(--bd-sp-2); }
+.bd-fact b { font-weight: var(--bd-fw-medium); color: var(--bd-fg-muted); min-width: 120px; }
+
+/* details כפתור */
+.bd details > summary { list-style: none; cursor: pointer; display: inline-flex; }
+.bd details > summary::-webkit-details-marker { display: none; }
+.bd details[open] > summary { margin-bottom: var(--bd-sp-4); }
+.bd-menu { position: relative; }
+.bd-menu__body { position: absolute; inset-inline-end: 0; top: calc(100% + 6px); z-index: 5; width: 300px; background: var(--bd-surface); border: 1px solid var(--bd-line); border-radius: var(--bd-r-md); padding: var(--bd-sp-4); box-shadow: 0 8px 24px rgb(0 0 0 / .12); display: grid; gap: var(--bd-sp-3); }
+.bd .bd-menu details[open] > summary { margin-bottom: 0; }
+
+.bd-link-btn--accent { color: var(--bd-accent); }
+.bd-dot--lg { width: 14px; height: 14px; }
+
+/* מסך כניסה */
+.bd-code-input { text-align: center; font-size: 1.4rem; letter-spacing: 6px; }
+
+/* דף הבית */
+.bd-hero { text-align: center; padding: var(--bd-sp-8) 0 var(--bd-sp-4); }
+.bd-hero .bd-sub { font-size: var(--bd-fs-lg); max-width: 560px; margin: var(--bd-sp-2) auto 0; }
+.bd-steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: var(--bd-sp-3); }
+.bd-steps li { counter-increment: s; display: flex; gap: var(--bd-sp-3); align-items: flex-start; }
+.bd-steps li::before { content: counter(s); flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--bd-accent); color: var(--bd-accent-fg); display: grid; place-items: center; font-weight: var(--bd-fw-bold); }
+.bd-grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--bd-sp-4); }
+.bd-shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--bd-sp-4); }
+.bd-shots figure { margin: 0; }
+.bd-shots img { width: 100%; display: block; border-radius: var(--bd-r-md); border: 1px solid var(--bd-line); box-shadow: var(--bd-shadow); }
+.bd-shots figcaption { text-align: center; font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); margin-top: var(--bd-sp-2); }
+.bd-example { background: var(--bd-surface-2); border-radius: var(--bd-r-sm); padding: var(--bd-sp-3) var(--bd-sp-4); }
+.bd-h2 { font-size: var(--bd-fs-xl); font-weight: var(--bd-fw-bold); margin-bottom: var(--bd-sp-3); }
+.bd-sms-preview { white-space: pre-wrap; background: var(--bd-surface-2); border-radius: var(--bd-r-sm); padding: var(--bd-sp-3); font: inherit; font-size: var(--bd-fs-sm); margin: 0; }
+
+/* בורר צבע לסיווג */
+.bd-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.bd-swatches label { position: relative; }
+.bd-swatches input { position: absolute; opacity: 0; }
+.bd-swatches span { display: block; width: 28px; height: 28px; border-radius: 50%; background: var(--c); border: 2px solid transparent; cursor: pointer; }
+.bd-swatches input:checked + span { border-color: var(--bd-fg); box-shadow: inset 0 0 0 2px var(--bd-surface); }
+.bd-swatches input:focus-visible + span { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+
+/* קישורים שמעוצבים כרכיבים — דורסים את צבע הקישור של הדפדפן */
+.bd a.bd-brand { color: var(--bd-fg); }
+.bd .bd-nav a { color: var(--bd-fg-muted); }
+.bd .bd-nav a:hover { color: var(--bd-fg); }
+.bd .bd-nav a[aria-current="page"] { color: var(--bd-accent); }
+.bd a.bd-chip, .bd a.bd-stat, .bd a.bd-icon-btn, .bd a.bd-btn--ghost, .bd a.bd-item--link { color: var(--bd-fg); }
+.bd a.bd-chip[aria-pressed="true"] { color: var(--bd-bg); }
+.bd a.bd-icon-btn--wa { color: var(--bd-wa); }
+.bd a.bd-btn--primary { color: var(--bd-accent-fg); }
+.bd a.bd-btn--soft { color: var(--bd-accent); }
