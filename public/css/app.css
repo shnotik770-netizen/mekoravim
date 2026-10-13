@@ -214,3 +214,11 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-import-cta > span:nth-child(2) { flex: 1; display: grid; min-width: 180px; }
 .bd-import-cta__ico { font-size: 1.8rem; }
 .bd-import-cta__go { font-weight: var(--bd-fw-bold); color: var(--bd-accent); white-space: nowrap; }
+
+/* סרגל חשבון הדגמה */
+.bd-demo-bar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between;
+  margin: 0 -16px 12px; padding: 10px 16px; background: #0F1B33; color: #fff; font-size: var(--bd-fs-sm); }
+.bd-demo-bar b { color: #E3B04B; }
+.bd-demo-bar__acts { display: flex; gap: 14px; align-items: center; }
+.bd-demo-bar a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.bd-demo-bar a.bd-demo-bar__wa { text-decoration: none; background: #25D366; padding: 6px 12px; border-radius: 999px; font-weight: 700; }

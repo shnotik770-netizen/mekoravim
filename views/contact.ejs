@@ -12,8 +12,9 @@
         <p class="bd-sub bd-num"><%= c.phone || 'אין טלפון' %></p>
       </div>
       <div class="bd-actions">
-        <% if (wa) { %><a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="וואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
-        <% if (c.phone) { %><a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a><% } %>
+        <% const isDemo = typeof demo !== 'undefined' && demo; %>
+        <% if (wa && !isDemo) { %><a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="וואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
+        <% if (c.phone && !isDemo) { %><a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a><% } %>
       </div>
     </div>
     <div class="bd-facts">

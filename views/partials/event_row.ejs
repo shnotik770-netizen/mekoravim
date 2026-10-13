@@ -6,6 +6,8 @@
   const intl = digits ? '972' + digits.replace(/^0/, '') : '';
   const first = e.member ? e.member.first_name : e.contact.first_name;
   const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : '';
+  const isDemo = typeof demo !== 'undefined' && demo; // בהדגמה: וואטסאפ בלי מספר (רק נוסח הברכה), בלי חיוג
+  const waHref = isDemo && wa ? 'https://wa.me/?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : wa;
   const cls = ['bd-row', isToday && 'bd-row--today', past && !done && 'bd-row--overdue', done && 'bd-row--done'].filter(Boolean).join(' ');
   const iso = e.date.getFullYear() + '-' + String(e.date.getMonth() + 1).padStart(2, '0') + '-' + String(e.date.getDate()).padStart(2, '0');
   const cat = catById.get(e.contact.category_id);
@@ -30,8 +32,8 @@
   </div>
   <div class="bd-row__actions">
     <% if (wa) { %>
-      <a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
-      <a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a>
+      <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
+      <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>
     <% } %>
     <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>">
       <input type="hidden" name="back" value="<%= back %>">

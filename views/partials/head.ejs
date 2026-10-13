@@ -27,6 +27,12 @@
 </head>
 <body>
 <div class="bd-page">
+<% if (typeof demo !== 'undefined' && demo) { %>
+<div class="bd-demo-bar" role="note">
+  <span>🎭 <b>חשבון הדגמה</b> — לחצו על הכול, שום דבר לא נשמר</span>
+  <span class="bd-demo-bar__acts"><a href="/">לדף הבית</a><a class="bd-demo-bar__wa" href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, ראיתי את ההדגמה ואשמח לשמוע על מערכת ימי הולדת למקורבים') %>" target="_blank" rel="noopener">💬 יצירת קשר בוואטסאפ</a></span>
+</div>
+<% } %>
 <div class="bd <%= _narrow ? 'bd-narrow' : 'bd-wrap' %>">
 <% if (_nav) { %>
 <header class="bd-appbar">
@@ -38,7 +44,7 @@
     <a href="<%= base %>/links" <%- _active === 'links' ? 'aria-current="page"' : '' %>>קישורי רישום</a>
     <a href="<%= base %>/settings" <%- _active === 'settings' ? 'aria-current="page"' : '' %>>הגדרות</a>
     <button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button>
-    <form method="post" action="<%= base %>/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form>
+    <% if (typeof demo !== 'undefined' && demo) { %><a href="/" class="bd-link-btn--accent">יציאה</a><% } else { %><form method="post" action="<%= base %>/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form><% } %>
   </nav>
 </header>
 <% } %>

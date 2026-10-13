@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { q, pool, migrate } from './lib/db.js';
+import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
   hebToday, addDays, fmtGreg, hebFromGreg, parseISO,
@@ -12,7 +12,7 @@ import {
 
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
-import { demoSeed, demoCalc, demoOptions } from './lib/demo.js';
+import { seedDemoAccount } from './lib/demo.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
@@ -100,23 +100,6 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
-
-// חשבון הדגמה (דף הבית): השרת רק מחשב — שום דבר לא נשמר. הנתונים חיים בזיכרון הדפדפן בלבד
-const demoJson = express.json({ limit: '30kb' });
-const demoLimiter = new Map(); // הגבלה עדינה לפי IP (בזיכרון)
-function demoRate(req, res, next) {
-  const now = Date.now(), k = req.ip, e = demoLimiter.get(k);
-  if (!e || now - e.t > 60000) demoLimiter.set(k, { t: now, n: 1 });
-  else if (++e.n > 120) return res.status(429).json({ error: 'יותר מדי בקשות, נסו שוב בעוד דקה' });
-  if (demoLimiter.size > 5000) demoLimiter.clear();
-  next();
-}
-app.get('/demo/seed', demoRate, (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ people: demoSeed(), options: demoOptions() });
-});
-app.post('/demo/calc', demoRate, demoJson, (req, res) => {
-  res.set('Cache-Control', 'no-store').json(demoCalc(req.body?.people));
-});
 
 // "שמירה כאפליקציה" (PWA): מניפסט כללי, ומניפסט אישי לכל שליח שנפתח ישר לדשבורד שלו
 function manifest({ name, short, start, scope }) {
@@ -507,18 +490,74 @@ app.post('/r/:token', async (req, res) => {
 
 const router = express.Router({ mergeParams: true });
 app.use('/s/:slug', router);
+// (חשבון ההדגמה מחובר לאותו router — ראו demoAccount למטה)
 
 router.use(async (req, res, next) => {
-  const { rows } = await q('SELECT * FROM shluchim WHERE slug=$1 AND active', [req.params.slug]);
+  const { rows } = await q('SELECT * FROM shluchim WHERE slug=$1 AND active', [req.demo ? req.demoSlug : req.params.slug]);
   if (!rows[0]) return res.redirect('/'); // קישור שליח לא פעיל / לא קיים — ישר לדף הבית
   const s = rows[0];
   req.shliach = res.locals.shliach = s;
+  if (req.demo) {
+    res.locals.base = '/demo';
+    res.locals.noApp = true;
+    req.authorized = true;
+    return next();
+  }
   res.locals.base = `/s/${s.slug}`;
   res.locals.manifestUrl = `/s/${s.slug}/manifest.webmanifest`;
   const sh = req.session.sh && !Array.isArray(req.session.sh) ? req.session.sh : {};
   req.authorized = sh[s.id] === s.session_version; // תמיד נדרשת כניסה בקוד
   next();
 });
+
+/* ------------------------------ חשבון הדגמה ------------------------------ */
+// /demo = אותם מסכים בדיוק של שליח, על חשבון לדוגמה שנוצר בכל בקשה בתוך טרנזקציה שמבוטלת (ROLLBACK)
+// כשהתשובה נשלחת. לכן שום פעולה לא נשמרת, לא נרשמת ביומן ולא שולחת SMS (sendSms חסום בהקשר הזה).
+const demoHits = new Map();
+async function demoAccount(req, res, next) {
+  const now = Date.now(), hit = demoHits.get(req.ip);
+  if (!hit || now - hit.t > 60000) demoHits.set(req.ip, { t: now, n: 1 });
+  else if (++hit.n > 90) return res.status(429).render('error', { message: 'יותר מדי בקשות להדגמה — נסו שוב בעוד דקה' });
+  if (demoHits.size > 5000) demoHits.clear();
+
+  const client = await pool.connect();
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    client.query('ROLLBACK').catch(() => {}).finally(() => client.release());
+  };
+  res.on('finish', finish);
+  res.on('close', finish);
+  req.demo = true;
+  res.locals.demo = true;
+  // אחרי פעולה: ההודעה מבהירה שבהדגמה זה לא נשמר
+  if (req.method === 'POST') {
+    const redirect = res.redirect.bind(res);
+    res.redirect = (...args) => {
+      const f = req.session.flash;
+      if (f && typeof f === 'object') req.session.flash = { err: f.err };
+      else req.session.flash = `${f ? f + ' — ' : ''}בהדגמה זה לא נשמר באמת 🙂`;
+      // מקורב "חדש" לא קיים בבקשה הבאה — חוזרים לרשימה במקום לכרטיס שלו
+      const i = args.length - 1;
+      if (typeof args[i] === 'string') args[i] = args[i].replace(/^\/demo\/contacts\/\d+.*$/, '/demo/contacts');
+      return redirect(...args);
+    };
+  }
+  try {
+    await client.query('BEGIN');
+    dbStorage.run({ client, demo: true }, async () => {
+      try {
+        req.demoSlug = await seedDemoAccount(DEFAULT_CATEGORIES, COLORS);
+        next();
+      } catch (e) { next(e); }
+    });
+  } catch (e) {
+    finish();
+    next(e);
+  }
+}
+app.use('/demo', demoAccount, router);
 
 const requireShliach = (req, res, next) => (req.authorized ? next() : res.redirect(res.locals.base));
 
@@ -829,29 +868,19 @@ router.post('/contacts/:id/family/:fid/remind', loadContact, async (req, res) =>
 // הפרדת בן משפחה לכרטיס מקורב נפרד: התאריכים, התזכורת והיסטוריית "יצרתי קשר" עוברים איתו
 router.post('/contacts/:id/family/:fid/split', loadContact, async (req, res) => {
   const c = req.contact;
-  const client = await pool.connect();
-  let newId = null;
-  try {
-    await client.query('BEGIN');
+  const newId = await transaction(async (client) => {
     const { rows } = await client.query('SELECT * FROM family_members WHERE id=$1 AND contact_id=$2 FOR UPDATE', [int(req.params.fid), c.id]);
     const f = rows[0];
-    if (f) {
-      const ins = await client.query(
-        `INSERT INTO contacts (shliach_id, first_name, last_name, phone, notes, g_date, g_after_sunset, h_day, h_month, h_year, category_id, remind_days)
-         VALUES ($1,$2,$3,'',$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-        [req.shliach.id, f.first_name, c.last_name, `${f.relation} של ${c.first_name} ${c.last_name}`.slice(0, 1000),
-          f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year, c.category_id, f.remind_days]);
-      newId = ins.rows[0].id;
-      await client.query('UPDATE contact_log SET contact_id=$1, family_member_id=NULL WHERE family_member_id=$2', [newId, f.id]);
-      await client.query('DELETE FROM family_members WHERE id=$1', [f.id]);
-    }
-    await client.query('COMMIT');
-  } catch (e) {
-    await client.query('ROLLBACK');
-    throw e;
-  } finally {
-    client.release();
-  }
+    if (!f) return null;
+    const ins = await client.query(
+      `INSERT INTO contacts (shliach_id, first_name, last_name, phone, notes, g_date, g_after_sunset, h_day, h_month, h_year, category_id, remind_days)
+       VALUES ($1,$2,$3,'',$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [req.shliach.id, f.first_name, c.last_name, `${f.relation} של ${c.first_name} ${c.last_name}`.slice(0, 1000),
+        f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year, c.category_id, f.remind_days]);
+    await client.query('UPDATE contact_log SET contact_id=$1, family_member_id=NULL WHERE family_member_id=$2', [ins.rows[0].id, f.id]);
+    await client.query('DELETE FROM family_members WHERE id=$1', [f.id]);
+    return ins.rows[0].id;
+  });
   if (!newId) return res.redirect(`${res.locals.base}/contacts/${c.id}#family`);
   flash(req, 'בן המשפחה הועבר לכרטיס נפרד');
   res.redirect(`${res.locals.base}/contacts/${newId}`);
@@ -1034,7 +1063,7 @@ app.use((err, req, res, next) => {
   console.error(err);
   // ביומן רק סוג השגיאה והנתיב הכללי — לא הודעת השגיאה (עלולה לכלול נתונים)
   const where = req.route ? (req.shliach ? `/s/…${req.route.path}` : req.baseUrl + req.route.path) : req.method;
-  audit({ shliachId: req.shliach?.id ?? null, actor: 'system', action: 'שגיאת שרת', outcome: 'error', detail: `${req.method} ${where} · ${err.code || err.name || 'Error'}` });
+  if (!req.demo) audit({ shliachId: req.shliach?.id ?? null, actor: 'system', action: 'שגיאת שרת', outcome: 'error', detail: `${req.method} ${where} · ${err.code || err.name || 'Error'}` });
   res.status(500).render('error', { message: 'אירעה שגיאה. נסה שוב.' });
 });
 

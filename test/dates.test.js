@@ -159,15 +159,17 @@ test('תזכורת אישית על מקורב: יום השליחה, כולל ד�
   assert.equal(msg, '🔔 תזכורת יום הולדת:\nדוד כהן, 40 — בעוד 2 ימים, חמישי י״א חשוון');
 });
 
-test('חשבון הדגמה: 10 מקורבים, רובם היום/השבוע/החודש, והחישוב לא שומר דבר', async () => {
+test('חשבון הדגמה: 10 מקורבים תקינים, רובם היום / ב-30 הימים הקרובים', async () => {
   process.env.DATABASE_URL ||= 'postgres://unused';
-  const { demoSeed, demoCalc } = await import('../lib/demo.js');
+  const { demoSeed } = await import('../lib/demo.js');
+  const { parseBirth } = await import('../lib/person.js');
+  const { nextBirthday } = await import('../lib/dates.js');
   for (const today of [new Date(2026, 9, 14), new Date(2027, 1, 20), new Date(2027, 2, 15), new Date(2026, 11, 31)]) {
-    const r = demoCalc(demoSeed(today), today);
-    assert.equal(r.people.length, 10);
-    assert.ok(r.people.every((p) => !p.error), JSON.stringify(r.people.filter((p) => p.error)));
-    assert.ok(r.people.filter((p) => p.today).length >= 2);
-    assert.ok(r.people.filter((p) => p.next30).length >= 6);
+    const people = demoSeed(today).map((p) => parseBirth(p));
+    assert.equal(people.length, 10);
+    assert.ok(people.every((p) => p.value), JSON.stringify(people.filter((p) => p.error)));
+    const days = people.map((p) => Math.round((nextBirthday(p.value, today).date - today) / 86400000));
+    assert.ok(days.filter((d) => d === 0).length >= 2, String(days));
+    assert.ok(days.filter((d) => d < 30).length >= 6, String(days));
   }
-  assert.ok(demoCalc([{ id: 'x', first_name: 'א', date_type: 'h', h_day: '30', h_month: '10' }]).people[0].error);
 });
