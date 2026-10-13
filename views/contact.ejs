@@ -1,7 +1,6 @@
 <%- include('partials/head', { title: c.first_name + ' ' + c.last_name, nav: true }) %>
 <%
-  const nextStr = (n) => [n.hebrew && `עברי: ${fmtGreg(n.hebrew.date)} (${n.hebrew.label})${n.hebrew.age ? ' · גיל ' + n.hebrew.age : ''}`,
-                          n.gregorian && `לועזי: ${fmtGreg(n.gregorian.date)}${n.gregorian.age ? ' · גיל ' + n.gregorian.age : ''}`].filter(Boolean).join(' | ');
+  const nextStr = (n) => n ? `${n.label} — ${DAY_NAMES[n.date.getDay()]}, ${fmtGreg(n.date)}${n.age ? ' · ימלאו ' + n.age : ''}` : '—';
 %>
 <% if (error) { %><div class="error"><%= error %></div><% } %>
 <div class="card">
@@ -16,9 +15,17 @@
     </div>
   </div>
   <p>🎂 <b>תאריך לידה:</b> <%= birthText(c) %></p>
-  <p>📅 <b>יום ההולדת הבא:</b> <%= nextStr(c.nextEv) || '—' %></p>
+  <p>📅 <b>יום ההולדת הבא:</b> <%= nextStr(c.next) %></p>
   <% if (c.notes) { %><p>📝 <%= c.notes %></p><% } %>
-  <p class="small muted">נוסף <%= c.source === 'form' ? 'דרך טופס הרישום' : 'ידנית' %> · <%= new Date(c.created_at).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' }) %></p>
+  <form method="post" action="<%= base %>/contacts/<%= c.id %>/category" class="inline-form cat-form">
+    <span>🏷️ <b>סיווג:</b></span>
+    <select name="category_id" onchange="this.form.submit()">
+      <option value="">— ללא סיווג —</option>
+      <% categories.forEach(k => { %><option value="<%= k.id %>" <%= c.category_id === k.id ? 'selected' : '' %>><%= k.name %></option><% }) %>
+    </select>
+    <noscript><button class="btn small">שמירה</button></noscript>
+  </form>
+  <p class="small muted">נוסף <%= link ? 'דרך קישור הרישום "' + link.name + '"' : 'ידנית' %> · <%= fmtDate(c.created_at) %></p>
 </div>
 
 <div class="card" id="log">
@@ -55,7 +62,7 @@
     <div class="list-item">
       <div class="grow"><b><%= f.first_name %></b> <span class="tag"><%= f.relation %></span>
         <div class="small muted"><%= birthText(f) %></div>
-        <div class="small">הבא: <%= nextStr(f.nextEv) || '—' %></div>
+        <div class="small">הבא: <%= nextStr(f.next) %></div>
       </div>
       <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="linkbtn small">מחיקה</button></form>
     </div>
@@ -83,6 +90,7 @@
         <label>שם משפחה <input name="last_name" value="<%= values.last_name %>" required maxlength="60"></label>
       </div>
       <label>טלפון <input name="phone" type="tel" dir="ltr" value="<%= values.phone %>" required></label>
+      <%- include('partials/cat_select', { selected: values.category_id }) %>
       <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
       <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes %></textarea></label>
       <button class="btn">שמירה</button>

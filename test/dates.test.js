@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO } from '../lib/dates.js';
+import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO, normalizeHeb, hebMonthRange } from '../lib/dates.js';
 
 test('המרה מלועזי לעברי, כולל אחרי השקיעה', () => {
   assert.deepEqual(hebFromGreg(new Date(1990, 9, 20), false), { day: 1, month: 8, year: 5751 });
@@ -20,20 +20,30 @@ test('30 בחודש חסר עובר ל-א׳ בחודש הבא', () => {
   assert.equal(toISO(hebOccurrence(30, 8, 5786)), toISO(hebOccurrence(1, 9, 5786)));
 });
 
-test('אירועים בטווח וגיל', () => {
+test('אירועים בטווח וגיל — עברי בלבד', () => {
   const evs = eventsInRange({ g_date: '1990-10-20', h_day: 1, h_month: 8, h_year: 5751 }, new Date(2026, 9, 11), new Date(2026, 9, 31));
-  assert.deepEqual(evs.map((e) => [e.kind, toISO(e.date), e.age]), [['hebrew', '2026-10-12', 36], ['gregorian', '2026-10-20', 36]]);
-  assert.equal(eventsInRange({ g_date: '1990-10-20' }, new Date(2026, 9, 11), new Date(2026, 9, 31), 'hebrew').length, 0);
+  assert.deepEqual(evs.map((e) => [toISO(e.date), e.age, e.label]), [['2026-10-12', 36, 'א׳ חשוון']]);
 });
 
-test('טווח שחוצה שנה', () => {
-  const evs = eventsInRange({ g_date: '2000-01-02' }, new Date(2026, 11, 28), new Date(2027, 0, 3));
-  assert.deepEqual(evs.map((e) => toISO(e.date)), ['2027-01-02']);
+test('טווח שחוצה ראש השנה', () => {
+  const evs = eventsInRange({ h_day: 1, h_month: 7 }, new Date(2026, 8, 1), new Date(2026, 8, 30));
+  assert.deepEqual(evs.map((e) => toISO(e.date)), ['2026-09-12']);
 });
 
-test('29 בפברואר', () => {
-  const evs = eventsInRange({ g_date: '2000-02-29' }, new Date(2027, 1, 1), new Date(2027, 1, 28), 'gregorian');
-  assert.equal(toISO(evs[0].date), '2027-02-28');
+test('אימות תאריך עברי (כללי קאפיטל)', () => {
+  assert.ok(normalizeHeb(30, 10, null).error); // ל׳ טבת — אף פעם
+  assert.ok(normalizeHeb(30, 2, 5750).error); // ל׳ אייר
+  assert.deepEqual(normalizeHeb(30, 13, null).value, { day: 30, month: 12, year: null }); // ל׳ אדר = אדר א׳
+  assert.ok(normalizeHeb(30, 13, 5785).error); // ל׳ אדר בשנה פשוטה
+  assert.deepEqual(normalizeHeb(14, 12, 5785).value, { day: 14, month: 13, year: 5785 }); // אדר א׳ בשנה פשוטה → אדר
+  assert.ok(normalizeHeb(30, 8, 5786).error); // חשוון 5786 חסר
+  assert.deepEqual(normalizeHeb(30, 8, 5787).value, { day: 30, month: 8, year: 5787 });
+});
+
+test('החודש העברי הנוכחי', () => {
+  const m = hebMonthRange(new Date(2026, 9, 13));
+  assert.equal(toISO(m.start), '2026-10-12');
+  assert.equal(m.name, 'חשוון תשפ״ז');
 });
 
 test('פענוח שנה עברית', () => {

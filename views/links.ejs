@@ -1,0 +1,38 @@
+<%- include('partials/head', { title: 'קישורי רישום', nav: true }) %>
+<h1>קישורי רישום למקורבים</h1>
+<p class="muted">צרו קישור, שלחו אותו למקורבים (וואטסאפ, קבוצה, QR בשיעור) — וכל מי שנרשם דרכו נכנס ישר לרשימה שלכם. אפשר ליצור כמה קישורים, למשל לכל שיעור או אירוע, ולשייך לכל קישור סיווג אוטומטי.</p>
+
+<div class="card">
+  <h3>קישור חדש</h3>
+  <form method="post" class="inline-form">
+    <input name="name" placeholder='שם הקישור (למשל: "שיעור שבועי")' maxlength="80">
+    <select name="category_id">
+      <option value="">ללא סיווג אוטומטי</option>
+      <% categories.forEach(c => { %><option value="<%= c.id %>"><%= c.name %></option><% }) %>
+    </select>
+    <button class="btn">יצירה</button>
+  </form>
+</div>
+
+<div class="card list">
+  <% if (!links.length) { %><p class="muted">עדיין לא נוצרו קישורים.</p><% } %>
+  <% links.forEach(l => { const url = site + '/r/' + l.token; %>
+    <div class="list-item wrapm <%= l.active ? '' : 'disabled' %>">
+      <div class="grow">
+        <b><%= l.name %></b>
+        <%- include('partials/cat_chip', { cat: catById.get(l.category_id) }) %>
+        <span class="tag"><%= l.n %> נרשמו</span>
+        <% if (!l.active) { %><span class="tag off">כבוי</span><% } %>
+        <div class="small"><code class="copy"><%= url %></code></div>
+      </div>
+      <div class="actions">
+        <% if (l.active) { %>
+          <a class="btn small ghost" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('נשמח לדעת מתי יום ההולדת שלך 🎂 ' + url) %>">💬 שליחה</a>
+          <a class="btn small ghost" target="_blank" rel="noopener" href="<%= url %>">תצוגה</a>
+        <% } %>
+        <form method="post" action="<%= base %>/links/<%= l.id %>/toggle"><button class="btn small ghost"><%= l.active ? 'כיבוי' : 'הפעלה' %></button></form>
+      </div>
+    </div>
+  <% }) %>
+</div>
+<%- include('partials/foot') %>

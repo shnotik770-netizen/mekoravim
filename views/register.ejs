@@ -1,9 +1,9 @@
-<%- include('partials/head', { title: internal ? 'מקורב חדש' : 'רישום — ' + shliach.name, nav: internal }) %>
+<%- include('partials/head', { title: internal ? 'מקורב חדש' : 'רישום — ' + link.shliach_name, nav: internal }) %>
 <div class="narrow">
   <% if (!internal) { %>
   <div class="center">
     <div class="hero-icon">🎂</div>
-    <h1><%= shliach.name %></h1>
+    <h1><%= link.shliach_name %></h1>
     <p class="lead">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
   </div>
   <% } else { %>
@@ -18,9 +18,10 @@
     </div>
     <label>טלפון * <input name="phone" type="tel" inputmode="tel" dir="ltr" value="<%= values.phone || '' %>" required maxlength="30"></label>
     <h3>תאריך לידה *</h3>
-    <p class="small muted">אפשר למלא תאריך לועזי מלא, או תאריך עברי (שנת הלידה העברית אינה חובה).</p>
+    <p class="small muted">אפשר למלא תאריך לועזי מלא, או תאריך עברי (שנת הלידה אינה חובה).</p>
     <%- include('partials/birth_fields', { prefix: '', vals: values }) %>
     <% if (internal) { %>
+      <%- include('partials/cat_select', { selected: values.category_id }) %>
       <label>הערות <textarea name="notes" rows="2" maxlength="1000"><%= values.notes || '' %></textarea></label>
     <% } %>
 

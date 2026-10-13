@@ -6,15 +6,14 @@
 <div class="ev <%= isToday ? 'today' : '' %> <%= past ? 'past' : '' %> <%= e.contacted ? 'done' : '' %>">
   <div class="ev-date">
     <div class="dn"><%= isToday ? 'היום' : 'יום ' + DAY_NAMES[e.date.getDay()] %></div>
-    <div class="dd"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></div>
+    <div class="dd"><%= e.label %></div>
+    <div class="dg"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></div>
   </div>
   <div class="ev-main">
     <a class="ev-name" href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a>
+    <%- include('cat_chip', { cat: catById.get(e.contact.category_id) }) %>
     <% if (e.sub) { %><div class="small muted"><%= e.sub %></div><% } %>
-    <div class="small">
-      <span class="tag <%= e.kind === 'hebrew' ? 'heb' : 'greg' %>"><%= e.kind === 'hebrew' ? 'עברי · ' + e.label : 'לועזי' %></span>
-      <% if (e.age) { %><span class="age">בן/בת <%= e.age %></span><% } %>
-    </div>
+    <% if (e.age) { %><div class="age">🎂 גיל <%= e.age %></div><% } %>
   </div>
   <div class="ev-actions">
     <% if (wa) { %><a class="icon-btn" href="<%= wa %>" target="_blank" rel="noopener" title="וואטסאפ">💬</a><a class="icon-btn" href="tel:<%= e.contact.phone %>" title="חיוג">📞</a><% } %>

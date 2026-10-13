@@ -12,13 +12,14 @@
 <body>
 <% if (typeof nav !== 'undefined' && nav) { %>
 <header class="topbar">
-  <a class="brand" href="<%= base %>/dashboard">🎂 <%= shliach.name %></a>
+  <a class="brand" href="<%= base %>">🎂 <%= shliach.name %></a>
   <nav>
-    <a href="<%= base %>/dashboard">דשבורד</a>
+    <a href="<%= base %>">דשבורד</a>
     <a href="<%= base %>/contacts">מקורבים</a>
     <a href="<%= base %>/contacts/new">+ הוספה</a>
+    <a href="<%= base %>/links">קישורי רישום</a>
     <a href="<%= base %>/settings">הגדרות</a>
-    <form method="post" action="<%= base %>/logout" class="inline"><button class="linkbtn">יציאה</button></form>
+    <% if (hasCode) { %><form method="post" action="<%= base %>/logout" class="inline"><button class="linkbtn">יציאה</button></form><% } %>
   </nav>
 </header>
 <% } %>

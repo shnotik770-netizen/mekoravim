@@ -1,5 +1,5 @@
 <%
-  // prefix: '' או 'fam[3]'; v: ערכים קיימים
+  // prefix: '' או 'fam[3]'; vals: ערכים קיימים
   const n = (k) => prefix ? `${prefix}[${k}]` : k;
   const v = vals || {};
   const t = v.date_type === 'h' ? 'h' : 'g';
@@ -10,26 +10,30 @@
     <label><input type="radio" name="<%= n('date_type') %>" value="h" <%= t === 'h' ? 'checked' : '' %>> תאריך עברי</label>
   </div>
   <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
-    <label>תאריך לידה מלא
+    <label>תאריך לידה לועזי מלא
       <input type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= new Date().toISOString().slice(0,10) %>">
     </label>
     <label class="check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> נולד/ה אחרי השקיעה</label>
+    <p class="hint">התאריך העברי יחושב אוטומטית — יום ההולדת נחגג לפי התאריך העברי.</p>
   </div>
-  <div class="h-fields row3" <%= t === 'g' ? 'hidden' : '' %>>
-    <label>יום
-      <select name="<%= n('h_day') %>">
-        <option value="">—</option>
-        <% for (let d = 1; d <= 30; d++) { %><option value="<%= d %>" <%= String(v.h_day) === String(d) ? 'selected' : '' %>><%= d %></option><% } %>
-      </select>
-    </label>
-    <label>חודש
-      <select name="<%= n('h_month') %>">
-        <option value="">—</option>
-        <% HEB_MONTHS.forEach(m => { %><option value="<%= m.v %>" <%= String(v.h_month) === String(m.v) ? 'selected' : '' %>><%= m.n %></option><% }) %>
-      </select>
-    </label>
-    <label>שנה <small>(לא חובה)</small>
-      <input name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder='תש"נ'>
-    </label>
+  <div class="h-fields" <%= t === 'g' ? 'hidden' : '' %>>
+    <div class="row3">
+      <label>יום
+        <select name="<%= n('h_day') %>">
+          <option value="">—</option>
+          <% HEB_DAYS.forEach(d => { %><option value="<%= d.v %>" <%= String(v.h_day) === String(d.v) ? 'selected' : '' %>><%= d.n %></option><% }) %>
+        </select>
+      </label>
+      <label>חודש
+        <select name="<%= n('h_month') %>">
+          <option value="">—</option>
+          <% HEB_MONTHS.forEach(m => { %><option value="<%= m.v %>" <%= String(v.h_month) === String(m.v) ? 'selected' : '' %>><%= m.n %></option><% }) %>
+        </select>
+      </label>
+      <label>שנה <small class="muted">(רשות)</small>
+        <input name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder='תש"נ'>
+      </label>
+    </div>
+    <p class="hint">בלי שנת לידה לא נוכל לחשב גיל.</p>
   </div>
 </div>

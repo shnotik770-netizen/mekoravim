@@ -1,25 +1,46 @@
 <%- include('partials/head', { title: 'הגדרות', nav: true }) %>
 <h1>הגדרות</h1>
 <% if (error) { %><div class="error"><%= error %></div><% } %>
+
 <div class="card">
-  <h3>אילו ימי הולדת להציג?</h3>
-  <form method="post">
-    <input type="hidden" name="action" value="mode">
-    <% [['both','גם עברי וגם לועזי'],['hebrew','עברי בלבד'],['gregorian','לועזי בלבד']].forEach(([v,l]) => { %>
-      <label class="check"><input type="radio" name="display_mode" value="<%= v %>" <%= shliach.display_mode === v ? 'checked' : '' %>> <%= l %></label>
-    <% }) %>
-    <p class="small muted">מי שנרשם רק עם תאריך עברי יופיע רק ביום ההולדת העברי. ממי שנרשם עם תאריך לועזי מחושב גם התאריך העברי.</p>
-    <button class="btn">שמירה</button>
+  <h3>סיווגי מקורבים</h3>
+  <div class="list">
+  <% categories.forEach(c => { %>
+    <div class="list-item">
+      <form method="post" class="inline-form grow">
+        <input type="hidden" name="action" value="cat_update"><input type="hidden" name="id" value="<%= c.id %>">
+        <input name="name" value="<%= c.name %>" maxlength="40" required>
+        <select name="color" class="color-select" style="--c: <%= c.color %>">
+          <% COLORS.forEach(col => { %><option value="<%= col %>" <%= col === c.color ? 'selected' : '' %> style="color: <%= col %>">● <%= col %></option><% }) %>
+        </select>
+        <button class="btn small ghost">שמירה</button>
+      </form>
+      <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
+        <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
+        <button class="linkbtn danger small">מחיקה</button>
+      </form>
+    </div>
+  <% }) %>
+  </div>
+  <form method="post" class="inline-form" style="margin-top:12px">
+    <input type="hidden" name="action" value="cat_add">
+    <input name="name" placeholder="סיווג חדש" maxlength="40" required>
+    <select name="color"><% COLORS.forEach(col => { %><option value="<%= col %>" style="color: <%= col %>">● <%= col %></option><% }) %></select>
+    <button class="btn">הוספה</button>
   </form>
 </div>
+
 <div class="card">
-  <h3>החלפת סיסמה</h3>
+  <h3><%= hasCode ? 'החלפת קוד כניסה' : 'הוספת קוד כניסה' %></h3>
+  <p class="small muted"><%= hasCode ? 'הקוד נדרש בכל כניסה מדפדפן חדש.' : 'כרגע הכניסה לחשבון היא דרך הקישור בלבד, ללא קוד. אפשר להוסיף קוד להגנה נוספת.' %></p>
   <form method="post">
-    <input type="hidden" name="action" value="password">
-    <label>סיסמה נוכחית <input type="password" name="current" required autocomplete="current-password"></label>
-    <label>סיסמה חדשה <input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
-    <label>אימות <input type="password" name="password2" required minlength="8" autocomplete="new-password"></label>
-    <button class="btn">עדכון</button>
+    <input type="hidden" name="action" value="code">
+    <% if (hasCode) { %><label>קוד נוכחי <input type="password" name="current" required autocomplete="current-password"></label><% } %>
+    <div class="row2">
+      <label>קוד חדש <input type="password" name="code" required minlength="4" autocomplete="new-password"></label>
+      <label>אימות <input type="password" name="code2" required minlength="4" autocomplete="new-password"></label>
+    </div>
+    <button class="btn">שמירה</button>
   </form>
 </div>
 <%- include('partials/foot') %>

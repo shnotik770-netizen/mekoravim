@@ -39,3 +39,10 @@ document.querySelectorAll('code.copy').forEach((el) => {
     try { await navigator.clipboard.writeText(el.textContent.trim()); el.classList.add('copied'); setTimeout(() => el.classList.remove('copied'), 1200); } catch {}
   });
 });
+
+// טופס יצירת שליח: שדה קוד רק כשנבחר "עם קוד"
+document.querySelectorAll('input[name=with_code]').forEach((r) => {
+  const field = document.querySelector('.code-field');
+  const sync = () => { field.hidden = document.querySelector('input[name=with_code]:checked').value !== 'yes'; };
+  r.addEventListener('change', sync); sync();
+});

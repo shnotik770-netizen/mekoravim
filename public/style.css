@@ -86,3 +86,25 @@ code.copy { cursor: copy; } code.copy.copied { background: var(--ok-soft); color
 details summary { list-style: none; cursor: pointer; display: inline-block; } details summary::-webkit-details-marker { display: none; }
 .sub-form { margin-top: 14px; }
 .danger-zone { margin-top: 16px; text-align: left; }
+.hint { font-size: .8rem; color: var(--muted); margin: -4px 0 6px; }
+.code-input { text-align: center; font-size: 1.4rem; letter-spacing: 6px; }
+.chip { display: inline-block; font-size: .75rem; padding: 1px 8px; border-radius: 99px; margin-inline-start: 4px; white-space: nowrap;
+  color: var(--c); background: color-mix(in srgb, var(--c) 13%, var(--card)); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.fchip { --c: var(--accent); padding: 4px 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: .9rem; }
+.fchip.on { background: var(--c); border-color: var(--c); color: #fff; }
+.row-search { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.row-search input { flex: 2 1 220px; margin: 0; } .row-search select { flex: 1 1 140px; margin: 0; width: auto; }
+.ev-date .dd { font-size: 1rem; } .ev-date .dg { font-size: .78rem; color: var(--muted); }
+.ev-date { width: 78px; }
+.cat-form { margin: 0 0 12px; } .cat-form select { flex: 0 1 220px; }
+.menu { position: relative; } .menu-body { position: absolute; left: 0; top: 110%; z-index: 4; background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px; width: 280px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin: 16px 0; }
+.shots figure { margin: 0; } .shots img { width: 100%; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0,0,0,.08); display: block; }
+.shots figcaption { text-align: center; font-size: .9rem; color: var(--muted); margin-top: 6px; }
+.steps { counter-reset: s; list-style: none; padding: 0; display: grid; gap: 10px; }
+.steps li { counter-increment: s; display: flex; gap: 12px; align-items: flex-start; }
+.steps li::before { content: counter(s); flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.example { background: var(--bg); border-radius: 10px; padding: 12px 14px; margin: 8px 0; }
+@media (max-width: 520px) { .list-item.wrapm { flex-wrap: wrap; } .wrapm .actions { width: 100%; } }

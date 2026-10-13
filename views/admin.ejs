@@ -4,42 +4,63 @@
   <form method="post" action="/admin/logout"><button class="btn ghost">יציאה</button></form>
 </div>
 
-<% if (newCode) { %>
+<% if (info) { %>
 <div class="card highlight">
-  <h3>פרטי הכניסה של <%= newCode.name %></h3>
-  <p>יש להעביר לשליח את הקישור ואת קוד ההפעלה. <b>הקוד מוצג פעם אחת בלבד</b> — בכניסה הראשונה השליח יבחר סיסמה אישית, ומאותו רגע רק לו יש גישה לנתונים.</p>
-  <p>קישור: <code class="copy"><%= base %>/s/<%= newCode.slug %></code></p>
-  <p>כניסה לשליח: <code class="copy"><%= base %>/s/<%= newCode.slug %>/login</code></p>
-  <p>קוד הפעלה: <code class="code-big"><%= newCode.code %></code></p>
+  <h3>פרטי הכניסה של <%= info.name %></h3>
+  <p>קישור קבוע: <code class="copy"><%= base %>/s/<%= info.slug %></code></p>
+  <% if (info.code) { %>
+    <p>קוד כניסה: <code class="code-big copy"><%= info.code %></code></p>
+    <p class="small muted">הקוד מוצג עכשיו בלבד — שמרו אותו והעבירו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
+  <% } else { %>
+    <p class="small muted">כניסה ללא קוד — כל מי שמחזיק בקישור נכנס לחשבון.</p>
+  <% } %>
+  <a class="btn small ghost" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ</a>
 </div>
 <% } %>
 
 <div class="card">
   <h3>שליח חדש</h3>
-  <form method="post" action="/admin/shluchim" class="inline-form">
-    <input name="name" placeholder="שם השליח / בית חב״ד" required maxlength="80">
+  <form method="post" action="/admin/shluchim">
+    <label>שם השליח / בית חב״ד <input name="name" required maxlength="80"></label>
+    <div class="seg">
+      <label><input type="radio" name="with_code" value="yes" checked> עם קוד כניסה</label>
+      <label><input type="radio" name="with_code" value="no"> ללא קוד (קישור בלבד)</label>
+    </div>
+    <label class="code-field">קוד <small class="muted">(השאירו ריק לקוד אקראי בן 6 ספרות)</small> <input name="code" maxlength="32" autocomplete="off"></label>
     <button class="btn">יצירת קישור</button>
   </form>
 </div>
 
 <div class="card">
   <h3>שלוחים (<%= shluchim.length %>)</h3>
+  <p class="small muted">המנהל רואה רק את השם והקישור — הנתונים של כל שליח פרטיים לו.</p>
   <% if (!shluchim.length) { %><p class="muted">עדיין אין שלוחים.</p><% } %>
   <div class="list">
   <% shluchim.forEach(s => { %>
     <div class="list-item <%= s.active ? '' : 'disabled' %>">
       <div class="grow">
         <b><%= s.name %></b>
-        <span class="tag <%= s.activated ? 'ok' : '' %>"><%= s.activated ? 'פעיל' : 'ממתין להפעלה' %></span>
+        <span class="tag <%= s.has_code ? 'ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
         <% if (!s.active) { %><span class="tag off">מושבת</span><% } %>
         <div class="small muted"><code class="copy"><%= base %>/s/<%= s.slug %></code></div>
       </div>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/reset" data-confirm="לאפס את הסיסמה של <%= s.name %>? השליח יצטרך קוד הפעלה חדש.">
-        <button class="btn small ghost">קוד הפעלה חדש</button>
-      </form>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/toggle">
-        <button class="btn small ghost"><%= s.active ? 'השבתה' : 'הפעלה' %></button>
-      </form>
+      <details class="menu">
+        <summary class="btn small ghost">פעולות ▾</summary>
+        <div class="menu-body">
+          <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="inline-form">
+            <input name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off">
+            <button class="btn small"><%= s.has_code ? 'החלפת קוד' : 'הוספת קוד' %></button>
+          </form>
+          <% if (s.has_code) { %>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/nocode" data-confirm="להסיר את הקוד? כל מי שמחזיק בקישור יוכל להיכנס.">
+            <button class="linkbtn small">הסרת קוד</button>
+          </form>
+          <% } %>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/toggle">
+            <button class="linkbtn small <%= s.active ? 'danger' : '' %>"><%= s.active ? 'השבתת החשבון' : 'הפעלת החשבון' %></button>
+          </form>
+        </div>
+      </details>
     </div>
   <% }) %>
   </div>

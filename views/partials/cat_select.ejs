@@ -1,0 +1,6 @@
+<label>סיווג
+  <select name="category_id">
+    <option value="">— ללא סיווג —</option>
+    <% categories.forEach(c => { %><option value="<%= c.id %>" <%= String(selected) === String(c.id) ? 'selected' : '' %>><%= c.name %></option><% }) %>
+  </select>
+</label>
