@@ -5,11 +5,11 @@
 </div>
 <form class="search row-search" method="get">
   <input name="q" value="<%= term %>" placeholder="🔍 חיפוש לפי שם או טלפון…">
-  <select name="cat" onchange="this.form.submit()">
+  <select name="cat" data-autosubmit>
     <option value="">כל הסיווגים</option>
     <% categories.forEach(c => { %><option value="<%= c.id %>" <%= cat === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
   </select>
-  <select name="sort" onchange="this.form.submit()">
+  <select name="sort" data-autosubmit>
     <option value="">לפי שם</option>
     <option value="next" <%= sort === 'next' ? 'selected' : '' %>>לפי יום הולדת קרוב</option>
   </select>

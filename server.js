@@ -13,6 +13,7 @@ import {
 const hebFromGregObj = (iso) => { const h = hebFromGreg(parseISO(iso), false); return { h_day: h.day, h_month: h.month, h_year: h.year }; };
 import { loadPeople, collectEvents } from './lib/events.js';
 import { smsConfigured, normalizePhone, sendWeekly, weeklyMessageFor, startScheduler } from './lib/sms.js';
+import { strongEnough, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
 import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,11 +24,29 @@ if (!ADMIN_PASSWORD || !SESSION_SECRET) {
   console.error('חובה להגדיר ADMIN_PASSWORD ו-SESSION_SECRET');
   process.exit(1);
 }
+// סיסמת המנהל פותחת גישה (עקיפה) לכל השלוחים — חובה שתהיה חזקה
+// 8 תווים לפחות (גם 8 ספרות מספיק — ההגבלה לפי חשבון חוסמת ניחוש), לא תו חוזר ולא רצף
+if (PROD && !strongEnough(ADMIN_PASSWORD, 8)) {
+  console.error('ADMIN_PASSWORD חלשה מדי: נדרשים לפחות 8 תווים, לא רצף (12345678) ולא תו חוזר');
+  process.exit(1);
+}
+if (PROD && SESSION_SECRET.length < 32) {
+  console.error('SESSION_SECRET קצר מדי: נדרשים לפחות 32 תווים אקראיים');
+  process.exit(1);
+}
+const ADMIN_SESSION_MS = 12 * 3600 * 1000;
 
 const DEFAULT_CATEGORIES = [
   ['מקורב קרוב', '#2f5bd3'], ['משתתף בשיעורים', '#1f8a4c'], ['תורם', '#b45309'], ['חדש', '#7c3aed'],
 ];
 const COLORS = ['#2f5bd3', '#1f8a4c', '#b45309', '#7c3aed', '#c0392b', '#0e7490', '#be185d', '#4b5563'];
+
+// סקריפטים רק מהאתר עצמו (בלי inline); style-attribute נדרש לצבעי הסיווגים
+const CSP = [
+  "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data:", "connect-src 'self'",
+  "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'", "object-src 'none'",
+].join('; ');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -44,6 +63,8 @@ app.use((req, res, next) => {
   res.set('X-Frame-Options', 'DENY');
   res.set('Referrer-Policy', 'same-origin');
   res.set('X-Content-Type-Options', 'nosniff');
+  res.set('Content-Security-Policy', CSP);
+  if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
@@ -57,17 +78,6 @@ const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 const int = (v) => parseInt(v, 10) || null;
 const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
 
-// הגבלת ניסיונות התחברות פשוטה (בזיכרון)
-const attempts = new Map();
-function tooMany(key) {
-  const a = attempts.get(key);
-  return a && a.count >= 8 && Date.now() - a.first < 15 * 60 * 1000;
-}
-function failed(key) {
-  const a = attempts.get(key);
-  if (!a || Date.now() - a.first > 15 * 60 * 1000) attempts.set(key, { count: 1, first: Date.now() });
-  else a.count++;
-}
 
 /* ------------------------------ דף ראשי ומנהל ------------------------------ */
 
@@ -83,26 +93,29 @@ function homeExamples() {
 app.get('/', (req, res) => res.render('home', { examples: homeExamples() }));
 
 app.get('/admin/login', (req, res) => {
-  if (req.session.admin) return res.redirect('/admin');
+  if (req.session.admin > Date.now()) return res.redirect('/admin');
   res.render('admin_login', { error: null });
 });
 
 app.post('/admin/login', (req, res) => {
-  const key = 'admin:' + req.ip;
-  if (tooMany(key)) return res.status(429).render('admin_login', { error: 'יותר מדי ניסיונות. נסה שוב בעוד רבע שעה.' });
+  const ipKey = 'admin:' + req.ip;
+  if (loginByIp.blocked(ipKey) || loginByAccount.blocked('admin')) {
+    return res.status(429).render('admin_login', { error: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.' });
+  }
   if (!crypto.timingSafeEqual(sha(req.body.password || ''), sha(ADMIN_PASSWORD))) {
-    failed(key);
+    loginByIp.hit(ipKey);
+    loginByAccount.hit('admin');
     return res.status(401).render('admin_login', { error: 'סיסמה שגויה' });
   }
-  attempts.delete(key);
-  req.session.admin = true;
+  loginByIp.reset(ipKey);
+  req.session.admin = Date.now() + ADMIN_SESSION_MS; // תוקף, לא רק true
   res.redirect('/admin');
 });
 
 app.post('/admin/logout', (req, res) => { req.session.admin = undefined; res.redirect('/'); });
 
 function requireAdmin(req, res, next) {
-  if (!req.session.admin) return res.redirect('/admin/login');
+  if (!(req.session.admin > Date.now())) { req.session.admin = undefined; return res.redirect('/admin/login'); }
   next();
 }
 
@@ -110,19 +123,23 @@ function requireAdmin(req, res, next) {
 app.get('/admin', requireAdmin, async (req, res) => {
   const { rows } = await q(`SELECT id, name, slug, active, created_at, access_code_hash IS NOT NULL AS has_code, sms_enabled
                             FROM shluchim ORDER BY created_at DESC`);
-  const info = req.session.newInfo;
-  req.session.newInfo = undefined;
+  const info = takeReveal(req.session.reveal);
+  req.session.reveal = undefined;
   res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured() });
 });
 
+// לפחות 6 תווים, ולא תו אחד שחוזר (000000) או רצף (123456)
 function validCode(code) {
-  return /^\S{4,32}$/.test(code);
+  return /^\S{6,32}$/.test(code) && strongEnough(code, 6);
 }
+const CODE_RULE = 'הקוד צריך להכיל 6–32 תווים, ללא רווחים, ולא רצף או תו חוזר';
 
+// כל שינוי קוד מעלה את session_version — וכך מנתק את כל הסשנים הקיימים של השליח
 async function setCode(req, id, code) {
-  await q('UPDATE shluchim SET access_code_hash=$1 WHERE id=$2', [code ? await bcrypt.hash(code, 10) : null, id]);
-  const { rows } = await q('SELECT name, slug FROM shluchim WHERE id=$1', [id]);
-  if (rows[0]) req.session.newInfo = { ...rows[0], code };
+  const { rows } = await q(
+    'UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1 WHERE id=$2 RETURNING name, slug',
+    [code ? await bcrypt.hash(code, 12) : null, id]);
+  if (rows[0]) req.session.reveal = storeReveal({ ...rows[0], code }); // בעוגייה רק מזהה, לא הקוד
 }
 
 app.post('/admin/shluchim', requireAdmin, async (req, res) => {
@@ -131,7 +148,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   let code = null;
   if (req.body.with_code === 'yes') {
     code = String(req.body.code || '').trim() || randomCode();
-    if (!validCode(code)) { flash(req, 'הקוד צריך להכיל 4–32 תווים, ללא רווחים'); return res.redirect('/admin'); }
+    if (!validCode(code)) { flash(req, CODE_RULE); return res.redirect('/admin'); }
   }
   const { rows } = await q('INSERT INTO shluchim (name, slug) VALUES ($1,$2) RETURNING id', [name, randomToken(9)]);
   const id = rows[0].id;
@@ -144,7 +161,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
 
 app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
   const code = String(req.body.code || '').trim() || randomCode();
-  if (!validCode(code)) { flash(req, 'הקוד צריך להכיל 4–32 תווים, ללא רווחים'); return res.redirect('/admin'); }
+  if (!validCode(code)) { flash(req, CODE_RULE); return res.redirect('/admin'); }
   await setCode(req, int(req.params.id), code);
   res.redirect('/admin');
 });
@@ -203,6 +220,12 @@ app.get('/r/:token', (req, res) => res.render('register', { values: { date_type:
 
 app.post('/r/:token', async (req, res) => {
   if (req.body.website) return res.render('register_done'); // מלכודת לבוטים
+  if (!registerByIp.take(`reg:${req.ip}`) || !registerByLink.take(`link:${req.link.id}`)) {
+    return res.status(429).render('register', {
+      values: req.body, family: Object.values(req.body.fam || {}), internal: false,
+      error: 'נשלחו יותר מדי רישומים. נסו שוב בעוד כמה דקות.',
+    });
+  }
   const { c, fam, error } = parseForm(req.body);
   if (error) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error, internal: false });
   c.category_id = req.link.category_id;
@@ -223,7 +246,8 @@ router.use(async (req, res, next) => {
   req.shliach = res.locals.shliach = s;
   res.locals.base = `/s/${s.slug}`;
   res.locals.hasCode = !!s.access_code_hash;
-  req.authorized = !s.access_code_hash || (req.session.sh || []).includes(s.id);
+  const sh = req.session.sh && !Array.isArray(req.session.sh) ? req.session.sh : {};
+  req.authorized = !s.access_code_hash || sh[s.id] === s.session_version;
   next();
 });
 
@@ -269,20 +293,27 @@ router.get('/', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   const s = req.shliach;
-  const key = `s${s.id}:${req.ip}`;
+  const ipKey = `s${s.id}:${req.ip}`;
+  const acctKey = `s${s.id}`;
   if (!s.access_code_hash) return res.redirect(res.locals.base);
-  if (tooMany(key)) return res.status(429).render('shliach_login', { error: 'יותר מדי ניסיונות. נסה שוב בעוד רבע שעה.' });
+  if (loginByIp.blocked(ipKey) || loginByAccount.blocked(acctKey)) {
+    return res.status(429).render('shliach_login', { error: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.' });
+  }
   if (!(await bcrypt.compare(String(req.body.code || '').trim(), s.access_code_hash))) {
-    failed(key);
+    loginByIp.hit(ipKey);
+    loginByAccount.hit(acctKey); // נספר לחשבון מכל IP — החלפת כתובות לא עוקפת
     return res.status(401).render('shliach_login', { error: 'קוד שגוי' });
   }
-  attempts.delete(key);
-  req.session.sh = [...new Set([...(req.session.sh || []), s.id])];
+  loginByIp.reset(ipKey);
+  req.session.sh = { ...(Array.isArray(req.session.sh) ? {} : req.session.sh), [s.id]: s.session_version };
   res.redirect(res.locals.base);
 });
 
 router.post('/logout', (req, res) => {
-  req.session.sh = (req.session.sh || []).filter((id) => id !== req.shliach.id);
+  if (req.session.sh && !Array.isArray(req.session.sh)) {
+    const { [req.shliach.id]: _, ...rest } = req.session.sh;
+    req.session.sh = rest;
+  }
   res.redirect(res.locals.base);
 });
 
@@ -479,10 +510,13 @@ router.post('/settings', async (req, res) => {
   if (a === 'code') {
     if (s.access_code_hash && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) return fail('הקוד הנוכחי שגוי');
     const code = String(req.body.code || '').trim();
-    if (!validCode(code)) return fail('הקוד צריך להכיל 4–32 תווים, ללא רווחים');
+    if (!validCode(code)) return fail(CODE_RULE);
     if (code !== String(req.body.code2 || '').trim()) return fail('הקודים אינם תואמים');
-    await q('UPDATE shluchim SET access_code_hash=$1 WHERE id=$2', [await bcrypt.hash(code, 10), s.id]);
-    req.session.sh = [...new Set([...(req.session.sh || []), s.id])];
+    const { rows } = await q(
+      'UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1 WHERE id=$2 RETURNING session_version',
+      [await bcrypt.hash(code, 12), s.id]);
+    // מנתק את כל שאר המכשירים, ומשאיר מחובר רק את מי שהחליף
+    req.session.sh = { ...(Array.isArray(req.session.sh) ? {} : req.session.sh), [s.id]: rows[0].session_version };
     flash(req, 'קוד הכניסה עודכן');
   } else if (a === 'cat_add') {
     const name = String(req.body.name || '').trim().slice(0, 40);

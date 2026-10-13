@@ -46,3 +46,6 @@ document.querySelectorAll('input[name=with_code]').forEach((r) => {
   const sync = () => { field.hidden = document.querySelector('input[name=with_code]:checked').value !== 'yes'; };
   r.addEventListener('change', sync); sync();
 });
+
+// שליחה אוטומטית של טופס בשינוי בחירה (במקום onchange inline — חסום ב-CSP)
+document.querySelectorAll('[data-autosubmit]').forEach((el) => el.addEventListener('change', () => el.form.submit()));

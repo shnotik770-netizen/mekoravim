@@ -33,6 +33,9 @@
     <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'g' } }) %></template>
 
     <button class="btn wide"><%= internal ? 'שמירה' : 'שליחה' %></button>
+    <% if (!internal) { %>
+    <p class="small muted privacy">🔒 הפרטים נשמרים אצל <%= link.shliach_name %> בלבד, לצורך ברכה ביום ההולדת, ואינם מועברים לאף אחד אחר. כשאתם רושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת.</p>
+    <% } %>
   </form>
 </div>
 <%- include('partials/foot') %>

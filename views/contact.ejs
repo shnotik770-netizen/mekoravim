@@ -19,7 +19,7 @@
   <% if (c.notes) { %><p>📝 <%= c.notes %></p><% } %>
   <form method="post" action="<%= base %>/contacts/<%= c.id %>/category" class="inline-form cat-form">
     <span>🏷️ <b>סיווג:</b></span>
-    <select name="category_id" onchange="this.form.submit()">
+    <select name="category_id" data-autosubmit>
       <option value="">— ללא סיווג —</option>
       <% categories.forEach(k => { %><option value="<%= k.id %>" <%= c.category_id === k.id ? 'selected' : '' %>><%= k.name %></option><% }) %>
     </select>
