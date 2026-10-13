@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  hebToday, addDays, fmtGreg, hebFromGreg, parseISO,
+  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents } from './lib/events.js';
@@ -52,6 +52,9 @@ const CSP = [
   "manifest-src 'self'", "worker-src 'self'",
 ].join('; ');
 
+// גרסת הקבצים הסטטיים — משתנה בכל פריסה, כך שהדפדפן לא נשאר עם CSS/JS ישנים מהמטמון
+const ASSET_V = (process.env.RAILWAY_GIT_COMMIT_SHA || Date.now().toString(36)).slice(0, 8);
+
 const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -74,6 +77,7 @@ app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
   res.set('Content-Security-Policy', CSP);
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
+  res.locals.v = ASSET_V;
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
@@ -609,6 +613,7 @@ router.get('/', async (req, res) => {
   const next = all.find((e) => e.date > today);
   const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
   res.render('dashboard', {
+    weekInfo: weekInfo(today),
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
     lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, end30,

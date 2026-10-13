@@ -222,3 +222,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-demo-bar__acts { display: flex; gap: 14px; align-items: center; }
 .bd-demo-bar a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 .bd-demo-bar a.bd-demo-bar__wa { text-decoration: none; background: #25D366; padding: 6px 12px; border-radius: 999px; font-weight: 700; }
+
+/* טווח עברי ופרשת השבוע בכותרת "השבוע" */
+.bd-week-heb { flex-basis: 100%; order: 1; margin: -2px 0 var(--bd-sp-2); color: var(--bd-gold); font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); }
+.bd-card__head .bd-seg { order: 2; }
