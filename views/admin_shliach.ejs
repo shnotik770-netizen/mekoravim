@@ -1,0 +1,87 @@
+<%- include('partials/head', { title: s.name + ' — היסטוריה וסטטיסטיקה' }) %>
+<%
+  const ago = (d) => d ? fmtTime(d) : '—';
+  const kindName = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
+  const maxMonth = Math.max(1, ...months.map(m => m.links + m.manual));
+%>
+<header class="bd-appbar">
+  <a class="bd-brand" href="/admin"><%- include('partials/logo') %>ניהול שלוחים</a>
+  <nav class="bd-nav"><a href="/admin">שלוחים</a><a href="/admin/log">יומן פעולות</a></nav>
+</header>
+<section class="bd-head">
+  <h1 class="bd-title"><%= s.name %></h1>
+  <p class="bd-sub"><%= s.chabad_house || '' %><%= s.chabad_house ? ' · ' : '' %>נפתח <span class="bd-num" dir="ltr"><%= fmtTime(s.created_at) %></span>
+    <% if (!s.active) { %> · <span class="bd-status bd-status--bad">מושבת</span><% } %></p>
+  <p class="bd-help">כאן רק מספרים ופעולות — בלי שמות, טלפונים או פרטים של מקורבים.</p>
+</section>
+
+<div class="bd-stats">
+  <div class="bd-stat"><span class="bd-stat__label">מקורבים</span><span class="bd-stat__value bd-num"><%= counts.contacts %></span>
+    <span class="bd-stat__hint"><span class="bd-num"><%= counts.via_links %></span> דרך קישור · <span class="bd-num"><%= counts.new30 %></span> חדשים ב-30 יום</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">בני משפחה</span><span class="bd-stat__value bd-num"><%= counts.family %></span></div>
+  <div class="bd-stat"><span class="bd-stat__label">"יצרתי קשר"</span><span class="bd-stat__value bd-num"><%= counts.contacted %></span>
+    <span class="bd-stat__hint"><span class="bd-num"><%= counts.contacted30 %></span> ב-30 יום</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">כניסות ב-30 יום</span><span class="bd-stat__value bd-num"><%= activity.logins30 %></span>
+    <span class="bd-stat__hint">אחרונה: <span class="bd-num" dir="ltr"><%= ago(activity.last_login) %></span></span></div>
+</div>
+
+<div class="bd-layout bd-layout--split">
+<div class="bd-stack">
+  <section class="bd-card">
+    <h2 class="bd-section-title">מקורבים חדשים לפי חודש</h2>
+    <div class="bd-bars" role="img" aria-label="מקורבים חדשים בחצי השנה האחרונה">
+      <% months.forEach(m => { %>
+      <div class="bd-bars__col">
+        <span class="bd-bars__n bd-num"><%= m.links + m.manual %></span>
+        <span class="bd-bars__stack">
+          <span class="bd-bars__seg bd-bars__seg--links" style="height:<%= m.links / maxMonth * 100 %>%"></span>
+          <span class="bd-bars__seg" style="height:<%= m.manual / maxMonth * 100 %>%"></span>
+        </span>
+        <span class="bd-bars__label bd-num"><%= m.label %></span>
+      </div>
+      <% }) %>
+    </div>
+    <p class="bd-help bd-mt"><span class="bd-dot bd-bars__key--links"></span> דרך קישור רישום · <span class="bd-dot bd-bars__key"></span> הוספה ידנית</p>
+  </section>
+
+  <section class="bd-card">
+    <h2 class="bd-section-title">היסטוריית פעולות</h2>
+    <form method="get" class="bd-mb">
+      <select class="bd-input" name="o" aria-label="סינון" data-autosubmit style="max-width:240px">
+        <option value="">כל הפעולות</option>
+        <option value="problems" <%= problems ? 'selected' : '' %>>רק תקלות וכישלונות</option>
+      </select>
+    </form>
+    <%- include('partials/log_table', { rows, more, page, showShliach: false, OUTCOMES, ACTORS, fmtTime,
+      pageUrl: (n) => '?' + new URLSearchParams({ ...(problems ? { o: 'problems' } : {}), page: n }) }) %>
+  </section>
+</div>
+
+<aside class="bd-stack">
+  <section class="bd-card">
+    <h2 class="bd-section-title">פעילות</h2>
+    <div class="bd-facts">
+      <div class="bd-fact"><b>פעולה אחרונה</b><span class="bd-num" dir="ltr"><%= ago(activity.last_action) %></span></div>
+      <div class="bd-fact"><b>פעולות ב-30 יום</b><span class="bd-num"><%= activity.actions30 %></span></div>
+      <div class="bd-fact"><b>כניסות שנכשלו (30 יום)</b><span class="bd-num <%= activity.failed30 ? 'bd-err' : '' %>"><%= activity.failed30 %></span></div>
+      <div class="bd-fact"><b>תקלות מערכת (30 יום)</b><span class="bd-num <%= activity.sys_problems30 ? 'bd-err' : '' %>"><%= activity.sys_problems30 %></span></div>
+      <div class="bd-fact"><b>קישורי רישום</b><span><span class="bd-num"><%= counts.links_active %></span> פעילים מתוך <span class="bd-num"><%= counts.links %></span></span></div>
+      <div class="bd-fact"><b>סיווגים</b><span class="bd-num"><%= counts.categories %></span></div>
+    </div>
+  </section>
+  <section class="bd-card">
+    <h2 class="bd-section-title">SMS</h2>
+    <div class="bd-facts">
+      <div class="bd-fact"><b>תזכורות</b><span><%= [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join(' + ') || 'כבוי' %></span></div>
+      <div class="bd-fact"><b>מכסה לתזכורות</b><span>הוקצו <span class="bd-num"><%= quota.quota %></span> · נוצלו <span class="bd-num"><%= quota.used %></span> · יתרה <span class="bd-num <%= quota.low ? 'bd-err' : '' %>"><%= quota.left %></span></span></div>
+    </div>
+    <p class="bd-label bd-mt">ב-30 הימים האחרונים</p>
+    <% if (!sms.length) { %><p class="bd-help">לא נשלחו הודעות.</p><% } %>
+    <ul class="bd-items">
+      <% sms.forEach(k => { %><li class="bd-item"><div class="bd-item__main"><%= kindName[k.kind] || k.kind %></div><span class="bd-small"><span class="bd-num"><%= k.n %></span> הודעות · <span class="bd-num"><%= k.units %></span> יחידות</span></li><% }) %>
+    </ul>
+    <% if (s.sms_last_error) { %><p class="bd-err bd-mt">שגיאה אחרונה: <%= s.sms_last_error %></p><% } %>
+  </section>
+</aside>
+</div>
+<%- include('partials/foot') %>

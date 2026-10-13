@@ -155,3 +155,21 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 .bd-sms-usage--low { border-color: var(--bd-bad) !important; }
 .bd-msg--warn { background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); color: var(--bd-fg); }
 .bd-sms-alert { margin-bottom: var(--bd-sp-4); }
+
+/* יומן פעולות */
+.bd-log .bd-item { padding-block: var(--bd-sp-2); }
+.bd-log .bd-item__title { font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); }
+.bd-log__detail { margin-top: 2px; color: var(--bd-fg-muted); word-break: break-word; }
+.bd-log--error { background: var(--bd-bad-soft); border-radius: var(--bd-r-sm); }
+
+/* גרף עמודות פשוט (מקורבים חדשים לפי חודש) */
+.bd-bars { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--bd-sp-2); align-items: end; height: 160px; }
+.bd-bars__col { display: grid; grid-template-rows: auto 1fr auto; height: 100%; text-align: center; gap: 4px; }
+.bd-bars__n { font-size: var(--bd-fs-xs); color: var(--bd-fg-muted); }
+.bd-bars__stack { display: flex; flex-direction: column-reverse; justify-content: flex-start; background: var(--bd-surface-2); border-radius: 6px; overflow: hidden; }
+.bd-bars__seg { display: block; background: color-mix(in srgb, var(--bd-accent) 45%, var(--bd-surface)); }
+.bd-bars__seg--links { background: var(--bd-accent); }
+.bd-bars__label { font-size: var(--bd-fs-xs); color: var(--bd-fg-muted); }
+.bd-bars__key--links { background: var(--bd-accent); }
+.bd-bars__key { background: color-mix(in srgb, var(--bd-accent) 45%, var(--bd-surface)); }
+.bd-help .bd-dot { display: inline-block; vertical-align: middle; }

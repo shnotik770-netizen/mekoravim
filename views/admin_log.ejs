@@ -1,0 +1,25 @@
+<%- include('partials/head', { title: 'יומן פעולות' }) %>
+<header class="bd-appbar">
+  <a class="bd-brand" href="/admin"><%- include('partials/logo') %>ניהול שלוחים</a>
+  <nav class="bd-nav"><a href="/admin">שלוחים</a><a href="/admin/log" aria-current="page">יומן פעולות</a></nav>
+</header>
+<div class="bd-pagehead">
+  <h1 class="bd-title">יומן פעולות</h1>
+  <form method="get" class="bd-inline">
+    <select class="bd-input" name="s" aria-label="שליח" data-autosubmit>
+      <option value="">כל השלוחים</option>
+      <% shluchim.forEach(x => { %><option value="<%= x.id %>" <%= shliachId === x.id ? 'selected' : '' %>><%= x.name %></option><% }) %>
+    </select>
+    <select class="bd-input" name="o" aria-label="סינון" data-autosubmit>
+      <option value="">כל הפעולות</option>
+      <option value="problems" <%= problems ? 'selected' : '' %>>רק תקלות וכישלונות</option>
+    </select>
+    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">סינון</button></noscript>
+  </form>
+</div>
+<p class="bd-help bd-mb">היומן מציג רק סוג פעולה ותוצאה. שמות מקורבים, טלפונים ותוכן לא נשמרים בו. נשמר 180 יום.</p>
+<section class="bd-card">
+  <%- include('partials/log_table', { rows, more, page, showShliach: true, OUTCOMES, ACTORS, fmtTime,
+    pageUrl: (n) => '?' + new URLSearchParams({ ...(shliachId ? { s: shliachId } : {}), ...(problems ? { o: 'problems' } : {}), page: n }) }) %>
+</section>
+<%- include('partials/foot') %>

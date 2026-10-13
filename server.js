@@ -12,6 +12,7 @@ import {
 
 const hebFromGregObj = (iso) => { const h = hebFromGreg(parseISO(iso), false); return { h_day: h.day, h_month: h.month, h_year: h.year }; };
 import { loadPeople, collectEvents } from './lib/events.js';
+import { audit, auditRequests, pruneAudit } from './lib/audit.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
 import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
@@ -56,6 +57,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+// ב-Express 5 בקשה בלי גוף משאירה את req.body ריק (undefined) — מונע TypeError בנתיבים
+app.use((req, res, next) => { req.body ??= {}; next(); });
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: PROD ? '1d' : 0 }));
 app.use(cookieSession({
   name: 'mk', keys: [SESSION_SECRET], httpOnly: true, sameSite: 'lax', secure: PROD,
@@ -71,6 +74,7 @@ app.use((req, res, next) => {
   req.session.flash = undefined;
   next();
 });
+app.use(auditRequests);
 
 const flash = (req, msg) => { req.session.flash = msg; };
 const flashErr = (req, msg) => { req.session.flash = { err: msg }; };
@@ -132,6 +136,7 @@ app.post('/admin/login', (req, res) => {
   if (!crypto.timingSafeEqual(sha(req.body.password || ''), sha(ADMIN_PASSWORD))) {
     loginByIp.hit(ipKey);
     loginByAccount.hit('admin');
+    req.auditDetail = 'סיסמה שגויה';
     return res.status(401).render('admin_login', { error: 'סיסמה שגויה' });
   }
   loginByIp.reset(ipKey);
@@ -153,7 +158,14 @@ app.get('/admin', requireAdmin, async (req, res) => {
                             FROM shluchim ORDER BY created_at DESC`);
   const info = takeReveal(req.session.reveal);
   req.session.reveal = undefined;
-  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus });
+  const { rows: [summary] } = await q(`SELECT
+      (SELECT count(*) FROM shluchim WHERE active)::int AS active,
+      (SELECT count(DISTINCT shliach_id) FROM activity_log WHERE actor='shliach' AND created_at > now() - interval '30 days')::int AS used30,
+      (SELECT count(*) FROM contacts)::int AS contacts,
+      (SELECT coalesce(sum(units),0) FROM sms_log WHERE created_at >= date_trunc('month', now()))::int AS sms_month,
+      (SELECT count(*) FROM activity_log WHERE created_at > now() - interval '24 hours'
+         AND (outcome='error' OR (actor IN ('system','public') AND outcome IN ('fail','blocked'))))::int AS problems24`);
+  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus, summary });
 });
 
 // מכסת יחידות SMS לתזכורות ימי הולדת: ברירת מחדל לשלוחים חדשים, ולכל שליח מכסה משלו שהמנהל מוסיף לה
@@ -187,6 +199,76 @@ app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
   const { rows } = await q('SELECT sms_quota, sms_used_birthdays, sms_alert_threshold FROM shluchim WHERE id=$1', [id]);
   if (rows[0]) { const st = quotaStatus(rows[0]); flash(req, `המכסה עודכנה: ${st.quota} יחידות, נוצלו ${st.used}, יתרה ${st.left} (התראה מתחת ל-${st.threshold})`); }
   res.redirect('/admin');
+});
+
+/* ------------------------- יומן פעולות וסטטיסטיקות ------------------------- */
+// הכול כאן אגרגטיבי או מתוך activity_log — שמות, טלפונים ופרטי מקורבים לא נשלפים בכלל
+
+const OUTCOMES = { ok: 'הצליח', fail: 'נכשל', blocked: 'נחסם', error: 'תקלה' };
+const ACTORS = { admin: 'מנהל', shliach: 'שליח', public: 'רישום ציבורי', system: 'מערכת' };
+const LOG_PAGE = 100;
+
+async function loadLog({ shliachId = null, problems = false, page = 1 }) {
+  const where = [], params = [];
+  if (shliachId) { params.push(shliachId); where.push(`l.shliach_id=$${params.length}`); }
+  if (problems) where.push(`l.outcome <> 'ok'`);
+  params.push(LOG_PAGE + 1, (page - 1) * LOG_PAGE);
+  const { rows } = await q(
+    `SELECT l.*, s.name AS shliach_name FROM activity_log l LEFT JOIN shluchim s ON s.id=l.shliach_id
+     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+     ORDER BY l.id DESC LIMIT $${params.length - 1} OFFSET $${params.length}`, params);
+  return { rows: rows.slice(0, LOG_PAGE), more: rows.length > LOG_PAGE };
+}
+
+const fmtTime = (d) => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d);
+
+app.get('/admin/log', requireAdmin, async (req, res) => {
+  const page = Math.max(1, int(req.query.page) || 1);
+  const shliachId = int(req.query.s), problems = req.query.o === 'problems';
+  const log = await loadLog({ shliachId, problems, page });
+  const { rows: shluchim } = await q('SELECT id, name FROM shluchim ORDER BY name');
+  res.render('admin_log', { ...log, page, shliachId, problems, shluchim, OUTCOMES, ACTORS, fmtTime });
+});
+
+app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
+  const id = int(req.params.id);
+  const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, phone, sms_weekly, sms_daily,
+                              sms_quota, sms_used_birthdays, sms_alert_threshold, sms_last_error FROM shluchim WHERE id=$1`, [id]);
+  if (!rows[0]) return res.status(404).render('error', { message: 'השליח לא נמצא' });
+  const one = async (sql) => (await q(sql, [id])).rows[0];
+  const counts = await one(`SELECT
+      (SELECT count(*) FROM contacts WHERE shliach_id=$1)::int AS contacts,
+      (SELECT count(*) FROM contacts WHERE shliach_id=$1 AND reg_link_id IS NOT NULL)::int AS via_links,
+      (SELECT count(*) FROM family_members f JOIN contacts c ON c.id=f.contact_id WHERE c.shliach_id=$1)::int AS family,
+      (SELECT count(*) FROM contacts WHERE shliach_id=$1 AND created_at > now() - interval '30 days')::int AS new30,
+      (SELECT count(*) FROM contact_log l JOIN contacts c ON c.id=l.contact_id WHERE c.shliach_id=$1)::int AS contacted,
+      (SELECT count(*) FROM contact_log l JOIN contacts c ON c.id=l.contact_id WHERE c.shliach_id=$1 AND l.created_at > now() - interval '30 days')::int AS contacted30,
+      (SELECT count(*) FROM reg_links WHERE shliach_id=$1)::int AS links,
+      (SELECT count(*) FROM reg_links WHERE shliach_id=$1 AND active)::int AS links_active,
+      (SELECT count(*) FROM categories WHERE shliach_id=$1)::int AS categories`);
+  const activity = await one(`SELECT
+      (SELECT max(created_at) FROM activity_log WHERE shliach_id=$1 AND actor='shliach') AS last_action,
+      (SELECT max(created_at) FROM activity_log WHERE shliach_id=$1 AND action='כניסה לחשבון' AND outcome='ok') AS last_login,
+      (SELECT count(*) FROM activity_log WHERE shliach_id=$1 AND action='כניסה לחשבון' AND outcome='ok' AND created_at > now() - interval '30 days')::int AS logins30,
+      (SELECT count(*) FROM activity_log WHERE shliach_id=$1 AND action='כניסה לחשבון' AND outcome<>'ok' AND created_at > now() - interval '30 days')::int AS failed30,
+      (SELECT count(*) FROM activity_log WHERE shliach_id=$1 AND actor='shliach' AND created_at > now() - interval '30 days')::int AS actions30,
+      (SELECT count(*) FROM activity_log WHERE shliach_id=$1 AND outcome IN ('fail','error','blocked') AND actor='system' AND created_at > now() - interval '30 days')::int AS sys_problems30`);
+  const { rows: sms } = await q(`SELECT kind, count(*)::int AS n, sum(units)::int AS units FROM sms_log
+                                 WHERE shliach_id=$1 AND created_at > now() - interval '30 days' GROUP BY kind`, [id]);
+  // מקורבים חדשים לפי חודש (6 חודשים), מפוצל: דרך קישור רישום / ידני
+  const { rows: months } = await q(`
+    SELECT to_char(m, 'MM/YY') AS label,
+           count(c.id) FILTER (WHERE c.reg_link_id IS NOT NULL)::int AS links,
+           count(c.id) FILTER (WHERE c.reg_link_id IS NULL)::int AS manual
+    FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
+    LEFT JOIN contacts c ON c.shliach_id=$1 AND date_trunc('month', c.created_at) = m
+    GROUP BY m ORDER BY m`, [id]);
+  const page = Math.max(1, int(req.query.page) || 1);
+  const log = await loadLog({ shliachId: id, problems: req.query.o === 'problems', page });
+  res.render('admin_shliach', {
+    s: rows[0], counts, activity, sms, months, quota: quotaStatus(rows[0]), ...log, page, problems: req.query.o === 'problems',
+    OUTCOMES, ACTORS, fmtTime, base: baseUrl(req),
+  });
 });
 
 // לפחות 6 תווים, ולא תו אחד שחוזר (000000) או רצף (123456)
@@ -246,6 +328,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
   const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota) VALUES ($1,$2,$3,$4,$4,$5) RETURNING id', [name, house, randomToken(9), phone, quota.value]);
   const id = rows[0].id;
+  req.auditShliachId = id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {
     await q('INSERT INTO categories (shliach_id, name, color, sort) VALUES ($1,$2,$3,$4)', [id, n, c, i]);
   }
@@ -447,7 +530,7 @@ function renderLogin(req, res, error = null, status = 200) {
 
 router.post('/otp/send', async (req, res) => {
   const s = req.shliach;
-  if (!s.phone || !smsConfigured()) return renderLogin(req, res, 'לא ניתן לשלוח קוד כרגע. פנו למנהל המערכת.', 503);
+  if (!s.phone || !smsConfigured()) { req.auditDetail = !s.phone ? 'לשליח אין נייד' : 'SMS לא מוגדר'; return renderLogin(req, res, 'לא ניתן לשלוח קוד כרגע. פנו למנהל המערכת.', 503); }
   if (!otpSendByIp.take(`otp:${req.ip}`) || !otpSendByAccount.take(`otp:s${s.id}`)) {
     return renderLogin(req, res, 'נשלחו יותר מדי קודים. נסו שוב בעוד כמה דקות.', 429);
   }
@@ -461,6 +544,7 @@ router.post('/otp/send', async (req, res) => {
     await sendToShliach(s, s.phone, `קוד הכניסה שלך ל"ימי הולדת למקורבים": ${code}\nבתוקף ${OTP_TTL_MIN} דקות. אין למסור אותו לאף אחד.`, 'otp');
   } catch (e) {
     console.error(`OTP לשליח ${s.id} נכשל:`, e.message);
+    req.auditDetail = `שליחת SMS נכשלה: ${e.message}`; // הודעת ימות המשיח — לא מידע של השליח
     return renderLogin(req, res, 'שליחת ה-SMS נכשלה. נסו שוב בעוד רגע.', 502);
   }
   req.session.otp = { id: s.id, at: Date.now() };
@@ -494,6 +578,7 @@ router.post('/login', async (req, res) => {
   if (!ok) {
     loginByIp.hit(ipKey);
     loginByAccount.hit(acctKey); // נספר לחשבון מכל IP — החלפת כתובות לא עוקפת
+    req.auditDetail = 'קוד שגוי';
     if (otp === 'expired' && req.session.otp?.id === s.id) {
       req.session.otp = undefined;
       return renderLogin(req, res, 'הקוד שגוי, והקוד החד-פעמי פג תוקף או שנוצלו כל הניסיונות. אפשר לשלוח קוד חדש.', 401);
@@ -501,6 +586,7 @@ router.post('/login', async (req, res) => {
     return renderLogin(req, res, 'קוד שגוי', 401);
   }
   loginByIp.reset(ipKey);
+  req.auditDetail = otp === 'ok' ? 'בקוד חד-פעמי' : 'בקוד קבוע';
   req.session.otp = undefined;
   // כניסה בקוד חד-פעמי (למשל כששכחו את הקוד) מאפשרת לקבוע קוד חדש ב-15 הדקות הקרובות בלי הקוד הנוכחי
   req.session.otpLogin = otp === 'ok' ? { id: s.id, at: Date.now() } : undefined;
@@ -760,6 +846,9 @@ app.get('/health', (req, res) => res.send('ok'));
 app.use((req, res) => res.status(404).render('error', { message: 'הדף לא נמצא' }));
 app.use((err, req, res, next) => {
   console.error(err);
+  // ביומן רק סוג השגיאה והנתיב הכללי — לא הודעת השגיאה (עלולה לכלול נתונים)
+  const where = req.route ? (req.shliach ? `/s/…${req.route.path}` : req.baseUrl + req.route.path) : req.method;
+  audit({ shliachId: req.shliach?.id ?? null, actor: 'system', action: 'שגיאת שרת', outcome: 'error', detail: `${req.method} ${where} · ${err.code || err.name || 'Error'}` });
   res.status(500).render('error', { message: 'אירעה שגיאה. נסה שוב.' });
 });
 
@@ -769,5 +858,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await migrate();
   const port = process.env.PORT || 3000;
   app.listen(port, () => console.log(`listening on ${port}`));
+  audit({ actor: 'system', action: 'הפעלת השרת' });
+  pruneAudit().catch(() => {});
+  setInterval(() => pruneAudit().catch(() => {}), 24 * 3600 * 1000);
   startScheduler();
 }

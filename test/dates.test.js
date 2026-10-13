@@ -116,3 +116,11 @@ test('יחידות SMS ומכסה', async () => {
   const msg = buildDailyMessage([], { start: new Date(2026, 9, 16), end: new Date(2026, 9, 17) }, '');
   assert.equal(msg, '🎂 ימי הולדת היום ועד מוצאי שבת/חג (16.10–17.10)\nאין ימי הולדת בימים אלה.');
 });
+
+test('יומן: מיסוך מספרי טלפון', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { scrub } = await import('../lib/audit.js');
+  assert.equal(scrub('נשלח ל-0521234567'), 'נשלח ל-\u206605•••••567\u2069');
+  assert.equal(scrub('052-123-4567 נכשל'), '\u206605•••••567\u2069 נכשל');
+  assert.equal(scrub('3 יחידות'), '3 יחידות');
+});

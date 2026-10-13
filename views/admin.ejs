@@ -1,8 +1,16 @@
 <%- include('partials/head', { title: 'ניהול שלוחים' }) %>
 <header class="bd-appbar">
   <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
-  <nav class="bd-nav"><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
+  <nav class="bd-nav"><a href="/admin" aria-current="page">שלוחים</a><a href="/admin/log">יומן פעולות</a><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
 </header>
+<div class="bd-stats">
+  <div class="bd-stat"><span class="bd-stat__label">שלוחים פעילים</span><span class="bd-stat__value bd-num"><%= summary.active %></span>
+    <span class="bd-stat__hint"><span class="bd-num"><%= summary.used30 %></span> השתמשו ב-30 יום</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">מקורבים במערכת</span><span class="bd-stat__value bd-num"><%= summary.contacts %></span></div>
+  <div class="bd-stat"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span></div>
+  <a class="bd-stat" href="/admin/log?o=problems"><span class="bd-stat__label">תקלות ב-24 שעות</span><span class="bd-stat__value bd-num" <%- summary.problems24 ? 'style="color:var(--bd-bad)"' : '' %>><%= summary.problems24 %></span>
+    <span class="bd-stat__hint">ליומן הפעולות ←</span></a>
+</div>
 <div class="bd-pagehead">
   <span class="bd-status <%= smsOn ? 'bd-status--ok' : 'bd-status--bad' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span>
   <form method="post" action="/admin/sms-quota" class="bd-inline">
@@ -33,7 +41,7 @@
   <% shluchim.forEach(s => { %>
     <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">
-        <div class="bd-item__title"><%= s.name %>
+        <div class="bd-item__title"><a href="/admin/shluchim/<%= s.id %>" title="היסטוריה וסטטיסטיקה"><%= s.name %></a>
           <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %>
           <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
           <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
@@ -47,6 +55,7 @@
       <details class="bd-menu">
         <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
         <div class="bd-menu__body">
+          <a class="bd-btn bd-btn--ghost bd-btn--sm" href="/admin/shluchim/<%= s.id %>">📊 היסטוריה וסטטיסטיקה</a>
           <form method="post" action="/admin/shluchim/<%= s.id %>/send-link">
             <button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button>
           </form>

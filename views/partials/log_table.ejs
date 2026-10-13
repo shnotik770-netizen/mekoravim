@@ -1,0 +1,25 @@
+<%# טבלת יומן פעולות. משתנים: rows, more, page, showShliach, OUTCOMES, ACTORS, fmtTime, pageUrl(n) %>
+<% const cls = { ok: 'bd-status--ok', fail: 'bd-status--bad', blocked: 'bd-status--bad', error: 'bd-status--bad' }; %>
+<% if (!rows.length) { %><div class="bd-empty">אין רשומות.</div><% } else { %>
+<ul class="bd-items bd-log">
+<% rows.forEach(r => { %>
+  <li class="bd-item <%= r.outcome === 'error' ? 'bd-log--error' : '' %>">
+    <div class="bd-item__main">
+      <div class="bd-item__title">
+        <span class="bd-status <%= cls[r.outcome] %>"><%= OUTCOMES[r.outcome] || r.outcome %></span>
+        <%= r.action %>
+      </div>
+      <div class="bd-item__sub">
+        <span class="bd-num" dir="ltr"><%= fmtTime(r.created_at) %></span> · <%= ACTORS[r.actor] || r.actor %>
+        <% if (showShliach && r.shliach_id) { %> · <a href="/admin/shluchim/<%= r.shliach_id %>"><%= r.shliach_name || ('#' + r.shliach_id) %></a><% } %>
+        <% if (r.detail) { %><div class="bd-log__detail"><%= r.detail %></div><% } %>
+      </div>
+    </div>
+  </li>
+<% }) %>
+</ul>
+<% } %>
+<div class="bd-actions bd-mt">
+  <% if (page > 1) { %><a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= pageUrl(page - 1) %>">→ חדשות יותר</a><% } %>
+  <% if (more) { %><a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= pageUrl(page + 1) %>">ישנות יותר ←</a><% } %>
+</div>
