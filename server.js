@@ -12,6 +12,7 @@ import {
 
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
+import { demoSeed, demoCalc, demoOptions } from './lib/demo.js';
 import { splitTable, guessMapping, parseRow, dupKey, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
@@ -99,6 +100,23 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
+
+// חשבון הדגמה (דף הבית): השרת רק מחשב — שום דבר לא נשמר. הנתונים חיים בזיכרון הדפדפן בלבד
+const demoJson = express.json({ limit: '30kb' });
+const demoLimiter = new Map(); // הגבלה עדינה לפי IP (בזיכרון)
+function demoRate(req, res, next) {
+  const now = Date.now(), k = req.ip, e = demoLimiter.get(k);
+  if (!e || now - e.t > 60000) demoLimiter.set(k, { t: now, n: 1 });
+  else if (++e.n > 120) return res.status(429).json({ error: 'יותר מדי בקשות, נסו שוב בעוד דקה' });
+  if (demoLimiter.size > 5000) demoLimiter.clear();
+  next();
+}
+app.get('/demo/seed', demoRate, (req, res) => {
+  res.set('Cache-Control', 'no-store').json({ people: demoSeed(), options: demoOptions() });
+});
+app.post('/demo/calc', demoRate, demoJson, (req, res) => {
+  res.set('Cache-Control', 'no-store').json(demoCalc(req.body?.people));
+});
 
 // "שמירה כאפליקציה" (PWA): מניפסט כללי, ומניפסט אישי לכל שליח שנפתח ישר לדשבורד שלו
 function manifest({ name, short, start, scope }) {

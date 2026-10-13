@@ -158,3 +158,16 @@ test('תזכורת אישית על מקורב: יום השליחה, כולל ד�
   const msg = buildContactReminder([{ date: D(2026, 10, 22), label: 'י״א חשוון', age: 40, name: 'דוד כהן', contact: { phone: '052-1234567' } }], D(2026, 10, 20), '');
   assert.equal(msg, '🔔 תזכורת יום הולדת:\nדוד כהן, 40 — בעוד 2 ימים, חמישי י״א חשוון');
 });
+
+test('חשבון הדגמה: 10 מקורבים, רובם היום/השבוע/החודש, והחישוב לא שומר דבר', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { demoSeed, demoCalc } = await import('../lib/demo.js');
+  for (const today of [new Date(2026, 9, 14), new Date(2027, 1, 20), new Date(2027, 2, 15), new Date(2026, 11, 31)]) {
+    const r = demoCalc(demoSeed(today), today);
+    assert.equal(r.people.length, 10);
+    assert.ok(r.people.every((p) => !p.error), JSON.stringify(r.people.filter((p) => p.error)));
+    assert.ok(r.people.filter((p) => p.today).length >= 2);
+    assert.ok(r.people.filter((p) => p.next30).length >= 6);
+  }
+  assert.ok(demoCalc([{ id: 'x', first_name: 'א', date_type: 'h', h_day: '30', h_month: '10' }]).people[0].error);
+});

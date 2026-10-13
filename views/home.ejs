@@ -24,7 +24,7 @@
 
 <header class="hm-bar">
   <a class="hm-brand" href="/"><img src="/icons/icon-192.png" alt="" width="34" height="34">ימי הולדת <span>למקורבים</span></a>
-  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
+  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %><span class="hm-wide">יצירת קשר ב</span>וואטסאפ</a>
 </header>
 
 <section class="hm-hero">
@@ -36,7 +36,7 @@
       <p class="hm-lead hm-rise" style="--d:2">כל ימי ההולדת העבריים של המקורבים ובני המשפחה — במקום אחד, עם תזכורת ב-SMS ובוואטסאפ בלחיצה.</p>
       <div class="hm-cta hm-rise" style="--d:3">
         <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
-        <a class="hm-btn hm-btn--line" href="#how">איך זה עובד</a>
+        <a class="hm-btn hm-btn--line" href="#demo" data-demo-open>▶ איך זה עובד</a>
       </div>
     </div>
 
@@ -73,6 +73,7 @@
       <li data-reveal><span>2</span><h3>מוסיפים מקורבים</h3><p>בעצמכם, מאקסל, או בקישור רישום.</p></li>
       <li data-reveal><span>3</span><h3>מקבלים תזכורת ומברכים</h3><p>וואטסאפ או שיחה — בלחיצה אחת.</p></li>
     </ol>
+    <p class="hm-center" data-reveal><a class="hm-btn hm-btn--gold" href="#demo" data-demo-open>▶ נסו חשבון הדגמה</a></p>
   </section>
 
   <section class="hm-sec">
@@ -108,6 +109,24 @@
   </a>
 </div>
 
+<dialog class="hm-demo" id="demo" aria-labelledby="demo-title">
+  <div class="hm-demo__sheet">
+    <header class="hm-demo__bar">
+      <div><h2 id="demo-title">חשבון הדגמה</h2><span class="hm-demo__badge">🔒 שום דבר לא נשמר — שחקו חופשי</span></div>
+      <div class="hm-demo__baracts">
+        <button type="button" class="hm-link" data-act="reset">איפוס</button>
+        <button type="button" class="hm-demo__x" data-demo-close aria-label="סגירה">✕</button>
+      </div>
+    </header>
+    <div class="hm-demo__body" data-demo-body></div>
+    <footer class="hm-demo__foot">
+      <span>אהבתם? כך זה נראה בחשבון שלכם.</span>
+      <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
+    </footer>
+  </div>
+</dialog>
+
 <script src="/app.js"></script>
+<script src="/demo.js"></script>
 </body>
 </html>
