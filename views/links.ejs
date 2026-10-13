@@ -1,16 +1,21 @@
 <%- include('partials/head', { title: 'קישורי רישום', nav: true }) %>
 <h1>קישורי רישום למקורבים</h1>
-<p class="muted">צרו קישור, שלחו אותו למקורבים (וואטסאפ, קבוצה, QR בשיעור) — וכל מי שנרשם דרכו נכנס ישר לרשימה שלכם. אפשר ליצור כמה קישורים, למשל לכל שיעור או אירוע, ולשייך לכל קישור סיווג אוטומטי.</p>
+<p class="muted">צרו כמה קישורים שתרצו — למשל לכל שיעור, קבוצה או אירוע — ושלחו אותם למקורבים. כל מי שממלא קישור נכנס ישר לרשימה שלכם <b>ומסווג אוטומטית בסיווג שבחרתם לאותו קישור</b>.</p>
 
 <div class="card">
   <h3>קישור חדש</h3>
-  <form method="post" class="inline-form">
-    <input name="name" placeholder='שם הקישור (למשל: "שיעור שבועי")' maxlength="80">
-    <select name="category_id">
-      <option value="">ללא סיווג אוטומטי</option>
-      <% categories.forEach(c => { %><option value="<%= c.id %>"><%= c.name %></option><% }) %>
-    </select>
-    <button class="btn">יצירה</button>
+  <form method="post">
+    <div class="row2">
+      <label>שם הקישור <input name="name" placeholder='למשל: "שיעור שבועי"' maxlength="80"></label>
+      <label>מי שנרשם דרכו יסווג כ:
+        <select name="category_id">
+          <% categories.forEach((c, i) => { %><option value="<%= c.id %>" <%= i === 0 ? 'selected' : '' %>><%= c.name %></option><% }) %>
+          <option value="">ללא סיווג</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn">יצירת קישור</button>
+    <a class="small" href="<%= base %>/settings">ניהול סיווגים</a>
   </form>
 </div>
 
@@ -32,6 +37,18 @@
         <% } %>
         <form method="post" action="<%= base %>/links/<%= l.id %>/toggle"><button class="btn small ghost"><%= l.active ? 'כיבוי' : 'הפעלה' %></button></form>
       </div>
+      <details class="link-edit">
+        <summary class="linkbtn small">✏️ עריכה</summary>
+        <form method="post" action="<%= base %>/links/<%= l.id %>" class="inline-form">
+          <input name="name" value="<%= l.name %>" maxlength="80" required>
+          <select name="category_id">
+            <option value="">ללא סיווג</option>
+            <% categories.forEach(c => { %><option value="<%= c.id %>" <%= l.category_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
+          </select>
+          <button class="btn small">שמירה</button>
+        </form>
+        <p class="hint">שינוי הסיווג חל על נרשמים חדשים בלבד.</p>
+      </details>
     </div>
   <% }) %>
 </div>

@@ -18,6 +18,8 @@
 </div>
 <% } %>
 
+<p class="small"><span class="tag <%= smsOn ? 'ok' : 'warn' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span></p>
+
 <div class="card">
   <h3>שליח חדש</h3>
   <form method="post" action="/admin/shluchim">
@@ -41,6 +43,7 @@
       <div class="grow">
         <b><%= s.name %></b>
         <span class="tag <%= s.has_code ? 'ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
+        <% if (s.sms_enabled) { %><span class="tag">📱 SMS</span><% } %>
         <% if (!s.active) { %><span class="tag off">מושבת</span><% } %>
         <div class="small muted"><code class="copy"><%= base %>/s/<%= s.slug %></code></div>
       </div>

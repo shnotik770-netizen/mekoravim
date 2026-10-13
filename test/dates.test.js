@@ -54,3 +54,17 @@ test('פענוח שנה עברית', () => {
   assert.ok(Number.isNaN(parseHebYear('abc')));
   assert.equal(hebDateStr(15, 7, 5750), 'ט״ו תשרי תש״נ');
 });
+
+test('הודעת SMS שבועית', async () => {
+  process.env.DATABASE_URL ||= 'postgres://unused';
+  const { buildWeeklyMessage, normalizePhone } = await import('../lib/sms.js');
+  const week = { start: new Date(2026, 9, 11), end: new Date(2026, 9, 17) };
+  const c = { first_name: 'משה', last_name: 'כהן' };
+  const msg = buildWeeklyMessage('x', [
+    { date: new Date(2026, 9, 12), label: 'א׳ חשוון', age: 36, name: 'משה כהן', contact: c, member: null },
+    { date: new Date(2026, 9, 16), label: 'ה׳ חשוון', age: 12, name: 'שרה', contact: c, member: { first_name: 'שרה', relation: 'בת' } },
+  ], week, 'https://x/s/abc');
+  assert.equal(msg, '🎂 ימי הולדת השבוע (11.10–17.10)\nשני א׳ חשוון: משה כהן, 36\nשישי ה׳ חשוון: שרה (בת של משה כהן), 12\nhttps://x/s/abc');
+  assert.equal(normalizePhone('+972-52-123-4567'), '0521234567');
+  assert.equal(normalizePhone('03-1234567'), null);
+});

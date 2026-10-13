@@ -108,3 +108,5 @@ details summary { list-style: none; cursor: pointer; display: inline-block; } de
 .steps li::before { content: counter(s); flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .example { background: var(--bg); border-radius: 10px; padding: 12px 14px; margin: 8px 0; }
 @media (max-width: 520px) { .list-item.wrapm { flex-wrap: wrap; } .wrapm .actions { width: 100%; } }
+.sms-preview { white-space: pre-wrap; background: var(--bg); border-radius: 10px; padding: 12px; font-family: inherit; font-size: .9rem; margin: 8px 0 0; }
+.link-edit { width: 100%; } .link-edit .inline-form { margin-top: 8px; } .list-item.wrapm { flex-wrap: wrap; }

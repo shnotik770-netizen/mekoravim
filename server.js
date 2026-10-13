@@ -6,11 +6,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { q, migrate } from './lib/db.js';
 import {
-  HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, eventsInRange, nextBirthday, weekRange, hebMonthRange,
+  HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
   hebToday, addDays, fmtGreg, hebFromGreg, parseISO,
 } from './lib/dates.js';
 
 const hebFromGregObj = (iso) => { const h = hebFromGreg(parseISO(iso), false); return { h_day: h.day, h_month: h.month, h_year: h.year }; };
+import { loadPeople, collectEvents } from './lib/events.js';
+import { smsConfigured, normalizePhone, sendWeekly, weeklyMessageFor, startScheduler } from './lib/sms.js';
 import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -106,11 +108,11 @@ function requireAdmin(req, res, next) {
 
 // המנהל רואה רק שם, קישור וסטטוס — לא את נתוני המקורבים
 app.get('/admin', requireAdmin, async (req, res) => {
-  const { rows } = await q(`SELECT id, name, slug, active, created_at, access_code_hash IS NOT NULL AS has_code
+  const { rows } = await q(`SELECT id, name, slug, active, created_at, access_code_hash IS NOT NULL AS has_code, sms_enabled
                             FROM shluchim ORDER BY created_at DESC`);
   const info = req.session.newInfo;
   req.session.newInfo = undefined;
-  res.render('admin', { shluchim: rows, base: baseUrl(req), info });
+  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured() });
 });
 
 function validCode(code) {
@@ -229,29 +231,6 @@ const requireShliach = (req, res, next) => (req.authorized ? next() : res.redire
 
 async function loadCategories(shliachId) {
   return (await q('SELECT * FROM categories WHERE shliach_id=$1 ORDER BY sort, id', [shliachId])).rows;
-}
-
-async function loadPeople(shliachId) {
-  const contacts = (await q('SELECT * FROM contacts WHERE shliach_id=$1 ORDER BY first_name, last_name', [shliachId])).rows;
-  const family = (await q(`SELECT f.* FROM family_members f JOIN contacts c ON c.id=f.contact_id WHERE c.shliach_id=$1`, [shliachId])).rows;
-  return { contacts, family };
-}
-
-// כל ימי ההולדת העבריים (מקורבים + בני משפחה) בטווח
-function collectEvents({ contacts, family }, start, end) {
-  const byId = new Map(contacts.map((c) => [c.id, c]));
-  const out = [];
-  for (const c of contacts) {
-    for (const e of eventsInRange(c, start, end)) out.push({ ...e, contact: c, member: null, name: `${c.first_name} ${c.last_name}` });
-  }
-  for (const f of family) {
-    const c = byId.get(f.contact_id);
-    if (!c) continue;
-    for (const e of eventsInRange(f, start, end)) {
-      out.push({ ...e, contact: c, member: f, name: f.first_name, sub: `${f.relation} של ${c.first_name} ${c.last_name}` });
-    }
-  }
-  return out.sort((a, b) => a.date - b.date || a.name.localeCompare(b.name, 'he'));
 }
 
 // "נוצר קשר" = קיים רישום יצירת קשר לאותו אדם מ-14 יום לפני יום ההולדת ואילך
@@ -443,6 +422,16 @@ router.post('/links', async (req, res) => {
   res.redirect(`${res.locals.base}/links`);
 });
 
+router.post('/links/:id', async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 80);
+  if (name) {
+    await q('UPDATE reg_links SET name=$1, category_id=$2 WHERE id=$3 AND shliach_id=$4',
+      [name, await validCategory(req.shliach.id, int(req.body.category_id)), int(req.params.id), req.shliach.id]);
+    flash(req, 'הקישור עודכן');
+  }
+  res.redirect(`${res.locals.base}/links`);
+});
+
 router.post('/links/:id/toggle', async (req, res) => {
   await q('UPDATE reg_links SET active = NOT active WHERE id=$1 AND shliach_id=$2', [int(req.params.id), req.shliach.id]);
   res.redirect(`${res.locals.base}/links`);
@@ -450,12 +439,41 @@ router.post('/links/:id/toggle', async (req, res) => {
 
 /* ------------------------------ הגדרות ------------------------------ */
 
-router.get('/settings', async (req, res) => res.render('settings', { error: null, categories: await loadCategories(req.shliach.id) }));
+async function renderSettings(req, res, error = null, status = 200) {
+  res.status(status).render('settings', {
+    error, categories: await loadCategories(req.shliach.id),
+    smsOn: smsConfigured(), smsPreview: await weeklyMessageFor(req.shliach), fmtDate,
+  });
+}
+
+router.get('/settings', (req, res) => renderSettings(req, res));
+
+// SMS שבועי: הגדרה ושליחת ניסיון
+const lastTest = new Map();
+router.post('/sms', async (req, res) => {
+  const s = req.shliach;
+  const back = `${res.locals.base}/settings#sms`;
+  if (req.body.action === 'test') {
+    if (!smsConfigured()) return renderSettings(req, res, 'שליחת SMS עדיין לא הוגדרה במערכת', 400);
+    if (Date.now() - (lastTest.get(s.id) || 0) < 60 * 1000) return renderSettings(req, res, 'אפשר לשלוח הודעת ניסיון פעם בדקה', 429);
+    lastTest.set(s.id, Date.now());
+    const r = await sendWeekly(s);
+    flash(req, r.ok ? 'הודעת הניסיון נשלחה ✓' : `השליחה נכשלה: ${r.error}`);
+    return res.redirect(back);
+  }
+  const enabled = req.body.sms_enabled === 'on';
+  const phone = String(req.body.sms_phone || '').trim();
+  if (phone && !normalizePhone(phone)) return renderSettings(req, res, 'מספר הנייד לקבלת SMS אינו תקין', 400);
+  if (enabled && !phone) return renderSettings(req, res, 'כדי להפעיל SMS יש להזין מספר נייד', 400);
+  await q('UPDATE shluchim SET sms_phone=$1, sms_enabled=$2 WHERE id=$3', [normalizePhone(phone) || '', enabled, s.id]);
+  flash(req, enabled ? 'נשמר — תקבלו SMS בכל יום ראשון בבוקר' : 'ההגדרה נשמרה');
+  res.redirect(back);
+});
 
 router.post('/settings', async (req, res) => {
   const s = req.shliach;
   const back = `${res.locals.base}/settings`;
-  const fail = async (error) => res.status(400).render('settings', { error, categories: await loadCategories(s.id) });
+  const fail = (error) => renderSettings(req, res, error, 400);
   const a = req.body.action;
 
   if (a === 'code') {
@@ -497,4 +515,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await migrate();
   const port = process.env.PORT || 3000;
   app.listen(port, () => console.log(`listening on ${port}`));
+  startScheduler();
 }
