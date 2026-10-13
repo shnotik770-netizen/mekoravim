@@ -104,3 +104,45 @@ document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener(
   }), { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
   els.forEach((e, i) => { e.style.transitionDelay = `${(i % 3) * 90}ms`; io.observe(e); });
 })();
+
+// ייבוא מאקסל: תיקון שורות בתצוגה המקדימה. הטקסט בתיבה מנורמל (שורה = מקורב, טאב = תא),
+// כל שינוי בתא מעדכן את השורה המתאימה בתיבה; "עדכון התצוגה" בודק מחדש בשרת.
+(() => {
+  const ta = document.querySelector('.bd-import-text');
+  if (!ta) return;
+  const form = ta.form;
+  const dirty = document.querySelector('[data-import-dirty]');
+  const setCell = (line, col, value) => {
+    const lines = ta.value.split('\n');
+    const cells = (lines[line] ?? '').split('\t');
+    while (cells.length <= col) cells.push('');
+    cells[col] = value.replace(/[\t\r\n]+/g, ' ');
+    lines[line] = cells.join('\t');
+    ta.value = lines.join('\n');
+    if (dirty) dirty.hidden = false;
+  };
+  form.addEventListener('input', (e) => {
+    const el = e.target.closest('[data-line][data-col]');
+    if (el) setCell(+el.dataset.line, +el.dataset.col, el.value);
+  });
+  form.addEventListener('click', (e) => {
+    const edit = e.target.closest('[data-edit-row]'), drop = e.target.closest('[data-drop-row]');
+    if (!edit && !drop) return;
+    const tr = e.target.closest('tr[data-row]');
+    const line = +tr.dataset.row;
+    const ed = form.querySelector(`[data-edit-for="${line}"]`);
+    if (edit) { ed.hidden = !ed.hidden; if (!ed.hidden) ed.querySelector('input')?.focus(); return; }
+    // הסרת שורה: מרוקנים את תאיה (השורה נשארת ריקה, כך שמספור השורות האחרות לא זז)
+    const lines = ta.value.split('\n');
+    lines[line] = '';
+    ta.value = lines.join('\n');
+    tr.remove(); ed?.remove();
+    if (dirty) dirty.hidden = false;
+  });
+  // "ליצור סיווגים חדשים" — מרענן את התצוגה מיד
+  form.querySelectorAll('[data-autosubmit-preview]').forEach((cb) => cb.addEventListener('change', () => {
+    const h = document.createElement('input');
+    h.type = 'hidden'; h.name = 'action'; h.value = 'preview';
+    form.append(h); form.submit();
+  }));
+})();

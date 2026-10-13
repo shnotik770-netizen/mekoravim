@@ -1,8 +1,8 @@
-<%- include('partials/head', { title: 'ייבוא מקורבים מאקסל', nav: true, active: 'contacts' }) %>
+<%- include('partials/head', { title: 'ייבוא מקורבים מאקסל', nav: true, active: 'new' }) %>
 <% const catName = (id) => (categories.find(c => c.id === id) || {}).name || '—'; %>
 <div class="bd-pagehead">
   <h1 class="bd-title">ייבוא מקורבים מאקסל</h1>
-  <a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= base %>/contacts">← למקורבים</a>
+  <a class="bd-btn bd-btn--ghost bd-btn--sm" href="<%= base %>/contacts/new">← הוספה ידנית</a>
 </div>
 <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><span><%= error %></span></div><% } %>
 
@@ -26,6 +26,9 @@
   </section>
 
   <% if (rows) { %>
+  <div class="bd-msg bd-msg--info bd-import-undo"><span>טעיתם בהדבקה או בסיווג? אפשר לבטל ולהדביק מחדש — או לתקן כל שורה כאן למטה (✏️).</span>
+    <button class="bd-btn bd-btn--ghost bd-btn--sm" name="action" value="reset" formnovalidate>ביטול והדבקה מחדש</button></div>
+
   <section class="bd-card">
     <h2 class="bd-section-title">שיוך עמודות</h2>
     <div class="bd-field"><label class="bd-check"><input type="hidden" name="has_header" value="0"><input type="checkbox" name="has_header" value="1" <%= hasHeader ? 'checked' : '' %>> השורה הראשונה היא כותרות</label></div>
@@ -40,6 +43,15 @@
     <button class="bd-btn bd-btn--ghost bd-btn--sm bd-mt" name="action" value="preview">עדכון התצוגה</button>
   </section>
 
+  <% if (newCats.length) { %>
+  <section class="bd-card bd-highlight">
+    <h2 class="bd-section-title">סיווגים שעוד לא קיימים</h2>
+    <p class="bd-mb"><% newCats.forEach((c, i) => { %><span class="bd-status bd-status--accent"><span>"<%= c.name %>" · <span class="bd-num"><%= c.count %></span> שורות</span></span> <% }) %></p>
+    <label class="bd-check"><input type="hidden" name="create_cats" value="0"><input type="checkbox" name="create_cats" value="1" <%= createCats ? 'checked' : '' %> data-autosubmit-preview> ליצור אותם כסיווגים חדשים</label>
+    <p class="bd-help bd-mt">אם לא — המקורבים האלה יקבלו את הסיווג שנבחר למעלה (<%= defaultCategory ? catName(defaultCategory) : 'ללא סיווג' %>). אפשר גם לבטל, לתקן את הסיווג באקסל ולהדביק מחדש.</p>
+  </section>
+  <% } %>
+
   <section class="bd-card">
     <% const bad = rows.filter(r => r.error).length, dups = rows.filter(r => r.dup).length; %>
     <h2 class="bd-section-title">תצוגה מקדימה</h2>
@@ -48,12 +60,13 @@
       <% if (bad) { %><span class="bd-status bd-status--bad"><span>שגיאות: <b class="bd-num"><%= bad %></b></span></span><% } %>
       <% if (dups) { %><span class="bd-status"><span>כפילויות: <b class="bd-num"><%= dups %></b></span></span><% } %>
     </p>
+    <div class="bd-msg bd-msg--warn bd-mb" data-import-dirty hidden><span>יש תיקונים שעוד לא נבדקו —</span> <button class="bd-btn bd-btn--primary bd-btn--sm" name="action" value="preview">עדכון התצוגה</button></div>
     <div class="bd-table-wrap">
       <table class="bd-table">
-        <thead><tr><th>#</th><th>מצב</th><th>שם</th><th>טלפון</th><th>תאריך לידה</th><th>סיווג</th></tr></thead>
+        <thead><tr><th>#</th><th>מצב</th><th>שם</th><th>טלפון</th><th>תאריך לידה</th><th>סיווג</th><th></th></tr></thead>
         <tbody>
         <% rows.slice(0, 500).forEach(r => { %>
-          <tr class="<%= r.error ? 'is-bad' : r.dup ? 'is-dup' : '' %>">
+          <tr class="<%= r.error ? 'is-bad' : r.dup ? 'is-dup' : '' %>" data-row="<%= r.line %>">
             <td class="bd-num"><%= r.n %></td>
             <% if (r.error) { %>
               <td><span class="bd-status bd-status--bad">שגיאה</span></td><td colspan="4"><%= r.error %> <span class="bd-muted">· <%= r.cells.join(' | ').slice(0, 80) %></span></td>
@@ -62,8 +75,17 @@
               <td><%= r.value.first_name %> <%= r.value.last_name %></td>
               <td class="bd-num" dir="ltr"><%= r.value.phone %></td>
               <td><%= birthText(r.value) %></td>
-              <td><%= catName(r.value.category_id) %><% if (r.warning) { %> <span class="bd-err bd-small">(<%= r.warning %>)</span><% } %></td>
+              <td><% if (r.newCategory) { %><%= createCats ? r.newCategory : catName(r.value.category_id) %> <span class="bd-small <%= createCats ? 'bd-muted' : 'bd-err' %>">(<%= createCats ? 'סיווג חדש' : '"' + r.newCategory + '" לא קיים' %>)</span><% } else { %><%= catName(r.value.category_id) %><% } %></td>
             <% } %>
+            <td class="bd-import-ops"><button type="button" class="bd-link-btn bd-link-btn--accent" data-edit-row aria-label="תיקון שורה <%= r.n %>">✏️</button><button type="button" class="bd-link-btn" data-drop-row aria-label="הסרת שורה <%= r.n %>">✕</button></td>
+          </tr>
+          <tr class="bd-import-edit" data-edit-for="<%= r.line %>" <%= r.error ? '' : 'hidden' %>>
+            <td colspan="7"><div class="bd-import-cells">
+              <% for (let i = 0; i < width; i++) { if (mapping[i] === 'skip') continue; %>
+              <label class="bd-small"><span class="bd-muted"><%= IMPORT_FIELDS[mapping[i]] %></span>
+                <input class="bd-input" value="<%= r.cells[i] || '' %>" data-line="<%= r.line %>" data-col="<%= i %>" dir="auto"></label>
+              <% } %>
+            </div></td>
           </tr>
         <% }) %>
         </tbody>
@@ -71,9 +93,10 @@
     </div>
     <% if (rows.length > 500) { %><p class="bd-help bd-mt">מוצגות 500 השורות הראשונות מתוך <%= rows.length %>.</p><% } %>
     <div class="bd-actions bd-mt">
-      <button class="bd-btn bd-btn--primary" name="action" value="save" <%= okCount ? '' : 'disabled' %>>ייבוא <%= okCount %> מקורבים</button>
-      <span class="bd-help">שורות עם שגיאה או כפילות לא ייובאו. אפשר לתקן באקסל ולהדביק שוב.</span>
+      <button class="bd-btn bd-btn--primary" name="action" value="save" <%= okCount ? '' : 'disabled' %>>ייבוא <%= okCount %> מקורבים<%= createCats && newCats.length ? ' + ' + newCats.length + ' סיווגים' : '' %></button>
+      <button class="bd-btn bd-btn--ghost" name="action" value="reset" formnovalidate>ביטול והדבקה מחדש</button>
     </div>
+    <p class="bd-help bd-mt">שורות עם שגיאה או כפילות לא ייובאו. אפשר לתקן אותן כאן (✏️) וללחוץ "עדכון התצוגה".</p>
   </section>
   <% } %>
 </form>

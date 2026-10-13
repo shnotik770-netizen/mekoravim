@@ -13,7 +13,7 @@ import {
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
 import { demoSeed, demoCalc, demoOptions } from './lib/demo.js';
-import { splitTable, guessMapping, parseRow, dupKey, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
+import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
 import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
@@ -59,7 +59,7 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 // ייבוא מקורבים בהדבקה (עד אלפי שורות) מקבל גוף גדול יותר; שאר הטפסים — 100kb
 const smallBody = express.urlencoded({ extended: true, limit: '100kb' });
-const bigBody = express.urlencoded({ extended: true, limit: '2mb' });
+const bigBody = express.urlencoded({ extended: true, limit: '2mb', parameterLimit: 5000 });
 app.use((req, res, next) => (/^\/s\/[^/]+\/contacts\/import$/.test(req.path) ? bigBody : smallBody)(req, res, next));
 // ב-Express 5 בקשה בלי גוף משאירה את req.body ריק (undefined) — מונע TypeError בנתיבים
 app.use((req, res, next) => { req.body ??= {}; next(); });
@@ -479,7 +479,7 @@ app.use('/r/:token', async (req, res, next) => {
   const { rows } = await q(
     `SELECT l.*, s.name AS shliach_name FROM reg_links l JOIN shluchim s ON s.id=l.shliach_id
      WHERE l.token=$1 AND l.active AND s.active`, [req.params.token]);
-  if (!rows[0]) return res.status(404).render('error', { message: 'קישור הרישום אינו פעיל' });
+  if (!rows[0]) return res.redirect('/'); // קישור רישום לא פעיל — ישר לדף הבית
   req.link = res.locals.link = rows[0];
   res.locals.noApp = true; // דפי רישום למקורבים — בלי הצעת התקנה
   next();
@@ -510,7 +510,7 @@ app.use('/s/:slug', router);
 
 router.use(async (req, res, next) => {
   const { rows } = await q('SELECT * FROM shluchim WHERE slug=$1 AND active', [req.params.slug]);
-  if (!rows[0]) return res.status(404).render('error', { message: 'הקישור אינו פעיל' });
+  if (!rows[0]) return res.redirect('/'); // קישור שליח לא פעיל / לא קיים — ישר לדף הבית
   const s = rows[0];
   req.shliach = res.locals.shliach = s;
   res.locals.base = `/s/${s.slug}`;
@@ -694,10 +694,11 @@ router.get('/contacts/import', async (req, res) => {
 // שלב 1: תצוגה מקדימה (action=preview), שלב 2: שמירה (action=save). הטבלה נשלחת מחדש בכל שלב — אין מצב בשרת
 router.post('/contacts/import', async (req, res) => {
   const s = req.shliach;
-  const categories = await loadCategories(s.id);
-  const text = String(req.body.text || '');
+  let categories = await loadCategories(s.id);
+  let text = String(req.body.text || '');
   const defaultCategory = categories.some((c) => c.id === int(req.body.category_id)) ? int(req.body.category_id) : null;
-  const render = (o) => res.render('import', { text, categories, defaultCategory, IMPORT_FIELDS, rows: null, mapping: [], error: null, ...o });
+  const render = (o) => res.render('import', { text, categories, defaultCategory, IMPORT_FIELDS, rows: null, mapping: [], error: null, newCats: [], createCats: true, ...o });
+  if (req.body.action === 'reset') { req.skipAudit = true; text = ''; return render({}); }
   let table = splitTable(text);
   if (!table.length) { req.skipAudit = true; return render({ error: 'לא הודבקו נתונים' }); }
   const guess = guessMapping(table);
@@ -705,17 +706,34 @@ router.post('/contacts/import', async (req, res) => {
   // שיוך עמודות שהמשתמש בחר בתצוגה המקדימה (אם יש), אחרת הניחוש
   const chosen = Array.from({ length: width }, (_, i) => req.body[`col${i}`]);
   const mapping = chosen.every((v) => v in IMPORT_FIELDS) ? chosen : guess.mapping;
-  const hasHeader = req.body.has_header !== undefined ? req.body.has_header === '1' : guess.hasHeader;
+  const hasHeader = req.body.has_header !== undefined ? [].concat(req.body.has_header).includes('1') : guess.hasHeader;
   const header = hasHeader ? table[0] : null;
   if (hasHeader) table = table.slice(1);
+  // הטקסט מוחזר מנורמל (טאבים, שורה לכל מקורב) — כך אפשר לתקן כל שורה בתצוגה המקדימה
+  text = toTSV(header ? [header, ...table] : table);
   if (table.length > IMPORT_MAX) { req.skipAudit = true; return render({ error: `אפשר לייבא עד ${IMPORT_MAX} שורות בפעם אחת (הודבקו ${table.length})` }); }
   if (!mapping.includes('first_name') && !mapping.includes('full_name')) { req.skipAudit = true; return render({ error: 'יש לבחור עמודה של שם פרטי או שם מלא', rows: [], mapping, header, hasHeader, width }); }
+
+  // סיווגים שלא קיימים: אפשר ליצור אותם (ברירת מחדל: כן)
+  const createCats = req.body.create_cats === undefined ? true : [].concat(req.body.create_cats).includes('1');
+  const ci = mapping.indexOf('category');
+  const known = new Set(categories.map((c) => c.name.trim()));
+  const newCatCounts = new Map();
+  if (ci >= 0) for (const r of table) { const n = (r[ci] || '').trim().slice(0, 40); if (n && !known.has(n)) newCatCounts.set(n, (newCatCounts.get(n) || 0) + 1); }
+  const newCats = [...newCatCounts].slice(0, 20).map(([name, count]) => ({ name, count }));
+  if (req.body.action === 'save' && createCats && newCats.length) {
+    for (const [i, c] of newCats.entries()) {
+      await q('INSERT INTO categories (shliach_id, name, color, sort) VALUES ($1,$2,$3,(SELECT coalesce(max(sort),0)+1 FROM categories WHERE shliach_id=$1))',
+        [s.id, c.name, COLORS[(categories.length + i) % COLORS.length]]);
+    }
+    categories = await loadCategories(s.id);
+  }
 
   const { rows: existing } = await q('SELECT first_name, last_name, phone, h_day, h_month FROM contacts WHERE shliach_id=$1', [s.id]);
   const seen = new Set(existing.map(dupKey));
   const rows = table.map((cells, i) => {
     const r = parseRow(cells, mapping, { categories, defaultCategory });
-    const out = { n: i + 1, cells, ...r };
+    const out = { n: i + 1, line: i + (hasHeader ? 1 : 0), cells, ...r };
     if (r.value) {
       const k = dupKey(r.value);
       if (seen.has(k)) out.dup = true; else seen.add(k);
@@ -726,12 +744,13 @@ router.post('/contacts/import', async (req, res) => {
 
   if (req.body.action !== 'save') {
     req.skipAudit = true; // תצוגה מקדימה לא נרשמת ביומן
-    return render({ rows, mapping, header, hasHeader, width, okCount: ok.length });
+    return render({ rows, mapping, header, hasHeader, width, okCount: ok.length, newCats, createCats });
   }
   for (const r of ok) await saveContact(s.id, r.value, [], null);
   const skipped = rows.length - ok.length;
-  req.auditDetail = `נוספו ${ok.length}${skipped ? `, דולגו ${skipped}` : ''}`; // מספרים בלבד
-  flash(req, `נוספו ${ok.length} מקורבים${skipped ? ` (${skipped} שורות דולגו — שגיאה או כפילות)` : ''}`);
+  const made = createCats ? newCats.length : 0;
+  req.auditDetail = `נוספו ${ok.length}${skipped ? `, דולגו ${skipped}` : ''}${made ? `, סיווגים חדשים ${made}` : ''}`; // מספרים בלבד
+  flash(req, `נוספו ${ok.length} מקורבים${made ? ` ו-${made} סיווגים חדשים` : ''}${skipped ? ` (${skipped} שורות דולגו — שגיאה או כפילות)` : ''}`);
   res.redirect(`${res.locals.base}/contacts`);
 });
 

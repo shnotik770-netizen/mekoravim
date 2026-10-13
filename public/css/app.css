@@ -203,3 +203,14 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 /* תזכורת SMS ופעולות על בן משפחה */
 .bd-remind .bd-input { max-width: 200px; flex: 0 1 200px; }
 .bd-family__ops { display: grid; gap: var(--bd-sp-2); justify-items: start; }
+.bd-import-undo { align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: var(--bd-sp-4); }
+.bd-import-ops { white-space: nowrap; }
+.bd-import-ops .bd-link-btn { padding: 0 6px; }
+.bd-import-cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--bd-sp-2); padding: var(--bd-sp-2) 0; }
+.bd-import-cells label { display: grid; gap: 2px; }
+.bd-table tr.bd-import-edit td { background: var(--bd-surface-2); border-top: 0; }
+.bd a.bd-import-cta { display: flex; align-items: center; gap: var(--bd-sp-3); flex-wrap: wrap; max-width: 640px; margin-bottom: var(--bd-sp-4); color: var(--bd-fg); border: 1px dashed var(--bd-accent); background: var(--bd-accent-soft); }
+.bd a.bd-import-cta:hover { border-style: solid; }
+.bd-import-cta > span:nth-child(2) { flex: 1; display: grid; min-width: 180px; }
+.bd-import-cta__ico { font-size: 1.8rem; }
+.bd-import-cta__go { font-weight: var(--bd-fw-bold); color: var(--bd-accent); white-space: nowrap; }

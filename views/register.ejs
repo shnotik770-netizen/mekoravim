@@ -8,7 +8,13 @@
   <p class="bd-sub" style="font-size:var(--bd-fs-md)">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
 </div>
 <% } else { %>
-<div class="bd-head"><h1 class="bd-title">הוספת מקורב</h1></div>
+<div class="bd-pagehead"><h1 class="bd-title">הוספת מקורב</h1></div>
+<a class="bd-card bd-import-cta" href="<%= base %>/contacts/import">
+  <span class="bd-import-cta__ico">📋</span>
+  <span><b>יש לכם רשימה באקסל?</b><span class="bd-help">מדביקים את כולה בבת אחת — המערכת מזהה שמות, טלפונים ותאריכים.</span></span>
+  <span class="bd-import-cta__go">הדבקה מאקסל ←</span>
+</a>
+<p class="bd-section-title bd-mt">או הוספה של מקורב אחד:</p>
 <% } %>
 <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
 <form method="post" class="bd-card" novalidate style="<%= internal ? 'max-width:640px' : '' %>">
