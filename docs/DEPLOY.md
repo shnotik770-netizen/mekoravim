@@ -33,7 +33,7 @@
 דומיין משלך — בשלב מאוחר יותר.
 
 ## 4. גיבוי
-שירות Postgres → **Backups** → להפעיל גיבוי אוטומטי.
+גיבוי מובנה של Railway דורש תוכנית Pro. במקומו יש גיבוי יומי חינמי — סעיף 6.
 
 ## 5. בדיקה
 1. `<הכתובת>/health` מחזיר `ok`.
@@ -48,10 +48,8 @@
 **מה עושים ב-Railway:**
 1. בפרויקט: **+ Create → Bucket**, בשם `backups`.
 2. **+ Create → GitHub Repo** → `shnotik770-netizen/mekoravim`, שם השירות `backup`, ענף כמו של web.
-3. בשירות `backup` → **Settings**:
-   - **Custom Start Command:** `node scripts/backup.mjs`
-   - **Cron Schedule:** `17 1 * * *` (כל לילה ב-01:17 UTC ≈ 3–4 בלילה בישראל)
-   - **Healthcheck Path:** ריק (לשירות cron אין שרת)
+3. בשירות `backup` → **Settings → Config-as-code → Railway Config File** = `railway.backup.json`
+   (הקובץ קובע: הרצת `node scripts/backup.mjs` כל לילה ב-01:17 UTC ≈ 3–4 בלילה בישראל, בלי בדיקת health).
 4. בשירות `backup` → **Variables**:
 
 | שם | ערך |
