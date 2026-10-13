@@ -119,3 +119,18 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 .bd a.bd-icon-btn--wa { color: var(--bd-wa); }
 .bd a.bd-btn--primary { color: var(--bd-accent-fg); }
 .bd a.bd-btn--soft { color: var(--bd-accent); }
+
+/* כפתור "שמירה כאפליקציה" */
+.bd-install { all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium);
+  padding: var(--bd-sp-2) var(--bd-sp-3); border-radius: var(--bd-r-pill); min-height: 36px; display: inline-flex; align-items: center;
+  background: var(--bd-today-bg); color: var(--bd-gold); border: 1px solid var(--bd-today-line); }
+.bd-install:hover { background: color-mix(in srgb, var(--bd-today-bg) 70%, var(--bd-gold)); }
+.bd-install:focus-visible { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-install[hidden] { display: none !important; }
+
+/* כפתור וואטסאפ בדף הבית */
+.bd a.bd-wa-btn { background: var(--bd-wa); color: #fff; }
+.bd a.bd-wa-btn:hover { background: color-mix(in srgb, var(--bd-wa) 88%, #000); }
+.bd-wa-float { position: fixed; bottom: 20px; inset-inline-start: 20px; z-index: 40; width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--bd-wa); color: #fff; box-shadow: 0 6px 18px rgb(0 0 0 / .2); }
+.bd a.bd-wa-float { color: #fff; }

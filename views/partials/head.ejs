@@ -16,6 +16,14 @@
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
+<% if (typeof noApp === 'undefined' || !noApp) { %>
+<link rel="manifest" href="<%= typeof manifestUrl !== 'undefined' ? manifestUrl : '/manifest.webmanifest' %>">
+<meta name="theme-color" content="#C98A1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ימי הולדת">
+<% } %>
+<link rel="icon" type="image/png" href="/icons/favicon-64.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
 <body>
 <div class="bd-page">
@@ -29,9 +37,10 @@
     <a href="<%= base %>/contacts/new" <%- _active === 'new' ? 'aria-current="page"' : '' %>>+ הוספה</a>
     <a href="<%= base %>/links" <%- _active === 'links' ? 'aria-current="page"' : '' %>>קישורי רישום</a>
     <a href="<%= base %>/settings" <%- _active === 'settings' ? 'aria-current="page"' : '' %>>הגדרות</a>
+    <button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button>
     <% if (hasCode) { %><form method="post" action="<%= base %>/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form><% } %>
   </nav>
 </header>
 <% } %>
 <main>
-<% if (flash) { %><div class="bd-msg bd-msg--ok" role="status">✓ <%= flash %></div><% } %>
+<% if (flash && flash.err) { %><div class="bd-msg bd-msg--err" role="alert"><%= flash.err %></div><% } else if (flash) { %><div class="bd-msg bd-msg--ok" role="status">✓ <%= flash %></div><% } %>

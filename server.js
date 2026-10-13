@@ -47,6 +47,7 @@ const CSP = [
   "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data:", "connect-src 'self'",
   "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'", "object-src 'none'",
+  "manifest-src 'self'", "worker-src 'self'",
 ].join('; ');
 
 const app = express();
@@ -72,6 +73,7 @@ app.use((req, res, next) => {
 });
 
 const flash = (req, msg) => { req.session.flash = msg; };
+const flashErr = (req, msg) => { req.session.flash = { err: msg }; };
 const randomToken = (bytes) => crypto.randomBytes(bytes).toString('base64url');
 const randomCode = () => String(crypto.randomInt(100000, 1000000));
 const baseUrl = (req) => process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
@@ -92,6 +94,24 @@ function homeExamples() {
 }
 
 app.get('/', (req, res) => res.render('home', { examples: homeExamples() }));
+
+// "שמירה כאפליקציה" (PWA): מניפסט כללי, ומניפסט אישי לכל שליח שנפתח ישר לדשבורד שלו
+function manifest({ name, short, start, scope }) {
+  return {
+    name, short_name: short, start_url: start, scope, id: start,
+    description: 'ימי הולדת עבריים של המקורבים — דשבורד, תזכורות ויצירת קשר',
+    display: 'standalone', dir: 'rtl', lang: 'he',
+    background_color: '#F7F4EE', theme_color: '#C98A1A',
+    icons: [
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  };
+}
+app.get('/manifest.webmanifest', (req, res) => {
+  res.type('application/manifest+json').send(manifest({ name: 'ימי הולדת למקורבים', short: 'ימי הולדת', start: '/admin', scope: '/' }));
+});
 
 app.get('/admin/login', (req, res) => {
   if (req.session.admin > Date.now()) return res.redirect('/admin');
@@ -122,7 +142,7 @@ function requireAdmin(req, res, next) {
 
 // המנהל רואה רק שם, קישור וסטטוס — לא את נתוני המקורבים
 app.get('/admin', requireAdmin, async (req, res) => {
-  const { rows } = await q(`SELECT id, name, slug, active, created_at, access_code_hash IS NOT NULL AS has_code, sms_enabled
+  const { rows } = await q(`SELECT id, name, slug, active, created_at, access_code_hash IS NOT NULL AS has_code, sms_enabled, phone
                             FROM shluchim ORDER BY created_at DESC`);
   const info = takeReveal(req.session.reveal);
   req.session.reveal = undefined;
@@ -138,20 +158,23 @@ const CODE_RULE = 'הקוד צריך להכיל 6–32 תווים, ללא רוו
 // כל שינוי קוד מעלה את session_version — וכך מנתק את כל הסשנים הקיימים של השליח
 async function setCode(req, id, code) {
   const { rows } = await q(
-    'UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1 WHERE id=$2 RETURNING name, slug',
+    'UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1 WHERE id=$2 RETURNING name, slug, phone',
     [code ? await bcrypt.hash(code, 12) : null, id]);
   if (rows[0]) req.session.reveal = storeReveal({ ...rows[0], code }); // בעוגייה רק מזהה, לא הקוד
 }
 
 app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 80);
-  if (!name) { flash(req, 'יש להזין שם'); return res.redirect('/admin'); }
+  if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect('/admin'); }
+  const phone = normalizePhone(req.body.phone);
+  if (!phone) { flashErr(req, 'יש להזין מספר נייד תקין של השליח (05X-XXXXXXX)'); return res.redirect('/admin'); }
   let code = null;
   if (req.body.with_code === 'yes') {
     code = String(req.body.code || '').trim() || randomCode();
-    if (!validCode(code)) { flash(req, CODE_RULE); return res.redirect('/admin'); }
+    if (!validCode(code)) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
   }
-  const { rows } = await q('INSERT INTO shluchim (name, slug) VALUES ($1,$2) RETURNING id', [name, randomToken(9)]);
+  // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
+  const { rows } = await q('INSERT INTO shluchim (name, slug, phone, sms_phone) VALUES ($1,$2,$3,$3) RETURNING id', [name, randomToken(9), phone]);
   const id = rows[0].id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {
     await q('INSERT INTO categories (shliach_id, name, color, sort) VALUES ($1,$2,$3,$4)', [id, n, c, i]);
@@ -162,8 +185,16 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
 
 app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
   const code = String(req.body.code || '').trim() || randomCode();
-  if (!validCode(code)) { flash(req, CODE_RULE); return res.redirect('/admin'); }
+  if (!validCode(code)) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
   await setCode(req, int(req.params.id), code);
+  res.redirect('/admin');
+});
+
+app.post('/admin/shluchim/:id/phone', requireAdmin, async (req, res) => {
+  const phone = normalizePhone(req.body.phone);
+  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect('/admin'); }
+  await q(`UPDATE shluchim SET phone=$1, sms_phone=CASE WHEN sms_phone='' THEN $1 ELSE sms_phone END WHERE id=$2`, [phone, int(req.params.id)]);
+  flash(req, 'הטלפון עודכן');
   res.redirect('/admin');
 });
 
@@ -214,6 +245,7 @@ app.use('/r/:token', async (req, res, next) => {
      WHERE l.token=$1 AND l.active AND s.active`, [req.params.token]);
   if (!rows[0]) return res.status(404).render('error', { message: 'קישור הרישום אינו פעיל' });
   req.link = res.locals.link = rows[0];
+  res.locals.noApp = true; // דפי רישום למקורבים — בלי הצעת התקנה
   next();
 });
 
@@ -246,6 +278,7 @@ router.use(async (req, res, next) => {
   const s = rows[0];
   req.shliach = res.locals.shliach = s;
   res.locals.base = `/s/${s.slug}`;
+  res.locals.manifestUrl = `/s/${s.slug}/manifest.webmanifest`;
   res.locals.hasCode = !!s.access_code_hash;
   const sh = req.session.sh && !Array.isArray(req.session.sh) ? req.session.sh : {};
   req.authorized = !s.access_code_hash || sh[s.id] === s.session_version;
@@ -253,6 +286,11 @@ router.use(async (req, res, next) => {
 });
 
 const requireShliach = (req, res, next) => (req.authorized ? next() : res.redirect(res.locals.base));
+
+router.get('/manifest.webmanifest', (req, res) => {
+  const b = res.locals.base;
+  res.type('application/manifest+json').send(manifest({ name: `ימי הולדת — ${req.shliach.name}`, short: 'ימי הולדת', start: b, scope: b }));
+});
 
 async function loadCategories(shliachId) {
   return (await q('SELECT * FROM categories WHERE shliach_id=$1 ORDER BY sort, id', [shliachId])).rows;
@@ -516,7 +554,7 @@ router.post('/sms', async (req, res) => {
     if (Date.now() - (lastTest.get(s.id) || 0) < 60 * 1000) return renderSettings(req, res, 'אפשר לשלוח הודעת ניסיון פעם בדקה', 429);
     lastTest.set(s.id, Date.now());
     const r = await sendWeekly(s);
-    flash(req, r.ok ? 'הודעת הניסיון נשלחה ✓' : `השליחה נכשלה: ${r.error}`);
+    if (r.ok) flash(req, 'הודעת הניסיון נשלחה'); else flashErr(req, `השליחה נכשלה: ${r.error}`);
     return res.redirect(back);
   }
   const enabled = req.body.sms_enabled === 'on';

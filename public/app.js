@@ -50,3 +50,35 @@ if (codeField) {
   document.querySelectorAll('input[name=with_code]').forEach((r) => r.addEventListener('change', sync));
   sync();
 }
+
+// "שמירה כאפליקציה" (PWA) — כמו בקאפיטל: רישום service worker, שמירת אירוע ההתקנה
+// והפעלתו רק בלחיצה. באייפון אין API להתקנה — מציגים הנחיה (שיתוף ← הוסף למסך הבית).
+(() => {
+  const buttons = [...document.querySelectorAll('[data-install]')];
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (!buttons.length || standalone) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  let deferred = null;
+  const show = (on) => buttons.forEach((b) => { b.hidden = !on; });
+  if (isIOS) show(true);
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; show(true); });
+  window.addEventListener('appinstalled', () => { deferred = null; show(false); toast('נשמר כאפליקציה במסך הבית ✓'); });
+  buttons.forEach((b) => b.addEventListener('click', async () => {
+    if (deferred) {
+      deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      deferred = null;
+      if (outcome === 'accepted') show(false);
+    } else if (isIOS) {
+      toast('באייפון: הקישו על כפתור השיתוף ⬆️ ואז "הוסף למסך הבית"');
+    }
+  }));
+  function toast(msg) {
+    document.querySelector('.bd-toast')?.remove();
+    const t = document.createElement('div');
+    t.className = 'bd-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    (document.querySelector('.bd') || document.body).append(t);
+    setTimeout(() => t.remove(), 6000);
+  }
+})();

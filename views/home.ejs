@@ -1,8 +1,10 @@
 <%- include('partials/head', { title: 'ימי הולדת למקורבים' }) %>
+<% const waContact = 'https://wa.me/972533404770?text=' + encodeURIComponent('שלום, אשמח לשמוע על מערכת ימי ההולדת למקורבים'); %>
 <section class="bd-hero">
   <%- include('partials/logo', { big: true }) %>
   <h1 class="bd-title" style="font-size:2.25rem">ימי הולדת למקורבים</h1>
   <p class="bd-sub">מערכת פרטית לשלוחים, למעקב אחרי ימי ההולדת העבריים של המקורבים ובני משפחותיהם — כדי שאף יום הולדת לא יעבור בלי ברכה ושיחה.</p>
+  <p class="bd-mt"><a class="bd-btn bd-wa-btn" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>מעוניינים? דברו איתנו בוואטסאפ</a></p>
 </section>
 
 <section class="bd-card bd-mb">
@@ -43,6 +45,11 @@
   <div class="bd-card"><h3 class="bd-section-title">🔒 פרטיות</h3><p class="bd-help">המידע של כל שליח נגיש רק לו, בכניסה עם הקישור האישי (ואם הוגדר — גם קוד). מנהל המערכת לא צופה ברשימות המקורבים, ושינוי קוד מנתק את כל המכשירים המחוברים.</p></div>
 </div>
 
-<p class="bd-center bd-muted">מעוניינים בחשבון? פנו למנהל המערכת.</p>
+<section class="bd-card bd-center bd-mb">
+  <h2 class="bd-h2">רוצים חשבון לבית חב״ד שלכם?</h2>
+  <p class="bd-help bd-mb">שלחו הודעה ונפתח לכם קישור אישי — מוכן לשימוש תוך דקות.</p>
+  <a class="bd-btn bd-wa-btn" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ · <span class="bd-num">053-340-4770</span></a>
+</section>
+<a class="bd-wa-float" href="<%= waContact %>" target="_blank" rel="noopener" aria-label="יצירת קשר בוואטסאפ"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3 21l2-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></a>
 <p class="bd-center bd-small"><a href="/admin/login" class="bd-muted">כניסת מנהל</a></p>
 <%- include('partials/foot') %>

@@ -1,7 +1,7 @@
 <%- include('partials/head', { title: 'ניהול שלוחים' }) %>
 <header class="bd-appbar">
   <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
-  <nav class="bd-nav"><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
+  <nav class="bd-nav"><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
 </header>
 <p class="bd-mb"><span class="bd-status <%= smsOn ? 'bd-status--ok' : 'bd-status--bad' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span></p>
 
@@ -15,7 +15,7 @@
   <% } else { %>
     <p class="bd-help">כניסה ללא קוד — כל מי שמחזיק בקישור נכנס לחשבון.</p>
   <% } %>
-  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ</a>
+  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= info.phone ? '972' + info.phone.replace(/^0/, '') : '' %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
 </section>
 <% } %>
 
@@ -32,7 +32,10 @@
           <span class="bd-status <%= s.has_code ? 'bd-status--ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
           <% if (s.sms_enabled) { %><span class="bd-status bd-status--accent">📱 SMS</span><% } %>
           <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
-        <div class="bd-item__sub"><code class="bd-code copy"><%= base %>/s/<%= s.slug %></code></div>
+        <div class="bd-item__sub">
+          <% if (s.phone) { %><a href="https://wa.me/972<%= s.phone.replace(/^0/, '') %>" target="_blank" rel="noopener" class="bd-num">📱 <%= s.phone %></a> · <% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span> <% } %>
+          <code class="bd-code copy"><%= base %>/s/<%= s.slug %></code>
+        </div>
       </div>
       <details class="bd-menu">
         <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
@@ -40,6 +43,10 @@
           <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-stack">
             <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
             <button class="bd-btn bd-btn--primary bd-btn--sm"><%= s.has_code ? 'החלפת קוד' : 'הוספת קוד' %></button>
+          </form>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/phone" class="bd-stack">
+            <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" placeholder="נייד השליח" required aria-label="נייד השליח">
+            <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון טלפון</button>
           </form>
           <% if (s.has_code) { %>
           <form method="post" action="/admin/shluchim/<%= s.id %>/nocode" data-confirm="להסיר את הקוד? כל מי שמחזיק בקישור יוכל להיכנס."><button class="bd-link-btn bd-link-btn--accent">הסרת קוד</button></form>
@@ -54,7 +61,8 @@
 <aside class="bd-card">
   <h2 class="bd-section-title">שליח חדש</h2>
   <form method="post" action="/admin/shluchim">
-    <div class="bd-field"><label class="bd-label" for="sn">שם השליח / בית חב״ד</label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>
+    <div class="bd-field"><label class="bd-label" for="sn">שם השליח / בית חב״ד<span class="req">*</span></label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>
+    <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required pattern="[0-9+\-\s]{9,}"><span class="bd-help">לשליחת פרטי הכניסה בוואטסאפ, וכברירת מחדל ל-SMS השבועי</span></div>
     <div class="bd-toggle" role="radiogroup" aria-label="סוג כניסה">
       <input type="radio" name="with_code" id="wc-yes" value="yes" checked><label for="wc-yes">עם קוד</label>
       <input type="radio" name="with_code" id="wc-no" value="no"><label for="wc-no">קישור בלבד</label>
