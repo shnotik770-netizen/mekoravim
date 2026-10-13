@@ -10,7 +10,6 @@ import {
   hebToday, addDays, fmtGreg, hebFromGreg, parseISO,
 } from './lib/dates.js';
 
-const hebFromGregObj = (iso) => { const h = hebFromGreg(parseISO(iso), false); return { h_day: h.day, h_month: h.month, h_year: h.year }; };
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
 import { splitTable, guessMapping, parseRow, dupKey, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
@@ -99,15 +98,7 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 /* ------------------------------ דף ראשי ומנהל ------------------------------ */
 
 // דוגמאות חיות לדף הבית
-function homeExamples() {
-  const today = todayIL();
-  const a = { g_date: '1990-10-20', ...hebFromGregObj('1990-10-20') };
-  const b = { h_day: 14, h_month: 13, h_year: 5745 };
-  const c = { h_day: 30, h_month: 8, h_year: null };
-  return [a, b, c].map((p) => ({ ...p, text: birthText(p), next: nextBirthday(p, today) }));
-}
-
-app.get('/', (req, res) => res.render('home', { examples: homeExamples() }));
+app.get('/', (req, res) => res.render('home'));
 
 // "שמירה כאפליקציה" (PWA): מניפסט כללי, ומניפסט אישי לכל שליח שנפתח ישר לדשבורד שלו
 function manifest({ name, short, start, scope }) {
