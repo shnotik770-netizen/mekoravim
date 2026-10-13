@@ -137,3 +137,9 @@ fieldset.bd-field legend { margin-bottom: 6px; padding: 0; }
 
 /* הערה על תאריך שמציינים השנה במועד אחר (ל׳ בחודש חסר, אדר א׳/ב׳) */
 .bd-note { color: var(--bd-gold); font-size: var(--bd-fs-sm); }
+
+/* בורר אופן כניסה בתפריט הפעולות של המנהל */
+.bd-menu .bd-toggle { margin-bottom: 0; }
+/* ".bd button { color: inherit }" בחבילה גובר על צבע הכפתור — מחזירים */
+.bd button.bd-btn--primary { color: var(--bd-accent-fg); }
+.bd button.bd-btn--soft { color: var(--bd-accent); }

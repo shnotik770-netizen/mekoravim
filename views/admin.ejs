@@ -13,7 +13,7 @@
     <p>קוד כניסה: <code class="bd-code bd-code--big copy"><%= info.code %></code></p>
     <p class="bd-help bd-mt">הקוד מוצג עכשיו בלבד — העבירו אותו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
   <% } else { %>
-    <p class="bd-help">כניסה ללא קוד — כל מי שמחזיק בקישור נכנס לחשבון.</p>
+    <p class="bd-help">כניסה בקוד חד-פעמי שנשלח ב-SMS לנייד השליח בכל כניסה.</p>
   <% } %>
   <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= info.phone ? '972' + info.phone.replace(/^0/, '') : '' %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
 </section>
@@ -29,7 +29,7 @@
     <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">
         <div class="bd-item__title"><%= s.name %>
-          <span class="bd-status <%= s.has_code ? 'bd-status--ok' : '' %>"><%= s.has_code ? '🔒 עם קוד' : 'ללא קוד' %></span>
+          <span class="bd-status bd-status--ok"><%= s.login_mode === 'code' ? '🔒 קוד קבוע' : '🔐 קוד ב-SMS' %></span>
           <% if (s.sms_enabled) { %><span class="bd-status bd-status--accent">📱 SMS</span><% } %>
           <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
         <div class="bd-item__sub">
@@ -40,17 +40,21 @@
       <details class="bd-menu">
         <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
         <div class="bd-menu__body">
-          <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-stack">
-            <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
-            <button class="bd-btn bd-btn--primary bd-btn--sm"><%= s.has_code ? 'החלפת קוד' : 'הוספת קוד' %></button>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/send-link" <% if (s.login_mode === 'code') { %>data-confirm="בכניסה בקוד קבוע ייקבע קוד חדש וישלח יחד עם הקישור. להמשיך?"<% } %>>
+            <button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS<%= s.login_mode === 'code' ? ' (עם קוד חדש)' : '' %></button>
+          </form>
+          <form method="post" action="/admin/shluchim/<%= s.id %>/login" class="bd-stack" data-login-mode>
+            <div class="bd-toggle" role="radiogroup" aria-label="אופן כניסה">
+              <input type="radio" name="login_mode" id="lm-otp-<%= s.id %>" value="otp" <%= s.login_mode === 'otp' ? 'checked' : '' %>><label for="lm-otp-<%= s.id %>">קוד ב-SMS</label>
+              <input type="radio" name="login_mode" id="lm-code-<%= s.id %>" value="code" <%= s.login_mode === 'code' ? 'checked' : '' %>><label for="lm-code-<%= s.id %>">קוד קבוע</label>
+            </div>
+            <input class="bd-input code-field" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
+            <button class="bd-btn bd-btn--primary bd-btn--sm">עדכון אופן כניסה ושליחה ב-SMS</button>
           </form>
           <form method="post" action="/admin/shluchim/<%= s.id %>/phone" class="bd-stack">
             <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" placeholder="נייד השליח" required aria-label="נייד השליח">
             <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון טלפון</button>
           </form>
-          <% if (s.has_code) { %>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/nocode" data-confirm="להסיר את הקוד? כל מי שמחזיק בקישור יוכל להיכנס."><button class="bd-link-btn bd-link-btn--accent">הסרת קוד</button></form>
-          <% } %>
           <form method="post" action="/admin/shluchim/<%= s.id %>/toggle"><button class="bd-link-btn <%= s.active ? '' : 'bd-link-btn--accent' %>"><%= s.active ? 'השבתת החשבון' : 'הפעלת החשבון' %></button></form>
         </div>
       </details>
@@ -60,15 +64,18 @@
 </section>
 <aside class="bd-card">
   <h2 class="bd-section-title">שליח חדש</h2>
-  <form method="post" action="/admin/shluchim">
+  <form method="post" action="/admin/shluchim" data-login-mode>
     <div class="bd-field"><label class="bd-label" for="sn">שם השליח / בית חב״ד<span class="req">*</span></label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>
-    <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required pattern="[0-9+\-\s]{9,}"><span class="bd-help">לשליחת פרטי הכניסה בוואטסאפ, וכברירת מחדל ל-SMS השבועי</span></div>
-    <div class="bd-toggle" role="radiogroup" aria-label="סוג כניסה">
-      <input type="radio" name="with_code" id="wc-yes" value="yes" checked><label for="wc-yes">עם קוד</label>
-      <input type="radio" name="with_code" id="wc-no" value="no"><label for="wc-no">קישור בלבד</label>
+    <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required pattern="[0-9+\-\s]{9,}"><span class="bd-help">הקישור ופרטי הכניסה יישלחו לנייד הזה ב-SMS מיד עם יצירת החשבון</span></div>
+    <fieldset class="bd-field"><legend class="bd-label">אופן כניסה</legend>
+    <div class="bd-toggle" role="radiogroup" aria-label="אופן כניסה">
+      <input type="radio" name="login_mode" id="nm-otp" value="otp" <%= smsOn ? 'checked' : 'disabled' %>><label for="nm-otp">קוד חד-פעמי ב-SMS</label>
+      <input type="radio" name="login_mode" id="nm-code" value="code" <%= smsOn ? '' : 'checked' %>><label for="nm-code">קוד קבוע</label>
     </div>
+    <span class="bd-help">אין כניסה בלי קוד. בקוד חד-פעמי — בכל כניסה ממכשיר חדש נשלח קוד לנייד.</span>
+    </fieldset>
     <div class="bd-field code-field"><label class="bd-label" for="sc">קוד <span class="opt">(ריק = 6 ספרות אקראיות)</span></label><input class="bd-input" id="sc" name="code" maxlength="32" autocomplete="off"></div>
-    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת קישור</button>
+    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת חשבון ושליחה ב-SMS</button>
   </form>
 </aside>
 </div>
