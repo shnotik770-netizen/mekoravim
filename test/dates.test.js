@@ -140,7 +140,8 @@ test('ייבוא מאקסל: טבלה, זיהוי עמודות ותאריכים'
   assert.deepEqual(guessMapping(r2).mapping, ['full_name', 'phone', 'date']);
   assert.equal(parseDateCell('32946').g_date, '1990-03-14'); // מספר סידורי של אקסל
   assert.deepEqual(parseDateCell('כ"ט באדר א\' תשמ"ד'), { date_type: 'h', h_day: '29', h_month: '12', h_year: 'תשמ"ד' });
-  assert.ok(parseRow(['', 'כהן', '', '1.1.2000'], ['first_name', 'last_name', 'phone', 'date']).error);
+  assert.equal(parseRow(['', 'כהן', '', '1.1.2000'], ['first_name', 'last_name', 'phone', 'date']).value.last_name, 'כהן'); // מספיק שם משפחה
+  assert.ok(parseRow(['', '', '', '1.1.2000'], ['first_name', 'last_name', 'phone', 'date']).error);
   assert.equal(dupKey({ phone: '+972-52-1234567', first_name: 'x' }), dupKey({ phone: '0521234567', first_name: 'y' }));
 });
 

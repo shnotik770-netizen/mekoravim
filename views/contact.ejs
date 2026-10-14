@@ -74,8 +74,9 @@
       <summary class="bd-btn bd-btn--ghost">✏️ עריכת פרטים</summary>
       <form method="post" action="<%= base %>/contacts/<%= c.id %>">
         <div class="bd-row2">
-          <div class="bd-field"><label class="bd-label" for="e-fn">שם פרטי</label><input class="bd-input" id="e-fn" name="first_name" value="<%= values.first_name %>" required maxlength="60"></div>
-          <div class="bd-field"><label class="bd-label" for="e-ln">שם משפחה</label><input class="bd-input" id="e-ln" name="last_name" value="<%= values.last_name %>" required maxlength="60"></div>
+          <div class="bd-field"><label class="bd-label" for="e-fn">שם פרטי</label><input class="bd-input" id="e-fn" name="first_name" value="<%= values.first_name %>" maxlength="60"></div>
+          <div class="bd-field"><label class="bd-label" for="e-ln">שם משפחה</label><input class="bd-input" id="e-ln" name="last_name" value="<%= values.last_name %>" maxlength="60"></div>
+          <p class="bd-help bd-names-note">מספיק שם פרטי <b>או</b> שם משפחה.</p>
         </div>
         <div class="bd-field"><label class="bd-label" for="e-ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>"></div>
         <fieldset class="bd-field"><legend class="bd-label">תאריך לידה</legend><%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'edit' }) %></fieldset>

@@ -4,7 +4,7 @@
   const done = e.contacted;
   const digits = String(e.contact.phone || '').replace(/\D/g, '');
   const intl = digits ? '972' + digits.replace(/^0/, '') : '';
-  const first = e.member ? e.member.first_name : e.contact.first_name;
+  const first = e.member ? e.member.first_name : (e.contact.first_name || e.contact.last_name);
   const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : '';
   const isDemo = typeof demo !== 'undefined' && demo; // בהדגמה: וואטסאפ בלי מספר (רק נוסח הברכה), בלי חיוג
   const waHref = isDemo && wa ? 'https://wa.me/?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : wa;

@@ -575,8 +575,8 @@ function parseExtras(link, body) {
   return { notes: lines.join('\n') };
 }
 
-function parseForm(body) {
-  const c = parseContact(body);
+function parseForm(body, opts) {
+  const c = parseContact(body, opts);
   const fam = c.error ? {} : parseFamily(body.fam);
   return { c: c.value, fam: fam.value, error: c.error || fam.error };
 }
@@ -603,7 +603,7 @@ app.post('/r/:token', async (req, res) => {
       error: 'נשלחו יותר מדי רישומים. נסו שוב בעוד כמה דקות.',
     });
   }
-  const { c, fam, error } = parseForm(req.body);
+  const { c, fam, error } = parseForm(req.body, { bothNames: req.link.require_both_names });
   const extras = parseExtras(req.link, req.body);
   const err = error || extras.error;
   if (err) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error: err, internal: false });
@@ -1180,11 +1180,11 @@ router.post('/links/:id', async (req, res) => {
       label: String(req.body[`extra_label_${i}`] || '').trim().slice(0, 60),
       required: req.body[`extra_req_${i}`] === 'on',
     })).filter((f) => f.label);
-    await q(`UPDATE reg_links SET name=$1, category_id=$2, form_title=$3, form_intro=$4, extra_fields=$5
+    await q(`UPDATE reg_links SET name=$1, category_id=$2, form_title=$3, form_intro=$4, extra_fields=$5, require_both_names=$8
              WHERE id=$6 AND shliach_id=$7`,
       [name, await validCategory(req.shliach.id, int(req.body.category_id)),
         String(req.body.form_title || '').trim().slice(0, 80), String(req.body.form_intro || '').trim().slice(0, 300),
-        JSON.stringify(extra), int(req.params.id), req.shliach.id]);
+        JSON.stringify(extra), int(req.params.id), req.shliach.id, req.body.names === 'both']);
     flash(req, 'הקישור והטופס עודכנו');
   }
   res.redirect(`${res.locals.base}/links`);

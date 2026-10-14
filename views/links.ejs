@@ -33,6 +33,11 @@
               <input class="bd-input" name="form_title" value="<%= l.form_title %>" maxlength="80" placeholder="למשל: רישום לשיעור התניא"></label>
             <label class="bd-small">טקסט פתיחה <span class="opt">(ריק = ברירת המחדל)</span>
               <textarea class="bd-input" name="form_intro" maxlength="300" rows="2" placeholder="נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!"><%= l.form_intro %></textarea></label>
+            <label class="bd-small">שם המקורב בטופס
+              <select class="bd-input" name="names">
+                <option value="both" <%= l.require_both_names ? 'selected' : '' %>>חובה גם שם פרטי וגם שם משפחה</option>
+                <option value="one" <%= !l.require_both_names ? 'selected' : '' %>>מספיק אחד מהם (פרטי או משפחה)</option>
+              </select></label>
             <span class="bd-small">שדות טקסט נוספים <span class="opt">(עד 3 — התשובות נשמרות בהערות המקורב)</span></span>
             <% const ex = Array.isArray(l.extra_fields) ? l.extra_fields : []; for (let i = 0; i < 3; i++) { const f = ex[i] || {}; %>
             <div class="bd-inline bd-extra-row">
