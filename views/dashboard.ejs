@@ -82,10 +82,14 @@
         <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %></h2>
         <p class="bd-dates"><span class="bd-dates__heb"><%= titles[view][1] %></span><span class="bd-dates__greg"><bdi class="bd-num"><%= titles[view][2] %></bdi><% if (titles[view][3]) { %> · <%= titles[view][3] %><% } %></span></p>
       </div>
+      <% if (view === 'missed') { %>
+      <a class="bd-btn bd-btn--ghost bd-btn--sm bd-back-normal" href="<%= qs({ view: 'week' }) %>">→ חזרה לתצוגה הרגילה</a>
+      <% } else { %>
       <div class="bd-seg" role="tablist" aria-label="טווח">
         <% segs.forEach(([k, l]) => { %><a role="tab" href="<%= qs({ view: k }) %>" aria-selected="<%= view === k %>"><%= l %></a><% }) %>
         <a role="tab" href="<%= qs({ view: 'range' }) %>" aria-selected="<%= view === 'range' %>" data-range-open="range" aria-haspopup="dialog">📅 טווח</a>
       </div>
+      <% } %>
       <% if (view === 'missed') { %>
       <div class="bd-missed-chips" role="group" aria-label="כמה זמן אחורה">
         <% MISSED_DAYS.forEach(d => { %><a class="bd-chip" href="<%= qs({ view: 'missed', days: d }) %>" aria-pressed="<%= missed.days === d %>"><%= { 7: 'שבוע', 14: 'שבועיים', 30: 'חודש', 90: '3 חודשים', 180: 'חצי שנה' }[d] %></a><% }) %>

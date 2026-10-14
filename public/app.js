@@ -247,7 +247,7 @@ function initRange(dlg) {
     const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
     let html = `<div class="bd-cal__nav"><button type="button" data-nav="-1" aria-label="החודש הקודם">›</button>
       <div class="bd-cal__month"><b>${MONTHS[m]} ${y}</b><small data-heb-month>&nbsp;</small></div>
-      <button type="button" data-nav="1" aria-label="החודש הבא">‹</button></div><div class="bd-cal__grid" role="grid">`;
+      <button type="button" data-nav="1" aria-label="החודש הבא"${isMissed() && y === today.getFullYear() && m === today.getMonth() ? ' disabled' : ''}>‹</button></div><div class="bd-cal__grid" role="grid">`;
     html += ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((d) => `<span class="bd-cal__dow">${d}</span>`).join('');
     for (let i = 0; i < first.getDay(); i++) html += '<span></span>';
     for (let d = 1; d <= days; d++) {
@@ -260,13 +260,14 @@ function initRange(dlg) {
       if (dt.getDay() === 6) cls.push('is-shabbat');
       const off = isMissed() && (t >= +today || t < +add(today, -MISSED_MAX));
       if (off) cls.push('is-off');
-      html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}"${off ? ' disabled' : ''} aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
+      if (off) { html += `<span class="${cls.join(' ')}" aria-disabled="true"><span>${d}</span><small></small></span>`; continue; }
+      html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}" aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
     }
     cal.innerHTML = html + '</div>';
     getJSON(`/api/hebmonth?y=${y}&m=${m + 1}`).then((h) => {
       if (!h?.days || shown.getFullYear() !== y || shown.getMonth() !== m) return;
       cal.querySelector('[data-heb-month]').textContent = h.month;
-      cal.querySelectorAll('[data-day] small').forEach((el, i) => { el.textContent = h.days[i] || ''; });
+      cal.querySelectorAll('.bd-cal__day small').forEach((el, i) => { el.textContent = h.days[i] || ''; });
     });
     summary();
     form.querySelector('button:not([type])').disabled = !(a && b);
@@ -356,7 +357,7 @@ initRange(document.getElementById('bd-range'));
     const opener = e.target.closest('[data-range-open]');
     const dlg = document.getElementById('bd-range');
     if (opener && dlg?.openRange && typeof dlg.showModal === 'function') { e.preventDefault(); return dlg.openRange(opener.dataset.rangeOpen || 'range'); }
-    const a = e.target.closest('.bd-stats a, .bd-chips a, .bd-seg a, .bd-missed-chips a, a.bd-missed-btn, a.bd-alert__more');
+    const a = e.target.closest('.bd-stats a, .bd-chips a, .bd-seg a, .bd-missed-chips a, a.bd-missed-btn, a.bd-alert__more, a.bd-back-normal');
     if (!a || !a.getAttribute('href')?.startsWith('?')) return;
     e.preventDefault();
     load(a.href, true);

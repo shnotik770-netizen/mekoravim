@@ -440,3 +440,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-qlog__col { display: grid; gap: 8px; margin-top: 4px; }
 .bd-qlog__col .bd-link-btn { justify-self: center; }
 .bd .bd-cal__day.is-off { opacity: .3; cursor: default; pointer-events: none; }
+.bd .bd-cal__day.is-off { opacity: .28; cursor: not-allowed; pointer-events: none; display: grid; place-items: center; align-content: center; height: 46px; }
+.bd .bd-cal__day.is-off span { text-decoration: line-through; font-weight: 400; }
+.bd .bd-back-normal { order: 2; }
+.bd .bd-cal__nav button:disabled { opacity: .25; cursor: default; }
