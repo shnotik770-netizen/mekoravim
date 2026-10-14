@@ -10,7 +10,7 @@
     week: ['השבוע', weekInfo.heb, span(weekRange.start, weekRange.end), weekInfo.parsha],
     month: ['חודש ' + monthWord, monthRange.name, span(monthRange.start, monthRange.end)],
     range: [range.preset ? '30 הימים הקרובים' : 'טווח נבחר', hebRangeStr(range.start, range.end), span(range.start, range.end), days + ' ימים'],
-    missed: ['עברו בלי ברכה', hebRangeStr(missed.start, missed.end), span(missed.start, missed.end), lists.missed.length ? lists.missed.length + ' ממתינים' : ''],
+    missed: ['עברו בלי ברכה', hebRangeStr(missed.start, missed.end), span(missed.start, missed.end), lists.missed.length ? (lists.missed.length === 1 ? 'ממתין אחד' : lists.missed.length + ' ממתינים') : ''],
   };
   const back = qs({});
   const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord]];
@@ -88,7 +88,7 @@
       </div>
       <% if (view === 'missed') { %>
       <div class="bd-missed-chips" role="group" aria-label="כמה זמן אחורה">
-        <% MISSED_DAYS.forEach(d => { %><a class="bd-chip" href="<%= qs({ view: 'missed', days: d }) %>" aria-pressed="<%= missed.days === d %>"><%= { 7: 'שבוע', 14: 'שבועיים', 30: 'חודש', 90: '3 חודשים' }[d] %></a><% }) %>
+        <% MISSED_DAYS.forEach(d => { %><a class="bd-chip" href="<%= qs({ view: 'missed', days: d }) %>" aria-pressed="<%= missed.days === d %>"><%= { 7: 'שבוע', 14: 'שבועיים', 30: 'חודש', 90: '3 חודשים', 180: 'חצי שנה' }[d] %></a><% }) %>
         <a class="bd-chip" href="<%= qs({ view: 'missed', days: 14 }) %>" data-range-open="missed" aria-pressed="<%= !missed.days %>" aria-haspopup="dialog">📅 טווח אחר</a>
       </div>
       <% } %>
@@ -153,6 +153,7 @@
       <button type="button" data-preset="7">7 ימים</button>
       <button type="button" data-preset="30">30 ימים</button>
       <button type="button" data-preset="90">3 חודשים</button>
+      <button type="button" data-preset="180" data-past>חצי שנה</button>
       <button type="button" data-preset="next-week" data-future>שבוע הבא</button>
     </div>
     <div class="bd-cal" data-cal></div>

@@ -439,3 +439,4 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-qlog__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .bd-qlog__col { display: grid; gap: 8px; margin-top: 4px; }
 .bd-qlog__col .bd-link-btn { justify-self: center; }
+.bd .bd-cal__day.is-off { opacity: .3; cursor: default; pointer-events: none; }

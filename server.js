@@ -647,7 +647,8 @@ async function markContacted(shliachId, events) {
 
 // דשבורד (או מסך קוד כניסה)
 const VIEWS = ['today', 'week', 'month', 'range', 'missed'];
-const MISSED_DAYS = [7, 14, 30, 90];
+const MISSED_DAYS = [7, 14, 30, 90, 180];
+const MISSED_MAX = 180; // ימי הולדת שעברו: עד חצי שנה אחורה
 // ימי הולדת שעברו: ?days= (ברירת מחדל שבועיים) או ?from=&to= — תמיד עד אתמול
 function pickMissed(query, today) {
   const yesterday = addDays(today, -1);
@@ -656,7 +657,8 @@ function pickMissed(query, today) {
     if (b < a) [a, b] = [b, a];
     if (b > yesterday) b = yesterday;
     if (a > b) a = b;
-    if (b - a > MAX_RANGE_DAYS * 864e5) a = addDays(b, -(MAX_RANGE_DAYS - 1));
+    if (a < addDays(today, -MISSED_MAX)) a = addDays(today, -MISSED_MAX);
+    if (a > b) a = b;
     return { start: a, end: b, days: null };
   }
   const days = MISSED_DAYS.includes(int(query.days)) ? int(query.days) : 14;

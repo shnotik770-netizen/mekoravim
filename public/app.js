@@ -230,6 +230,8 @@ function initRange(dlg) {
   // ימים עבריים לכל חודש מוצג — מהשרת (נשמר במטמון)
   const cache = new Map();
   const getJSON = (url) => { if (!cache.has(url)) cache.set(url, fetch(url).then((r) => r.json()).catch(() => null)); return cache.get(url); };
+  const MISSED_MAX = 180;
+  const isMissed = () => form.dataset.mode === 'missed';
   const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   let a = parse(fromI.value), b = parse(toI.value), shown = new Date((a || today).getFullYear(), (a || today).getMonth(), 1), picking = false;
 
@@ -256,7 +258,9 @@ function initRange(dlg) {
       if (b && t === +b) cls.push('is-end');
       if (t === +today) cls.push('is-today');
       if (dt.getDay() === 6) cls.push('is-shabbat');
-      html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}" aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
+      const off = isMissed() && (t >= +today || t < +add(today, -MISSED_MAX));
+      if (off) cls.push('is-off');
+      html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}"${off ? ' disabled' : ''} aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
     }
     cal.innerHTML = html + '</div>';
     getJSON(`/api/hebmonth?y=${y}&m=${m + 1}`).then((h) => {
@@ -270,13 +274,22 @@ function initRange(dlg) {
   const set = (x, y2) => {
     a = x; b = y2;
     if (a && b && b < a) [a, b] = [b, a];
+    if (isMissed()) { // אחורה בלבד: עד אתמול, ועד 180 יום
+      const yest = add(today, -1), min = add(today, -MISSED_MAX);
+      if (a && a > yest) a = yest; if (b && b > yest) b = yest;
+      if (a && a < min) a = min; if (b && b < min) b = min;
+    }
     if (a && b && (b - a) / 864e5 >= MAX) b = add(a, MAX - 1);
     fromI.value = a ? iso(a) : ''; toI.value = b ? iso(b) : '';
     render();
   };
   cal.addEventListener('click', (e) => {
     const nav = e.target.closest('[data-nav]');
-    if (nav) { shown = new Date(shown.getFullYear(), shown.getMonth() + +nav.dataset.nav, 1); return render(); }
+    if (nav) {
+      const next = new Date(shown.getFullYear(), shown.getMonth() + +nav.dataset.nav, 1);
+      if (isMissed() && (next > today || next < new Date(add(today, -MISSED_MAX).getFullYear(), add(today, -MISSED_MAX).getMonth(), 1))) return;
+      shown = next; return render();
+    }
     const day = e.target.closest('[data-day]');
     if (!day) return;
     const d = parse(day.dataset.day);
@@ -304,6 +317,9 @@ function initRange(dlg) {
     title.textContent = missed ? 'ימי הולדת שעברו — בחירת טווח' : 'בחירת טווח תאריכים';
     submit.textContent = missed ? 'הצגת מי שלא בירכו בטווח' : 'הצגת ימי ההולדת בטווח';
     form.querySelectorAll('[data-future]').forEach((el) => { el.hidden = missed; });
+    form.querySelectorAll('[data-past]').forEach((el) => { el.hidden = !missed; });
+    fromI.max = toI.max = missed ? iso(add(today, -1)) : '';
+    fromI.min = toI.min = missed ? iso(add(today, -MISSED_MAX)) : '';
     // מעבר בין מצבים: טווח ברירת מחדל מתאים (שבועיים אחורה / 30 יום קדימה)
     if (missed && !(b && b < today)) set(add(today, -14), add(today, -1));
     if (!missed && form.dataset.was === 'missed') set(today, add(today, 29));
