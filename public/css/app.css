@@ -269,3 +269,18 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-logo--mark { background: none; border-radius: 0; width: 40px; height: 40px; }
 .bd-logo--mark.bd-logo--lg { width: 84px; height: 84px; border-radius: 0; }
 .bd-mark { width: 100%; height: 100%; display: block; }
+
+/* שם השליח + סלוגן בראש המסך */
+.bd-brand__text { display: grid; line-height: 1.2; min-width: 0; }
+.bd-brand__name { font-weight: var(--bd-fw-bold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-brand__slogan { font-size: .72rem; font-weight: var(--bd-fw-medium); color: var(--bd-gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd .bd-appbar .bd-brand { min-width: 0; flex: 1 1 auto; }
+
+/* כרטיס יצירת קשר ושיתוף בהגדרות */
+.bd-help-card__brand { display: flex; align-items: center; gap: var(--bd-sp-3); margin-bottom: var(--bd-sp-3); }
+.bd-help-card__brand > span:last-child { display: grid; line-height: 1.25; }
+.bd-help-card__brand b { font-size: var(--bd-fs-lg); }
+.bd-help-card__brand b + span { color: var(--bd-gold); font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); }
+.bd-help-card__btns { display: flex; flex-wrap: wrap; gap: var(--bd-sp-3); }
+.bd-help-card__btns .bd-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 22px; }
+.bd button.bd-wa-btn, .bd a.bd-wa-btn { background: var(--bd-wa); color: #fff; }
