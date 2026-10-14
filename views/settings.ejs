@@ -67,7 +67,19 @@
   </section>
 </div>
 
-<aside class="bd-card">
+<aside class="bd-stack">
+<section class="bd-card">
+  <h2 class="bd-section-title">פנייה</h2>
+  <p class="bd-help bd-mb">איך לפנות אליכם במערכת ובהודעות — למשל "שלום, <%= displayName(shliach) %>".</p>
+  <form method="post" class="bd-inline">
+    <input type="hidden" name="action" value="address">
+    <select class="bd-input" name="address" aria-label="פנייה" data-autosubmit>
+      <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(shliach) === k ? 'selected' : '' %>><%= label %></option><% }) %>
+    </select>
+    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+  </form>
+</section>
+<section class="bd-card">
   <h2 class="bd-section-title">החלפת קוד כניסה</h2>
   <p class="bd-help bd-mb">החלפת הקוד מנתקת את כל שאר המכשירים המחוברים.<% if (canOtp) { %> אפשר תמיד להיכנס גם עם קוד חד-פעמי שנשלח ב-SMS לנייד <bdi class="bd-num" dir="ltr"><%= shliach.phone %></bdi>.<% } %></p>
   <form method="post">
@@ -77,13 +89,14 @@
     <div class="bd-field"><label class="bd-label" for="nc2">אימות</label><input class="bd-input" id="nc2" type="password" name="code2" required minlength="6" autocomplete="new-password"></div>
     <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">שמירה</button>
   </form>
+</section>
 </aside>
 </div>
 <section class="bd-card bd-mt bd-help-card">
   <div class="bd-help-card__brand"><%- include('partials/logo') %><span><b>זכרתי התקשרתי</b><span>לא מפספסים אף יום הולדת</span></span></div>
   <p class="bd-help bd-mb">יש שאלה, רעיון או בעיה? נשמח לשמוע. ומכירים עוד שלוחים שזה יעזור להם? שתפו אותם.</p>
   <div class="bd-help-card__btns">
-    <a class="bd-btn bd-wa-btn" target="_blank" rel="noopener" href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, אני משתמש/ת בזכרתי התקשרתי ורציתי לשאול: ') %>"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
+    <a class="bd-btn bd-wa-btn" target="_blank" rel="noopener" href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, ' + displayName(shliach) + ' כאן — ' + gword(shliach, 'אני משתמש', 'אני משתמשת') + ' בזכרתי התקשרתי ורציתי לשאול: ') %>"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
     <button type="button" class="bd-btn bd-btn--soft" data-share data-share-title="זכרתי התקשרתי — לא מפספסים אף יום הולדת" data-share-text="מערכת לשלוחים: כל ימי ההולדת העבריים של המקורבים במקום אחד, עם תזכורות ב-SMS"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>שיתוף עם שלוחים אחרים</button>
   </div>
 </section>

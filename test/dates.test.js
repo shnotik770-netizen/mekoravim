@@ -173,3 +173,14 @@ test('חשבון הדגמה: 10 מקורבים תקינים, רובם היום /
     assert.ok(days.filter((d) => d < 30).length >= 6, String(days));
   }
 });
+
+test('פנייה: הרב / הרבנית, בלי תואר, ובלי להכפיל תואר קיים', async () => {
+  const { displayName, parseAddress, g } = await import('../lib/address.js');
+  assert.equal(displayName({ name: 'יוסי כהן', gender: 'm', use_title: true }), 'הרב יוסי כהן');
+  assert.equal(displayName({ name: 'חיה כהן', gender: 'f', use_title: true }), 'הרבנית חיה כהן');
+  assert.equal(displayName({ name: 'חיה כהן', gender: 'f', use_title: false }), 'חיה כהן');
+  assert.equal(displayName({ name: 'הרב יוסי כהן', gender: 'm', use_title: true }), 'הרב יוסי כהן');
+  assert.deepEqual(parseAddress('f1'), { gender: 'f', use_title: true });
+  assert.deepEqual(parseAddress('xx'), { gender: 'm', use_title: true });
+  assert.equal(g({ gender: 'f' }, 'משתמש', 'משתמשת'), 'משתמשת');
+});

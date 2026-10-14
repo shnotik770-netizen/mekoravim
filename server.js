@@ -12,6 +12,7 @@ import {
 
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
+import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
@@ -78,6 +79,7 @@ app.use((req, res, next) => {
   res.set('Content-Security-Policy', CSP);
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   res.locals.v = ASSET_V;
+  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword });
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
@@ -131,7 +133,7 @@ app.get('/admin/login', (req, res) => {
 app.post('/admin/login', (req, res) => {
   const ipKey = 'admin:' + req.ip;
   if (loginByIp.blocked(ipKey) || loginByAccount.blocked('admin')) {
-    return res.status(429).render('admin_login', { error: 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.' });
+    return res.status(429).render('admin_login', { error: 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.' });
   }
   if (!crypto.timingSafeEqual(sha(req.body.password || ''), sha(ADMIN_PASSWORD))) {
     loginByIp.hit(ipKey);
@@ -331,7 +333,7 @@ const CODE_RULE = 'הקוד צריך להכיל 6–32 תווים, ללא רוו
 async function setCode(req, id, code) {
   const { rows } = await q(
     `UPDATE shluchim SET access_code_hash=$1, session_version=session_version+1
-     WHERE id=$2 RETURNING id, name, chabad_house, slug, phone`,
+     WHERE id=$2 RETURNING id, name, chabad_house, slug, phone, gender, use_title`,
     [await bcrypt.hash(code, 12), id]);
   if (rows[0]) req.session.reveal = storeReveal({ ...rows[0], code }); // בעוגייה רק מזהה
   return rows[0];
@@ -342,7 +344,7 @@ const shliachUrl = (req, slug) => `${baseUrl(req)}/s/${slug}`;
 // SMS עם הקישור האישי לשליח. הקוד הקבוע נכלל רק ברגע שנקבע (אחר כך השרת לא יודע אותו)
 function welcomeMessage(s, url, code, isNew) {
   const intro = isNew ? 'נפתח עבורך חשבון ב"זכרתי התקשרתי".' : (code ? 'קוד הכניסה שלך ל"זכרתי התקשרתי" עודכן.' : 'הקישור שלך ל"זכרתי התקשרתי":');
-  const lines = [`שלום ${s.name}! 🎂`, intro, isNew || code ? `הקישור האישי שלך:\n${url}` : url];
+  const lines = [`שלום ${displayName(s)}! 🎂`, intro, isNew || code ? `הקישור האישי שלך:\n${url}` : url];
   if (code) lines.push(`קוד הכניסה: ${code}`, '(אפשר להחליף אותו בהגדרות)');
   lines.push('אפשר גם להיכנס עם קוד חד-פעמי שיישלח לנייד הזה.');
   return lines.join('\n');
@@ -374,8 +376,9 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   const quota = parseQuota(req.body.sms_quota);
   if (quota.error) { flashErr(req, quota.error); return res.redirect('/admin'); }
   if (quota.value === null) quota.value = await getDefaultQuota();
+  const addr = parseAddress(req.body.address);
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
-  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota) VALUES ($1,$2,$3,$4,$4,$5) RETURNING id', [name, house, randomToken(9), phone, quota.value]);
+  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota, gender, use_title) VALUES ($1,$2,$3,$4,$4,$5,$6,$7) RETURNING id', [name, house, randomToken(9), phone, quota.value, addr.gender, addr.use_title]);
   const id = rows[0].id;
   req.auditShliachId = id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {
@@ -402,7 +405,7 @@ app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
 
 // שליחה חוזרת של הקישור בלבד (את הקוד הקבוע השרת לא יודע — שומר רק hash)
 app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
-  const { rows } = await q('SELECT id, name, slug, phone FROM shluchim WHERE id=$1', [int(req.params.id)]);
+  const { rows } = await q('SELECT id, name, slug, phone, gender, use_title FROM shluchim WHERE id=$1', [int(req.params.id)]);
   const s = rows[0];
   if (!s) return res.redirect('/admin');
   if (!s.phone) { flashErr(req, 'לשליח אין נייד'); return res.redirect('/admin'); }
@@ -688,7 +691,7 @@ router.post('/login', async (req, res) => {
   const ipKey = `s${s.id}:${req.ip}`;
   const acctKey = `s${s.id}`;
   if (loginByIp.blocked(ipKey) || loginByAccount.blocked(acctKey)) {
-    return renderLogin(req, res, 'יותר מדי ניסיונות. נסה שוב מאוחר יותר.', 429);
+    return renderLogin(req, res, 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.', 429);
   }
   const code = String(req.body.code || '').trim();
   // קודם הקוד הקבוע; אם לא תאם — קוד חד-פעמי פעיל (אם נשלח)
@@ -1054,7 +1057,11 @@ router.post('/settings', async (req, res) => {
   const fail = (error) => renderSettings(req, res, error, 400);
   const a = req.body.action;
 
-  if (a === 'code') {
+  if (a === 'address') {
+    const addr = parseAddress(req.body.address);
+    await q('UPDATE shluchim SET gender=$1, use_title=$2 WHERE id=$3', [addr.gender, addr.use_title, s.id]);
+    flash(req, 'הפנייה עודכנה');
+  } else if (a === 'code') {
     if (s.access_code_hash && !recentOtp(req) && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) return fail('הקוד הנוכחי שגוי');
     const code = String(req.body.code || '').trim();
     if (!validCode(code)) return fail(CODE_RULE);
@@ -1090,7 +1097,7 @@ app.use((err, req, res, next) => {
   // ביומן רק סוג השגיאה והנתיב הכללי — לא הודעת השגיאה (עלולה לכלול נתונים)
   const where = req.route ? (req.shliach ? `/s/…${req.route.path}` : req.baseUrl + req.route.path) : req.method;
   if (!req.demo) audit({ shliachId: req.shliach?.id ?? null, actor: 'system', action: 'שגיאת שרת', outcome: 'error', detail: `${req.method} ${where} · ${err.code || err.name || 'Error'}` });
-  res.status(500).render('error', { message: 'אירעה שגיאה. נסה שוב.' });
+  res.status(500).render('error', { message: 'אירעה שגיאה. נסו שוב.' });
 });
 
 export { app };

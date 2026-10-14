@@ -11,7 +11,7 @@
 <div class="bd-msg bd-msg--warn bd-sms-alert" role="alert"><span>⚠️ <b>שימו לב:</b> <% if (sms.empty) { %>יתרת ה-SMS לתזכורות ימי הולדת נגמרה — התזכורות האוטומטיות הופסקו.<% } else { %>יתרת ה-SMS לתזכורות ימי הולדת עומדת להסתיים (נותרו עוד <bdi class="bd-num"><%= sms.left %></bdi> יחידות).<% } %> לחידוש המכסה פנו למנהל.</span></div>
 <% } %>
 <section class="bd-head">
-  <h1 class="bd-title">שלום, <%= shliach.name %></h1>
+  <h1 class="bd-title">שלום, <%= displayName(shliach) %></h1>
   <p class="bd-sub">היום יום <%= DAY_NAMES[today.getDay()] %>, <%= hebToday %> · <span class="bd-num"><%= fmtGreg(today) %></span></p>
   <p class="bd-takeaway">
     <% if (!total) { %>עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a>, <a href="<%= base %>/contacts/new">הוסיפו מקורב</a> או <a href="<%= base %>/contacts/import">ייבאו רשימה מאקסל</a>.
