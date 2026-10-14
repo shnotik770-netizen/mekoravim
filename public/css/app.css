@@ -476,3 +476,8 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-row--done.is-open .bd-row__toggle { transform: rotate(180deg); }
 .bd .bd-row__toggle:focus-visible { outline: 2px solid var(--bd-accent); }
 .bd-demo-bar a:not(.bd-demo-bar__wa) { display: inline-block; padding: 8px 4px; }
+
+/* יומן פעולות: מסננים */
+.bd-log-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bd-log-filters .bd-input { width: auto; flex: 1 1 160px; min-width: 0; }
+@media (max-width: 520px) { .bd-log-filters .bd-input { flex-basis: calc(50% - 4px); } }

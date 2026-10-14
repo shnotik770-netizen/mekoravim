@@ -5,21 +5,34 @@
 </header>
 <div class="bd-pagehead">
   <h1 class="bd-title">יומן פעולות</h1>
-  <form method="get" class="bd-inline">
+  <form method="get" class="bd-log-filters">
     <select class="bd-input" name="s" aria-label="שליח" data-autosubmit>
       <option value="">כל השלוחים</option>
       <% shluchim.forEach(x => { %><option value="<%= x.id %>" <%= shliachId === x.id ? 'selected' : '' %>><%= x.name %></option><% }) %>
     </select>
-    <select class="bd-input" name="o" aria-label="סינון" data-autosubmit>
-      <option value="">כל הפעולות</option>
+    <select class="bd-input" name="a" aria-label="סוג פעולה" data-autosubmit>
+      <option value="">כל סוגי הפעולות</option>
+      <% actions.forEach(x => { %><option value="<%= x.action %>" <%= action === x.action ? 'selected' : '' %>><%= x.action %> (<%= x.n %>)</option><% }) %>
+    </select>
+    <select class="bd-input" name="by" aria-label="מי ביצע" data-autosubmit>
+      <option value="">כל המבצעים</option>
+      <% Object.entries(ACTORS).forEach(([k, l]) => { %><option value="<%= k %>" <%= actor === k ? 'selected' : '' %>><%= l %></option><% }) %>
+    </select>
+    <select class="bd-input" name="r" aria-label="תוצאה" data-autosubmit>
+      <option value="">כל התוצאות</option>
+      <% Object.entries(OUTCOMES).forEach(([k, l]) => { %><option value="<%= k %>" <%= outcome === k ? 'selected' : '' %>><%= l %></option><% }) %>
+    </select>
+    <select class="bd-input" name="o" aria-label="תקלות" data-autosubmit>
+      <option value="">גם הצלחות</option>
       <option value="problems" <%= problems ? 'selected' : '' %>>רק תקלות וכישלונות</option>
     </select>
+    <% if (Object.keys(filters).length) { %><a class="bd-btn bd-btn--ghost bd-btn--sm" href="/admin/log">ניקוי סינון ✕</a><% } %>
     <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">סינון</button></noscript>
   </form>
 </div>
 <p class="bd-help bd-mb">היומן מציג רק סוג פעולה ותוצאה. שמות מקורבים, טלפונים ותוכן לא נשמרים בו. נשמר 180 יום.</p>
 <section class="bd-card">
   <%- include('partials/log_table', { rows, more, page, showShliach: true, OUTCOMES, ACTORS, fmtTime,
-    pageUrl: (n) => '?' + new URLSearchParams({ ...(shliachId ? { s: shliachId } : {}), ...(problems ? { o: 'problems' } : {}), page: n }) }) %>
+    pageUrl: (n) => '?' + new URLSearchParams({ ...filters, page: n }) }) %>
 </section>
 <%- include('partials/foot') %>

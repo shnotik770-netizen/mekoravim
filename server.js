@@ -307,10 +307,13 @@ const OUTCOMES = { ok: 'הצליח', fail: 'נכשל', blocked: 'נחסם', erro
 const ACTORS = { admin: 'מנהל', shliach: 'שליח', public: 'רישום ציבורי', system: 'מערכת' };
 const LOG_PAGE = 100;
 
-async function loadLog({ shliachId = null, problems = false, page = 1 }) {
+async function loadLog({ shliachId = null, problems = false, page = 1, action = '', actor = '', outcome = '' }) {
   const where = [], params = [];
   if (shliachId) { params.push(shliachId); where.push(`l.shliach_id=$${params.length}`); }
   if (problems) where.push(`l.outcome <> 'ok'`);
+  if (action) { params.push(action); where.push(`l.action=$${params.length}`); }
+  if (actor) { params.push(actor); where.push(`l.actor=$${params.length}`); }
+  if (outcome) { params.push(outcome); where.push(`l.outcome=$${params.length}`); }
   params.push(LOG_PAGE + 1, (page - 1) * LOG_PAGE);
   const { rows } = await q(
     `SELECT l.*, s.name AS shliach_name FROM activity_log l LEFT JOIN shluchim s ON s.id=l.shliach_id
@@ -324,9 +327,15 @@ const fmtTime = (d) => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusa
 app.get('/admin/log', requireAdmin, async (req, res) => {
   const page = Math.max(1, int(req.query.page) || 1);
   const shliachId = int(req.query.s), problems = req.query.o === 'problems';
-  const log = await loadLog({ shliachId, problems, page });
+  // מסננים: סוג פעולה (מתוך הפעולות שקיימות ביומן), מי ביצע, תוצאה
+  const { rows: actions } = await q('SELECT action, count(*)::int AS n FROM activity_log GROUP BY action ORDER BY action');
+  const action = actions.some((a) => a.action === req.query.a) ? req.query.a : '';
+  const actor = Object.hasOwn(ACTORS, req.query.by) ? req.query.by : '';
+  const outcome = Object.hasOwn(OUTCOMES, req.query.r) ? req.query.r : '';
+  const log = await loadLog({ shliachId, problems, page, action, actor, outcome });
   const { rows: shluchim } = await q('SELECT id, name FROM shluchim ORDER BY name');
-  res.render('admin_log', { ...log, page, shliachId, problems, shluchim, OUTCOMES, ACTORS, fmtTime });
+  const filters = { ...(shliachId ? { s: shliachId } : {}), ...(problems ? { o: 'problems' } : {}), ...(action ? { a: action } : {}), ...(actor ? { by: actor } : {}), ...(outcome ? { r: outcome } : {}) };
+  res.render('admin_log', { ...log, page, shliachId, problems, shluchim, OUTCOMES, ACTORS, fmtTime, actions, action, actor, outcome, filters });
 });
 
 // בורר השליח בדשבורד (טופס GET)
