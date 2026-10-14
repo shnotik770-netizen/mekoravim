@@ -183,3 +183,20 @@ h1, h2, h3 { margin: 0; }
 .hm-terms a { color: var(--gold-2); font-weight: 700; }
 
 .hm-yechi { margin: 48px 20px 0; text-align: center; font: 700 1.05rem/1.4 var(--display); color: var(--gold-2); }
+
+/* עיגול מחיר השקה + הערות קטנות */
+.hm-badge { position: absolute; z-index: 3; top: -34px; left: -64px; width: 128px; height: 128px; border-radius: 50%;
+  display: grid; place-content: center; text-align: center; transform: rotate(-12deg); color: var(--night);
+  background: radial-gradient(circle at 35% 30%, #F4CF7A, var(--gold) 55%, var(--gold-2));
+  box-shadow: 0 14px 30px rgb(0 0 0 / .4), 0 0 0 5px rgb(227 176 75 / .22); animation: hm-badge 5s ease-in-out infinite; }
+.hm-badge::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; border: 1.5px dashed rgb(15 27 51 / .45); }
+.hm-badge__l1 { font-size: .74rem; font-weight: 800; }
+.hm-badge__l2 { font: 900 2.6rem/.95 var(--display); }
+.hm-badge__l2 small { font-size: 1.4rem; }
+.hm-badge__l3 { font-size: .66rem; font-weight: 800; line-height: 1.15; }
+@keyframes hm-badge { 0%, 100% { transform: rotate(-12deg) scale(1); } 50% { transform: rotate(-8deg) scale(1.05); } }
+@media (max-width: 520px) { .hm-badge { left: -14px; top: -40px; width: 110px; height: 110px; } .hm-badge__l2 { font-size: 2.2rem; } }
+@media (prefers-reduced-motion: reduce) { .hm-badge { animation: none; } }
+.hm-fine { margin-top: 14px; font-size: .78rem; color: rgb(255 255 255 / .6); }
+.hm-fine a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.hm-banner .hm-fine { margin-top: 16px; }

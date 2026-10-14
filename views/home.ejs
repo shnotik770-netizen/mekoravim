@@ -25,7 +25,7 @@
 
 <header class="hm-bar">
   <a class="hm-brand" href="/"><img src="/img/logo.svg?v=<%= v %>" alt="" width="40" height="40">זכרתי <span>התקשרתי</span></a>
-  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %><span class="hm-wide">יצירת קשר ב</span>וואטסאפ</a>
+  <a class="hm-btn hm-btn--gold hm-btn--sm" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %><span><span class="hm-wide">יצירת קשר ב</span>וואטסאפ</span></a>
 </header>
 
 <section class="hm-hero">
@@ -39,9 +39,11 @@
         <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
         <a class="hm-btn hm-btn--line" href="/demo">▶ איך זה עובד</a>
       </div>
+      <p class="hm-fine hm-rise" style="--d:4">מחיר השקה 40 ₪ · ט.ל.ח · כולל 200 יחידות SMS לתזכורות · השימוש בכפוף ל<a href="/terms">תנאי השימוש</a></p>
     </div>
 
-    <div class="hm-phone-wrap hm-rise" style="--d:2" aria-hidden="true">
+    <div class="hm-phone-wrap hm-rise" style="--d:2">
+      <div class="hm-badge" role="note" aria-label="מחיר השקה: 40 שקל, והמערכת שלך לתמיד"><span class="hm-badge__l1">מחיר השקה</span><span class="hm-badge__l2">40<small>₪</small></span><span class="hm-badge__l3">והמערכת שלך<br>לתמיד!</span></div>
       <div class="hm-phone"><img src="/img/dashboard.png?v=<%= v %>" alt=""></div>
       <div class="hm-pop hm-pop--a"><b>🎂 היום</b><span>יום הולדת לדוד כהן · 36</span></div>
       <div class="hm-pop hm-pop--b"><b>📱 SMS</b><span>3 ימי הולדת השבוע</span></div>
@@ -90,8 +92,9 @@
   <section class="hm-banner" data-reveal>
     <div class="hm-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <h2>מוכנים שאף מקורב לא יישכח?</h2>
-    <p>שלחו לנו הודעה בוואטסאפ ונחזור אליכם.</p>
+    <p>מחיר השקה: <b class="hm-gold">40 ₪ בלבד — והמערכת שלך לתמיד.</b> שלחו לנו הודעה בוואטסאפ ונחזור אליכם.</p>
     <a class="hm-btn hm-btn--gold hm-btn--lg" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>וואטסאפ · <span dir="ltr">053-340-4770</span></a>
+    <p class="hm-fine">ט.ל.ח · כולל 200 יחידות SMS לתזכורות · השימוש בכפוף ל<a href="/terms">תנאי השימוש</a></p>
   </section>
 </main>
 
