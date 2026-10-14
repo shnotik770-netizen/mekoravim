@@ -20,11 +20,7 @@
 <section class="bd-head">
   <h1 class="bd-title">שלום, <%= displayName(shliach) %></h1>
   <p class="bd-sub">היום יום <%= DAY_NAMES[today.getDay()] %>, <%= hebToday %> · <span class="bd-num"><%= fmtGreg(today) %></span></p>
-  <% if (total) { %><p class="bd-takeaway">
-    <% if (lists.today.length) { %>🎂 היום יום ההולדת של <b><%= lists.today.map(e => e.name).join(', ') %></b>
-    <% } else { %>אין ימי הולדת היום<% if (next) { %> · הבא: <b><%= next.name %></b> ב<%= next.label %><% } %><% } %>
-    <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
-  </p><% } %>
+
 </section>
 
 <div class="bd-stats">
@@ -46,6 +42,11 @@
   </a>
 </div>
 
+<% if (total) { %><p class="bd-takeaway bd-takeaway--below">
+    <% if (lists.today.length) { %>🎂 היום יום ההולדת של <b><%= lists.today.map(e => e.name).join(', ') %></b>
+    <% } else { %>אין ימי הולדת היום<% if (next) { %> · הבא: <b><%= next.name %></b> ב<%= next.label %><% } %><% } %>
+    <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
+  </p><% } %>
 <% if (!total) { %><p class="bd-empty-start">עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a>, <a href="<%= base %>/contacts/new">הוסיפו מקורב</a> או <a href="<%= base %>/contacts/import">ייבאו רשימה מאקסל</a>.</p><% } %>
 
 <a class="bd-sms-usage <%= sms.on && sms.low ? 'bd-sms-usage--low' : '' %>" href="<%= base %>/settings#sms" aria-label="יחידות SMS לתזכורות ימי הולדת">

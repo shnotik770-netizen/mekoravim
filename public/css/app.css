@@ -397,3 +397,4 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-cat__body .bd-btn { justify-self: start; width: auto; }
 /* ראש המסך: הכול בשורה אחת — שם השליח מתקצר במקום לשבור שורה */
 .bd .bd-appbar .bd-who { flex: 1 1 0; }
+.bd .bd-takeaway--below { margin: -4px 0 var(--bd-sp-4); padding: 12px 14px; border-radius: 14px; background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); line-height: 1.6; font-size: var(--bd-fs-sm); }
