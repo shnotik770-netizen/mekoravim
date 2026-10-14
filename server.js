@@ -107,6 +107,7 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
+app.get('/terms', (req, res) => res.render('terms'));
 
 // ימי חודש לועזי בתאריך עברי — ללוח השנה של בחירת הטווח
 app.get('/api/hebmonth', (req, res) => {

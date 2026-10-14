@@ -52,7 +52,7 @@
 
   <button class="bd-btn bd-btn--primary bd-btn--block"><%= internal ? 'שמירה' : 'שליחה' %></button>
   <% if (!internal) { %>
-  <p class="bd-help bd-center" style="margin-top:12px">🔒 הפרטים נשמרים רק אצל <%= link.shliach_name %>, לצורך ברכה ביום ההולדת, ולא מועברים לאף אחד. כשרושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת.</p>
+  <p class="bd-help bd-center" style="margin-top:12px">🔒 הפרטים נשמרים רק אצל <%= link.shliach_name %>, לצורך ברכה ביום ההולדת, ולא מועברים לאף אחד. כשרושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת. <a href="/terms" target="_blank" rel="noopener">תנאי שימוש</a></p>
   <% } %>
 </form>
 <%- include('partials/foot') %>
