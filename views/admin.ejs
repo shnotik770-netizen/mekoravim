@@ -3,14 +3,60 @@
   <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
   <nav class="bd-nav"><a href="/admin" aria-current="page">שלוחים</a><a href="/admin/log">יומן פעולות</a><a href="/">🏠 דף הבית</a><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
 </header>
-<div class="bd-stats">
-  <div class="bd-stat"><span class="bd-stat__label">שלוחים פעילים</span><span class="bd-stat__value bd-num"><%= summary.active %></span>
-    <span class="bd-stat__hint"><span class="bd-num"><%= summary.used30 %></span> השתמשו ב-30 יום</span></div>
-  <div class="bd-stat"><span class="bd-stat__label">מקורבים במערכת</span><span class="bd-stat__value bd-num"><%= summary.contacts %></span></div>
-  <div class="bd-stat"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span></div>
-  <a class="bd-stat" href="/admin/log?o=problems"><span class="bd-stat__label">תקלות ב-24 שעות</span><span class="bd-stat__value bd-num" <%- summary.problems24 ? 'style="color:var(--bd-bad)"' : '' %>><%= summary.problems24 %></span>
-    <span class="bd-stat__hint">ליומן הפעולות ←</span></a>
+<%
+  const tile = (k) => `/admin${d === k ? '' : '?d=' + k}#detail`;
+  const KIND = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', contact: 'תזכורת על מקורב', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
+  const ago = (t) => { if (!t) return 'אף פעם'; const h = (Date.now() - new Date(t)) / 36e5; return h < 1 ? 'לפני פחות משעה' : h < 24 ? `לפני ${Math.floor(h)} שעות` : `לפני ${Math.floor(h / 24)} ימים`; };
+%>
+<div class="bd-stats bd-admin-stats">
+  <a class="bd-stat" href="<%= tile('shluchim') %>" aria-pressed="<%= d === 'shluchim' %>"><span class="bd-stat__label">שלוחים פעילים</span><span class="bd-stat__value bd-num"><%= summary.active %></span>
+    <span class="bd-stat__hint"><span class="bd-num"><%= summary.used30 %></span> השתמשו ב-30 יום</span><span class="bd-stat__more">פירוט ▾</span></a>
+  <a class="bd-stat" href="<%= tile('contacts') %>" aria-pressed="<%= d === 'contacts' %>"><span class="bd-stat__label">מקורבים במערכת</span><span class="bd-stat__value bd-num"><%= summary.contacts %></span><span class="bd-stat__more">פירוט ▾</span></a>
+  <a class="bd-stat" href="<%= tile('sms') %>" aria-pressed="<%= d === 'sms' %>"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span><span class="bd-stat__more">פירוט ▾</span></a>
+  <a class="bd-stat" href="<%= tile('problems') %>" aria-pressed="<%= d === 'problems' %>"><span class="bd-stat__label">תקלות ב-24 שעות</span><span class="bd-stat__value bd-num" <%- summary.problems24 ? 'style="color:var(--bd-bad)"' : '' %>><%= summary.problems24 %></span><span class="bd-stat__more">פירוט ▾</span></a>
 </div>
+<% if (detail) { %>
+<section class="bd-card bd-mb bd-admin-detail" id="detail">
+  <div class="bd-card__head"><h2 class="bd-section-title"><%= { shluchim: 'שלוחים — פירוט', contacts: 'מקורבים — פירוט', sms: 'SMS החודש — פירוט', problems: 'תקלות — פירוט' }[d] %></h2><a class="bd-link-btn" href="/admin">סגירה ✕</a></div>
+  <% if (d === 'shluchim') { %>
+    <div class="bd-minis">
+      <span><b class="bd-num"><%= detail.t.total %></b> סה״כ</span><span><b class="bd-num"><%= detail.t.active %></b> פעילים</span><span><b class="bd-num"><%= detail.t.inactive %></b> מושבתים</span>
+      <span><b class="bd-num"><%= detail.used30 %></b> השתמשו ב-30 יום</span><span><b class="bd-num"><%= detail.never %></b> לא נכנסו אף פעם</span><span><b class="bd-num"><%= detail.t.new_month %></b> חדשים החודש</span>
+    </div>
+    <div class="bd-table-wrap"><table class="bd-table"><thead><tr><th>שליח</th><th>פעילות אחרונה</th><th>פעולות ב-30 יום</th><th>נוצר</th></tr></thead><tbody>
+      <% detail.rows.forEach(r => { %><tr><td><a href="/admin/shluchim/<%= r.id %>"><%= r.name %></a><% if (!r.active) { %> <span class="bd-status bd-status--bad">מושבת</span><% } %><% if (r.chabad_house) { %><div class="bd-muted bd-small"><%= r.chabad_house %></div><% } %></td>
+        <td><%= ago(r.last_seen) %></td><td class="bd-num"><%= r.actions30 %></td><td class="bd-num"><%= fmtDate(r.created_at) %></td></tr><% }) %>
+    </tbody></table></div>
+  <% } else if (d === 'contacts') { %>
+    <div class="bd-minis">
+      <span><b class="bd-num"><%= detail.t.contacts %></b> מקורבים</span><span><b class="bd-num"><%= detail.t.family %></b> בני משפחה</span><span><b class="bd-num"><%= detail.t.new30 %></b> נוספו ב-30 יום</span>
+      <span><b class="bd-num"><%= detail.t.via_link %></b> נרשמו בקישור</span><span><b class="bd-num"><%= detail.t.reminders %></b> עם תזכורת מיוחדת</span><span><b class="bd-num"><%= detail.t.greetings30 %></b> סימוני "יצרתי קשר" ב-30 יום</span>
+    </div>
+    <div class="bd-table-wrap"><table class="bd-table"><thead><tr><th>שליח</th><th>מקורבים</th><th>בני משפחה</th><th>חדשים (30 יום)</th><th>"יצרתי קשר" (30 יום)</th></tr></thead><tbody>
+      <% detail.rows.forEach(r => { %><tr><td><a href="/admin/shluchim/<%= r.id %>"><%= r.name %></a></td><td class="bd-num"><%= r.contacts %></td><td class="bd-num"><%= r.family %></td><td class="bd-num"><%= r.new30 %></td><td class="bd-num"><%= r.greetings30 %></td></tr><% }) %>
+    </tbody></table></div>
+  <% } else if (d === 'sms') { %>
+    <div class="bd-minis">
+      <% if (!detail.kinds.length) { %><span>עוד לא נשלחו הודעות החודש</span><% } %>
+      <% detail.kinds.forEach(k => { %><span><b class="bd-num"><%= k.units %></b> <%= KIND[k.kind] || k.kind %> <span class="bd-muted">(<%= k.msgs %> הודעות)</span></span><% }) %>
+    </div>
+    <% if (detail.months.length) { const mx = Math.max(...detail.months.map(m => m.units), 1); %>
+    <div class="bd-months" aria-label="יחידות לפי חודש"><% detail.months.forEach(m => { %><div><span class="bd-num"><%= m.units %></span><i style="height:<%= Math.max(4, Math.round(m.units / mx * 70)) %>px"></i><small class="bd-num"><%= m.m %></small></div><% }) %></div>
+    <% } %>
+    <div class="bd-table-wrap"><table class="bd-table"><thead><tr><th>שליח</th><th>החודש</th><th>מכסה לתזכורות</th><th>נוצלו</th><th>יתרה</th><th>תזכורות</th></tr></thead><tbody>
+      <% detail.rows.forEach(r => { const st = quotaStatus(r); %><tr><td><a href="/admin/shluchim/<%= r.id %>"><%= r.name %></a></td><td class="bd-num"><%= r.month_units %></td><td class="bd-num"><%= st.quota %></td><td class="bd-num"><%= st.used %></td>
+        <td class="bd-num" <%- st.low ? 'style="color:var(--bd-bad);font-weight:600"' : '' %>><%= st.left %></td><td><%= [r.sms_weekly && 'שבועי', r.sms_daily && 'יומי'].filter(Boolean).join(' + ') || '—' %></td></tr><% }) %>
+    </tbody></table></div>
+  <% } else { %>
+    <div class="bd-minis"><span><b class="bd-num"><%= summary.problems24 %></b> ב-24 שעות</span><span><b class="bd-num"><%= detail.w.errors7 %></b> שגיאות שרת ב-7 ימים</span><span><b class="bd-num"><%= detail.w.fails7 %></b> כשלים/חסימות ב-7 ימים</span></div>
+    <% if (!detail.groups.length) { %><p class="bd-help">👍 אין תקלות ב-24 השעות האחרונות.</p><% } else { %>
+    <div class="bd-table-wrap"><table class="bd-table"><thead><tr><th>פעולה</th><th>מי</th><th>תוצאה</th><th>פעמים</th><th>אחרונה</th></tr></thead><tbody>
+      <% detail.groups.forEach(g => { %><tr><td><%= g.action %></td><td><%= { system: 'מערכת', public: 'ציבורי', shliach: 'שליח', admin: 'מנהל' }[g.actor] || g.actor %></td><td><%= { error: 'שגיאה', fail: 'נכשל', blocked: 'נחסם' }[g.outcome] || g.outcome %></td><td class="bd-num"><%= g.n %></td><td><%= ago(g.last) %></td></tr><% }) %>
+    </tbody></table></div><% } %>
+    <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" href="/admin/log?o=problems">ליומן הפעולות המלא ←</a>
+  <% } %>
+</section>
+<% } %>
 <div class="bd-pagehead">
   <span class="bd-status <%= smsOn ? 'bd-status--ok' : 'bd-status--bad' %>">SMS ימות המשיח: <%= smsOn ? 'מחובר' : 'לא מוגדר (YEMOT_TOKEN)' %></span>
   <form method="post" action="/admin/sms-quota" class="bd-inline">

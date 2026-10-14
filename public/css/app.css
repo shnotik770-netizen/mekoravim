@@ -457,3 +457,15 @@ div.bd-stat:hover { border-color: var(--bd-line); }
   .bd .bd-who__house { font-size: .68rem; }
   .bd .bd-appbar .bd-tool-btn { width: 36px; height: 36px; }
 }
+
+/* דף מנהל: ריבועי הסיכום לחיצים + פירוט */
+.bd-stat__more { margin-top: auto; font-size: .72rem; color: var(--bd-accent); font-weight: var(--bd-fw-medium); }
+.bd-stat[aria-pressed="true"] .bd-stat__more { color: var(--bd-fg-muted); }
+.bd-minis { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--bd-sp-3); }
+.bd-minis > span { padding: 6px 12px; border-radius: 12px; background: var(--bd-surface-2); font-size: var(--bd-fs-sm); }
+.bd-minis b { font-size: 1.05rem; }
+.bd-months { display: flex; align-items: flex-end; gap: 12px; height: 120px; margin: 4px 0 var(--bd-sp-3); padding: 0 4px; }
+.bd-months > div { display: grid; justify-items: center; gap: 3px; font-size: .75rem; }
+.bd-months i { display: block; width: 26px; border-radius: 6px 6px 2px 2px; background: var(--bd-accent); }
+.bd-months small { color: var(--bd-fg-subtle); }
+.bd-admin-detail .bd-card__head { margin-bottom: var(--bd-sp-2); }

@@ -209,8 +209,57 @@ app.get('/admin', requireAdmin, async (req, res) => {
       (SELECT coalesce(sum(units),0) FROM sms_log WHERE created_at >= date_trunc('month', now()))::int AS sms_month,
       (SELECT count(*) FROM activity_log WHERE created_at > now() - interval '24 hours'
          AND (outcome='error' OR (actor IN ('system','public') AND outcome IN ('fail','blocked'))))::int AS problems24`);
-  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus, summary });
+  const d = ['shluchim', 'contacts', 'sms', 'problems'].includes(req.query.d) ? req.query.d : null;
+  res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus, summary,
+    d, detail: d ? await adminDetail(d) : null, fmtDate });
 });
+
+// פירוט לכל אחד מ-4 ריבועי הסיכום בדף המנהל — מספרים בלבד, בלי שמות או טלפונים של מקורבים
+async function adminDetail(d) {
+  if (d === 'shluchim') {
+    const { rows: [t] } = await q(`SELECT count(*)::int AS total, count(*) FILTER (WHERE active)::int AS active,
+        count(*) FILTER (WHERE NOT active)::int AS inactive,
+        count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS new_month,
+        count(*) FILTER (WHERE access_code_hash IS NULL)::int AS no_code FROM shluchim`);
+    const { rows } = await q(`SELECT s.id, s.name, s.chabad_house, s.active, s.created_at,
+        (SELECT max(created_at) FROM activity_log a WHERE a.shliach_id=s.id AND a.actor='shliach') AS last_seen,
+        (SELECT count(*) FROM activity_log a WHERE a.shliach_id=s.id AND a.actor='shliach' AND a.created_at > now() - interval '30 days')::int AS actions30
+      FROM shluchim s ORDER BY last_seen DESC NULLS LAST, s.created_at DESC`);
+    return { t, rows, used30: rows.filter((r) => r.actions30 > 0).length, never: rows.filter((r) => !r.last_seen).length };
+  }
+  if (d === 'contacts') {
+    const { rows: [t] } = await q(`SELECT (SELECT count(*) FROM contacts)::int AS contacts,
+        (SELECT count(*) FROM family_members)::int AS family,
+        (SELECT count(*) FROM contacts WHERE created_at > now() - interval '30 days')::int AS new30,
+        (SELECT count(*) FROM contacts WHERE reg_link_id IS NOT NULL)::int AS via_link,
+        (SELECT count(*) FROM contacts WHERE remind_days IS NOT NULL)::int AS reminders,
+        (SELECT count(*) FROM contact_log WHERE created_at > now() - interval '30 days')::int AS greetings30`);
+    const { rows } = await q(`SELECT s.id, s.name, s.chabad_house,
+        (SELECT count(*) FROM contacts c WHERE c.shliach_id=s.id)::int AS contacts,
+        (SELECT count(*) FROM family_members f JOIN contacts c ON c.id=f.contact_id WHERE c.shliach_id=s.id)::int AS family,
+        (SELECT count(*) FROM contacts c WHERE c.shliach_id=s.id AND c.created_at > now() - interval '30 days')::int AS new30,
+        (SELECT count(*) FROM contact_log l JOIN contacts c ON c.id=l.contact_id WHERE c.shliach_id=s.id AND l.created_at > now() - interval '30 days')::int AS greetings30
+      FROM shluchim s ORDER BY contacts DESC, s.name`);
+    return { t, rows };
+  }
+  if (d === 'sms') {
+    const { rows: kinds } = await q(`SELECT kind, sum(units)::int AS units, count(*)::int AS msgs FROM sms_log
+      WHERE created_at >= date_trunc('month', now()) GROUP BY kind ORDER BY units DESC`);
+    const { rows: months } = await q(`SELECT to_char(date_trunc('month', created_at), 'MM.YYYY') AS m, sum(units)::int AS units
+      FROM sms_log WHERE created_at >= date_trunc('month', now()) - interval '5 months' GROUP BY 1, date_trunc('month', created_at) ORDER BY date_trunc('month', created_at)`);
+    const { rows } = await q(`SELECT s.id, s.name, s.sms_quota, s.sms_used_birthdays, s.sms_alert_threshold, s.sms_weekly, s.sms_daily,
+        (SELECT coalesce(sum(units),0) FROM sms_log l WHERE l.shliach_id=s.id AND l.created_at >= date_trunc('month', now()))::int AS month_units
+      FROM shluchim s ORDER BY month_units DESC, s.name`);
+    return { kinds, months, rows };
+  }
+  const { rows: groups } = await q(`SELECT action, outcome, actor, count(*)::int AS n, max(created_at) AS last FROM activity_log
+    WHERE created_at > now() - interval '24 hours' AND (outcome='error' OR (actor IN ('system','public') AND outcome IN ('fail','blocked')))
+    GROUP BY action, outcome, actor ORDER BY n DESC LIMIT 30`);
+  const { rows: [w] } = await q(`SELECT count(*) FILTER (WHERE outcome='error')::int AS errors7,
+      count(*) FILTER (WHERE outcome IN ('fail','blocked') AND actor IN ('system','public'))::int AS fails7
+    FROM activity_log WHERE created_at > now() - interval '7 days'`);
+  return { groups, w };
+}
 
 // מכסת יחידות SMS לתזכורות ימי הולדת: ברירת מחדל לשלוחים חדשים, ולכל שליח מכסה משלו שהמנהל מוסיף לה
 const MAX_QUOTA = 100000;
