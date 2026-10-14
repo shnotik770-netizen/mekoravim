@@ -318,7 +318,7 @@ initRange(document.getElementById('bd-range'));
 // דשבורד: מעבר בין היום / השבוע / החודש / טווח / סיווג בלי טעינת דף — נשארים באותו מקום בדף
 (() => {
   if (!document.getElementById('bd-list-title')) return;
-  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn'];
+  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn', '.bd-layout--split > aside', '.bd-takeaway--below'];
   const load = async (url, push) => {
     const list = document.querySelector(PARTS[2]);
     list?.classList.add('bd-swapping');
@@ -353,6 +353,7 @@ initRange(document.getElementById('bd-range'));
     load(location.pathname + '?' + new URLSearchParams(new FormData(form)), true);
   });
   window.addEventListener('popstate', () => load(location.href, false));
+  window.bdReload = () => load(location.href, false);
 })();
 
 // שורה מכווצת של "נוצר קשר": לחיצה (לא על קישור/כפתור) פותחת/סוגרת את הפרטים
@@ -361,3 +362,59 @@ document.addEventListener('click', (e) => {
   if (!row || e.target.closest('a, button, form')) return;
   row.classList.toggle('is-open');
 });
+
+// "יצרתי קשר" בדשבורד: נשמר בלי טעינת דף, ונפתח חלון קליל — "נשמר בהצלחה" + איך נוצר הקשר / הערה (רשות).
+// לחיצה על וואטסאפ: שאלה — לשלוח ולסמן שנוצר קשר, או רק לשלוח.
+(() => {
+  const dlg = document.getElementById('bd-qlog');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+  const form = dlg.querySelector('[data-qlog-form]'), sub = dlg.querySelector('[data-qlog-sub]');
+  let cur = null;
+  const post = async (url, data) => {
+    const r = await fetch(url, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data) });
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  };
+  const logIt = async (f, method) => {
+    const btn = f.querySelector('button'); if (btn) btn.disabled = true;
+    try {
+      const data = new FormData(f); if (method) data.set('note', method);
+      const r = await post(f.action, data);
+      cur = { url: `${f.action}/${r.id}/note` };
+      form.reset();
+      if (method) { const m = form.querySelector(`input[name=method][value="${method}"]`); if (m) m.checked = true; }
+      sub.textContent = `נרשם שנוצר קשר עם ${f.dataset.name || ''}${r.demo ? ' (בהדגמה זה לא נשמר באמת)' : ''}`;
+      dlg.showModal();
+    } catch { f.submit(); }
+  };
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('form[data-quicklog]');
+    if (!f) return;
+    e.preventDefault(); logIt(f);
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    if (cur && (fd.get('method') || String(fd.get('note') || '').trim())) { try { await post(cur.url, fd); } catch {} }
+    dlg.close();
+  });
+  dlg.querySelector('[data-qlog-close]').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('close', () => { cur = null; window.bdReload ? window.bdReload() : location.reload(); });
+
+  // וואטסאפ
+  const ask = document.getElementById('bd-waask');
+  let waLink = null, waForm = null;
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a.bd-icon-btn--wa');
+    const f = a?.closest('li')?.querySelector('form[data-quicklog]');
+    if (!a || !f || !ask) return; // כבר סומן — וואטסאפ רגיל
+    e.preventDefault();
+    waLink = a.href; waForm = f;
+    ask.querySelector('[data-wa-sub]').textContent = `לשלוח ברכה ל${f.dataset.name || ''} ולסמן שנוצר קשר?`;
+    ask.showModal();
+  });
+  ask?.querySelector('[data-wa-mark]').addEventListener('click', () => { window.open(waLink, '_blank', 'noopener'); ask.close(); logIt(waForm, 'וואטסאפ'); });
+  ask?.querySelector('[data-wa-only]').addEventListener('click', () => { window.open(waLink, '_blank', 'noopener'); ask.close(); });
+  ask?.querySelector('[data-wa-cancel]').addEventListener('click', () => ask.close());
+  ask?.addEventListener('click', (e) => { if (e.target === ask) ask.close(); });
+})();

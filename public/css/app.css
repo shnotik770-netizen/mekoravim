@@ -419,3 +419,23 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-row--done:not(.is-open) .bd-row__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .bd .bd-row--done:not(.is-open) .bd-done-pill { min-height: 30px; padding-block: 2px; font-size: .78rem; }
 .bd .bd-row--done.is-open { cursor: pointer; }
+
+/* חלון קליל אחרי "יצרתי קשר" / לפני וואטסאפ */
+.bd-qlog { width: min(380px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 22px; background: var(--bd-surface); color: var(--bd-fg); box-shadow: 0 24px 60px rgb(0 0 0 / .3); box-sizing: border-box; }
+.bd-qlog::backdrop { background: rgb(15 27 51 / .4); backdrop-filter: blur(2px); }
+.bd-qlog[open] { animation: bd-pop .18s ease-out; }
+@keyframes bd-pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+.bd-qlog__form { display: grid; gap: 10px; padding: 22px 18px 18px; text-align: center; }
+.bd-qlog__ok { justify-self: center; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; font-weight: 800; color: #fff; background: var(--bd-ok, #1F8A57); }
+.bd-qlog__ok--wa { background: var(--bd-wa, #25D366); font-size: 26px; }
+.bd-qlog__title { margin: 0; font-size: var(--bd-fs-lg); }
+.bd-qlog__sub { margin: -4px 0 4px; color: var(--bd-fg-muted); font-size: var(--bd-fs-sm); }
+.bd-qlog__methods { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.bd-qlog__methods input { position: absolute; opacity: 0; pointer-events: none; }
+.bd-qlog__methods span { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--bd-line); font-size: var(--bd-fs-sm); cursor: pointer; }
+.bd-qlog__methods input:checked + span { background: var(--bd-accent); border-color: var(--bd-accent); color: #fff; }
+.bd-qlog__methods input:focus-visible + span { outline: 2px solid var(--bd-accent); outline-offset: 2px; }
+.bd-qlog textarea { text-align: right; resize: vertical; min-height: 64px; box-sizing: border-box; width: 100%; }
+.bd-qlog__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.bd-qlog__col { display: grid; gap: 8px; margin-top: 4px; }
+.bd-qlog__col .bd-link-btn { justify-self: center; }

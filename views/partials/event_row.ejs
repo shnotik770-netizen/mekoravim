@@ -35,7 +35,7 @@
       <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
       <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>
     <% } %>
-    <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>">
+    <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>"<% if (!done) { %> data-quicklog data-name="<%= e.name %>"<% } %>>
       <input type="hidden" name="back" value="<%= back %>">
       <input type="hidden" name="date" value="<%= iso %>">
       <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>

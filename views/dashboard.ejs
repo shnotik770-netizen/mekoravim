@@ -112,7 +112,7 @@
           <li>
             <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date"><%= e.label %><%= e.note ? ' (' + e.actualLabel + ')' : '' %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
             <% if (d) { %><a class="bd-icon-btn bd-icon-btn--wa" href="https://wa.me/972<%= d.replace(/^0/, '') %>" target="_blank" rel="noopener" aria-label="וואטסאפ ל<%= e.name %>"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
-            <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log">
+            <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log" data-quicklog data-name="<%= e.name %>">
               <input type="hidden" name="back" value="<%= back %>">
               <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
               <button class="bd-btn bd-btn--ghost bd-btn--sm">יצרתי קשר</button>
@@ -163,5 +163,33 @@
     <p class="bd-range__sum" data-range-sum aria-live="polite"></p>
     <button class="bd-btn bd-btn--primary bd-btn--block">הצגת ימי ההולדת בטווח</button>
   </form>
+</dialog>
+<dialog class="bd-qlog" id="bd-qlog" aria-labelledby="bd-qlog-title">
+  <form class="bd-qlog__form" data-qlog-form>
+    <div class="bd-qlog__ok" aria-hidden="true">✓</div>
+    <h2 class="bd-qlog__title" id="bd-qlog-title">נשמר בהצלחה</h2>
+    <p class="bd-qlog__sub" data-qlog-sub></p>
+    <p class="bd-help">רוצים לרשום איך נוצר הקשר? <span class="opt">(רשות)</span></p>
+    <div class="bd-qlog__methods" role="radiogroup" aria-label="איך נוצר הקשר">
+      <% ['וואטסאפ', 'שיחת טלפון', 'SMS', 'פגישה', 'אחר'].forEach(m => { %><label><input type="radio" name="method" value="<%= m %>"><span><%= m %></span></label><% }) %>
+    </div>
+    <textarea class="bd-input" name="note" rows="2" maxlength="450" placeholder="הערה — למשל: שמח מאוד, ביקש לבוא לשיעור"></textarea>
+    <div class="bd-qlog__btns">
+      <button class="bd-btn bd-btn--primary" data-qlog-save>שמירת הערה</button>
+      <button type="button" class="bd-btn bd-btn--ghost" data-qlog-close>סגירה</button>
+    </div>
+  </form>
+</dialog>
+<dialog class="bd-qlog" id="bd-waask" aria-labelledby="bd-waask-title">
+  <div class="bd-qlog__form">
+    <div class="bd-qlog__ok bd-qlog__ok--wa" aria-hidden="true">💬</div>
+    <h2 class="bd-qlog__title" id="bd-waask-title">שליחת ברכה בוואטסאפ</h2>
+    <p class="bd-qlog__sub" data-wa-sub></p>
+    <div class="bd-qlog__col">
+      <button type="button" class="bd-btn bd-btn--primary" data-wa-mark>שליחה וסימון "נוצר קשר"</button>
+      <button type="button" class="bd-btn bd-btn--ghost" data-wa-only>רק שליחה</button>
+      <button type="button" class="bd-link-btn" data-wa-cancel>ביטול</button>
+    </div>
+  </div>
 </dialog>
 <%- include('partials/foot') %>

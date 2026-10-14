@@ -1024,8 +1024,10 @@ router.post('/contacts/:id/log', loadContact, async (req, res) => {
     const ok = await q('SELECT 1 FROM family_members WHERE id=$1 AND contact_id=$2', [fid, req.contact.id]);
     if (!ok.rowCount) fid = null;
   }
-  await q('INSERT INTO contact_log (contact_id, family_member_id, note) VALUES ($1,$2,$3)',
+  const { rows } = await q('INSERT INTO contact_log (contact_id, family_member_id, note) VALUES ($1,$2,$3) RETURNING id',
     [req.contact.id, fid, String(req.body.note || '').trim().slice(0, 500)]);
+  // מהדשבורד (fetch): תשובת JSON — החלון הקליל "נשמר בהצלחה" מציע להוסיף הערה / איך נוצר הקשר
+  if (req.accepts(['html', 'json']) === 'json') return res.json({ ok: true, id: rows[0].id, demo: !!req.demo });
   flash(req, 'נרשם שנוצר קשר ✓');
   const qsBack = String(req.body.back || '');
   const back = qsBack === 'dashboard' || qsBack.startsWith('?')
@@ -1043,6 +1045,16 @@ router.post('/contacts/:id/unlog', loadContact, async (req, res) => {
     flash(req, 'הסימון בוטל');
   }
   res.redirect(res.locals.base + (String(req.body.back || '').startsWith('?') ? String(req.body.back).slice(0, 200) : ''));
+});
+
+// הערה / אופן יצירת הקשר לרישום שנוצר עכשיו (מהחלון שאחרי "יצרתי קשר")
+const CONTACT_METHODS = ['וואטסאפ', 'שיחת טלפון', 'SMS', 'פגישה', 'אחר'];
+router.post('/contacts/:id/log/:lid/note', loadContact, async (req, res) => {
+  const method = CONTACT_METHODS.includes(req.body.method) ? req.body.method : '';
+  const note = String(req.body.note || '').trim().slice(0, 450);
+  const text = [method, note].filter(Boolean).join(' — ');
+  if (text) await q('UPDATE contact_log SET note=$1 WHERE id=$2 AND contact_id=$3', [text, int(req.params.lid), req.contact.id]);
+  res.json({ ok: true, demo: !!req.demo });
 });
 
 router.post('/contacts/:id/log/:lid/delete', loadContact, async (req, res) => {
