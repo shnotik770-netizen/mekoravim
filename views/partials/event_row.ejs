@@ -31,6 +31,7 @@
     </div>
   </div>
   <div class="bd-row__actions">
+    <% if (done) { %><button type="button" class="bd-row__toggle" data-row-toggle aria-expanded="false" aria-label="פרטים ופעולות ל<%= e.name %>">▾</button><% } %>
     <% if (wa) { %>
       <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
       <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>

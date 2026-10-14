@@ -178,7 +178,7 @@
     <div class="bd-qlog__methods" role="radiogroup" aria-label="איך נוצר הקשר">
       <% ['וואטסאפ', 'שיחת טלפון', 'SMS', 'פגישה', 'אחר'].forEach(m => { %><label><input type="radio" name="method" value="<%= m %>"><span><%= m %></span></label><% }) %>
     </div>
-    <textarea class="bd-input" name="note" rows="2" maxlength="450" placeholder="הערה — למשל: שמח מאוד, ביקש לבוא לשיעור"></textarea>
+    <textarea class="bd-input" name="note" rows="2" maxlength="450" aria-label="הערה (רשות)" placeholder="הערה — למשל: שמח מאוד, ביקש לבוא לשיעור"></textarea>
     <div class="bd-qlog__btns">
       <button class="bd-btn bd-btn--primary" data-qlog-save>שמירת הערה</button>
       <button type="button" class="bd-btn bd-btn--ghost" data-qlog-close>סגירה</button>

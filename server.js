@@ -59,6 +59,8 @@ const ASSET_V = (process.env.RAILWAY_GIT_COMMIT_SHA || Date.now().toString(36)).
 
 const app = express();
 app.set('view engine', 'ejs');
+// תבניות נשמרות בזיכרון אחרי ההידור הראשון (פי 3–5 מהר יותר בדפים ארוכים). רק בפיתוח מקומי מפורש — בלי מטמון
+app.set('view cache', process.env.NODE_ENV !== 'development');
 app.set('views', path.join(__dirname, 'views'));
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
@@ -80,11 +82,15 @@ app.use((req, res, next) => {
   res.set('Content-Security-Policy', CSP);
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   res.locals.v = ASSET_V;
+  res.locals.todayISO = toISO(todayIL()); // "היום" לפי שעון ישראל (למשל max בשדה תאריך לידה)
   Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword });
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
 });
+// הגנת CSRF נוספת (מעבר ל-sameSite): דפדפנים מסמנים בקשות שמגיעות מאתר אחר — טופס POST מאתר זר נדחה
+app.use((req, res, next) => (req.method === 'POST' && req.get('sec-fetch-site') === 'cross-site'
+  ? res.status(403).render('error', { message: 'הבקשה נחסמה (נשלחה מאתר אחר)' }) : next()));
 app.use(auditRequests);
 
 const flash = (req, msg) => { req.session.flash = msg; };
@@ -206,7 +212,7 @@ app.get('/admin', requireAdmin, async (req, res) => {
       (SELECT count(*) FROM shluchim WHERE active)::int AS active,
       (SELECT count(DISTINCT shliach_id) FROM activity_log WHERE actor='shliach' AND created_at > now() - interval '30 days')::int AS used30,
       (SELECT count(*) FROM contacts)::int AS contacts,
-      (SELECT coalesce(sum(units),0) FROM sms_log WHERE created_at >= date_trunc('month', now()))::int AS sms_month,
+      (SELECT coalesce(sum(units),0) FROM sms_log WHERE created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'))::int AS sms_month,
       (SELECT count(*) FROM activity_log WHERE created_at > now() - interval '24 hours'
          AND (outcome='error' OR (actor IN ('system','public') AND outcome IN ('fail','blocked'))))::int AS problems24`);
   const d = ['shluchim', 'contacts', 'sms', 'problems'].includes(req.query.d) ? req.query.d : null;
@@ -219,7 +225,7 @@ async function adminDetail(d) {
   if (d === 'shluchim') {
     const { rows: [t] } = await q(`SELECT count(*)::int AS total, count(*) FILTER (WHERE active)::int AS active,
         count(*) FILTER (WHERE NOT active)::int AS inactive,
-        count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS new_month,
+        count(*) FILTER (WHERE created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'))::int AS new_month,
         count(*) FILTER (WHERE access_code_hash IS NULL)::int AS no_code FROM shluchim`);
     const { rows } = await q(`SELECT s.id, s.name, s.chabad_house, s.active, s.created_at,
         (SELECT max(created_at) FROM activity_log a WHERE a.shliach_id=s.id AND a.actor='shliach') AS last_seen,
@@ -244,11 +250,11 @@ async function adminDetail(d) {
   }
   if (d === 'sms') {
     const { rows: kinds } = await q(`SELECT kind, sum(units)::int AS units, count(*)::int AS msgs FROM sms_log
-      WHERE created_at >= date_trunc('month', now()) GROUP BY kind ORDER BY units DESC`);
-    const { rows: months } = await q(`SELECT to_char(date_trunc('month', created_at), 'MM.YYYY') AS m, sum(units)::int AS units
-      FROM sms_log WHERE created_at >= date_trunc('month', now()) - interval '5 months' GROUP BY 1, date_trunc('month', created_at) ORDER BY date_trunc('month', created_at)`);
+      WHERE created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem') GROUP BY kind ORDER BY units DESC`);
+    const { rows: months } = await q(`SELECT to_char(date_trunc('month', created_at AT TIME ZONE 'Asia/Jerusalem'), 'MM.YYYY') AS m, sum(units)::int AS units
+      FROM sms_log WHERE created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem') - interval '5 months' GROUP BY 1, date_trunc('month', created_at AT TIME ZONE 'Asia/Jerusalem') ORDER BY date_trunc('month', created_at AT TIME ZONE 'Asia/Jerusalem')`);
     const { rows } = await q(`SELECT s.id, s.name, s.sms_quota, s.sms_used_birthdays, s.sms_alert_threshold, s.sms_weekly, s.sms_daily,
-        (SELECT coalesce(sum(units),0) FROM sms_log l WHERE l.shliach_id=s.id AND l.created_at >= date_trunc('month', now()))::int AS month_units
+        (SELECT coalesce(sum(units),0) FROM sms_log l WHERE l.shliach_id=s.id AND l.created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'))::int AS month_units
       FROM shluchim s ORDER BY month_units DESC, s.name`);
     return { kinds, months, rows };
   }
@@ -357,8 +363,8 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
     SELECT to_char(m, 'MM/YY') AS label,
            count(c.id) FILTER (WHERE c.reg_link_id IS NOT NULL)::int AS links,
            count(c.id) FILTER (WHERE c.reg_link_id IS NULL)::int AS manual
-    FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
-    LEFT JOIN contacts c ON c.shliach_id=$1 AND date_trunc('month', c.created_at) = m
+    FROM generate_series(date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') - interval '5 months', date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem'), interval '1 month') m
+    LEFT JOIN contacts c ON c.shliach_id=$1 AND date_trunc('month', c.created_at AT TIME ZONE 'Asia/Jerusalem') = m
     GROUP BY m ORDER BY m`, [id]);
   // ימי הולדת — רק ספירות (השמות נטענים לחישוב ולא מועברים לתצוגה)
   const today = todayIL();
@@ -386,8 +392,8 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
     SELECT to_char(m, 'MM/YY') AS label,
            coalesce(sum(l.units) FILTER (WHERE l.kind IN ('weekly','daily','contact')), 0)::int AS reminders,
            coalesce(sum(l.units) FILTER (WHERE l.kind NOT IN ('weekly','daily','contact')), 0)::int AS system
-    FROM generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
-    LEFT JOIN sms_log l ON l.shliach_id=$1 AND date_trunc('month', l.created_at) = m
+    FROM generate_series(date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') - interval '5 months', date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem'), interval '1 month') m
+    LEFT JOIN sms_log l ON l.shliach_id=$1 AND date_trunc('month', l.created_at AT TIME ZONE 'Asia/Jerusalem') = m
     GROUP BY m ORDER BY m`, [id]);
   // בריאות החשבון: התראות אוטומטיות למנהל
   const sh = rows[0], quota = quotaStatus(sh), alerts = [];
@@ -515,7 +521,7 @@ app.post('/admin/shluchim/:id/phone', requireAdmin, async (req, res) => {
   const phone = normalizePhone(req.body.phone);
   if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect('/admin'); }
   // שינוי נייד = שינוי היעד של קודי הכניסה — מנתקים סשנים קיימים
-  await q(`UPDATE shluchim SET phone=$1, sms_phone=CASE WHEN sms_phone='' THEN $1 ELSE sms_phone END, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
+  await q(`UPDATE shluchim SET phone=$1, sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $1 ELSE sms_phone END, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
   flash(req, 'הטלפון עודכן');
   res.redirect('/admin');
 });
@@ -627,18 +633,38 @@ router.use(async (req, res, next) => {
 // /demo = אותם מסכים בדיוק של שליח, על חשבון לדוגמה שנוצר בכל בקשה בתוך טרנזקציה שמבוטלת (ROLLBACK)
 // כשהתשובה נשלחת. לכן שום פעולה לא נשמרת, לא נרשמת ביומן ולא שולחת SMS (sendSms חסום בהקשר הזה).
 const demoHits = new Map();
+const DEMO_MAX = 3;
+let demoActive = 0;
+const demoWaiting = [];
+function demoSlot() {
+  if (demoActive < DEMO_MAX) { demoActive++; return Promise.resolve(true); }
+  if (demoWaiting.length >= 30) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const w = { resolve, timer: setTimeout(() => { demoWaiting.splice(demoWaiting.indexOf(w), 1); resolve(false); }, 8000) };
+    demoWaiting.push(w);
+  });
+}
+function demoRelease() {
+  const w = demoWaiting.shift();
+  if (w) { clearTimeout(w.timer); w.resolve(true); } else demoActive--;
+}
 async function demoAccount(req, res, next) {
   const now = Date.now(), hit = demoHits.get(req.ip);
   if (!hit || now - hit.t > 60000) demoHits.set(req.ip, { t: now, n: 1 });
   else if (++hit.n > 90) return res.status(429).render('error', { message: 'יותר מדי בקשות להדגמה — נסו שוב בעוד דקה' });
   if (demoHits.size > 5000) demoHits.clear();
 
-  const client = await pool.connect();
+  // לכל היותר DEMO_MAX בקשות הדגמה במקביל (כל אחת מחזיקה חיבור למסד) — שלא יתפסו את כל החיבורים של משתמשים אמיתיים
+  if (!(await demoSlot())) return res.status(503).render('error', { message: 'יש עומס על חשבון ההדגמה — נסו שוב בעוד רגע' });
+  let client;
+  try { client = await pool.connect(); } catch (e) { demoRelease(); return next(e); }
+  const store = { client, demo: true, dead: false };
   let done = false;
   const finish = () => {
     if (done) return;
     done = true;
-    client.query('ROLLBACK').catch(() => {}).finally(() => client.release());
+    store.dead = true; // שאילתות מאוחרות של אותה בקשה ייכשלו במקום לרוץ על חיבור משוחרר
+    client.query('ROLLBACK').catch(() => {}).finally(() => { client.release(); demoRelease(); });
   };
   res.on('finish', finish);
   res.on('close', finish);
@@ -659,7 +685,7 @@ async function demoAccount(req, res, next) {
   }
   try {
     await client.query('BEGIN');
-    dbStorage.run({ client, demo: true }, async () => {
+    dbStorage.run(store, async () => {
       try {
         req.demoSlug = await seedDemoAccount(DEFAULT_CATEGORIES, COLORS);
         next();
@@ -684,13 +710,16 @@ async function loadCategories(shliachId) {
 }
 
 // "נוצר קשר" = קיים רישום יצירת קשר לאותו אדם מ-14 יום לפני יום ההולדת ואילך
+const CONTACT_AFTER = 60;
 async function markContacted(shliachId, events) {
   const { rows } = await q(
     `SELECT l.contact_id, l.family_member_id, l.created_at FROM contact_log l JOIN contacts c ON c.id=l.contact_id
      WHERE c.shliach_id=$1 AND l.created_at > $2`, [shliachId, addDays(events.reduce((m, e) => (e.date < m ? e.date : m), todayIL()), -15)]);
+  for (const l of rows) l.day = todayIL(l.created_at); // היום בלוח ישראל (לא UTC)
   for (const e of events) {
-    const from = addDays(e.date, -14);
-    e.contacted = rows.some((l) => l.contact_id === e.contact.id && (l.family_member_id ?? null) === (e.member?.id ?? null) && l.created_at >= from);
+    // חלון: משבועיים לפני יום ההולדת ועד CONTACT_AFTER ימים אחריו — רישום מאוחר יותר שייך ליום ההולדת הבא
+    const from = addDays(e.date, -14), to = addDays(e.date, CONTACT_AFTER);
+    e.contacted = rows.some((l) => l.contact_id === e.contact.id && (l.family_member_id ?? null) === (e.member?.id ?? null) && l.day >= from && l.day <= to);
   }
 }
 
@@ -719,7 +748,7 @@ function pickRange(query, today) {
   let a = parseISO(query.from), b = parseISO(query.to);
   if (!a || !b) return { start: today, end: addDays(today, 29), preset: true };
   if (b < a) [a, b] = [b, a];
-  if (b - a > MAX_RANGE_DAYS * 864e5) b = addDays(a, MAX_RANGE_DAYS - 1);
+  if (b - a >= MAX_RANGE_DAYS * 864e5) b = addDays(a, MAX_RANGE_DAYS - 1);
   return { start: a, end: b, preset: false };
 }
 router.get('/', async (req, res) => {
@@ -820,17 +849,17 @@ router.post('/login', async (req, res) => {
   const s = req.shliach;
   const ipKey = `s${s.id}:${req.ip}`;
   const acctKey = `s${s.id}`;
-  if (loginByIp.blocked(ipKey) || loginByAccount.blocked(acctKey)) {
-    return renderLogin(req, res, 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.', 429);
-  }
+  // הניסיון נספר *לפני* הבדיקה (bcrypt איטי) — כך גם בקשות מקבילות לא עוקפות את המגבלה
+  if (!loginByIp.take(ipKey)) return renderLogin(req, res, 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.', 429);
+  // חשבון שנחסם (ניסיונות מכל הכתובות) — עדיין אפשר להיכנס עם קוד חד-פעמי מה-SMS, כדי שתוקף לא ינעל את הבעלים
+  const acctOpen = loginByAccount.take(acctKey);
   const code = String(req.body.code || '').trim();
   // קודם הקוד הקבוע; אם לא תאם — קוד חד-פעמי פעיל (אם נשלח)
-  let ok = !!s.access_code_hash && (await bcrypt.compare(code, s.access_code_hash));
+  let ok = acctOpen && !!s.access_code_hash && (await bcrypt.compare(code, s.access_code_hash));
   let otp = null;
   if (!ok) { otp = await checkOtp(s.id, code); ok = otp === 'ok'; }
   if (!ok) {
-    loginByIp.hit(ipKey);
-    loginByAccount.hit(acctKey); // נספר לחשבון מכל IP — החלפת כתובות לא עוקפת
+    if (!acctOpen) return renderLogin(req, res, 'יותר מדי ניסיונות לחשבון הזה. אפשר להיכנס עם קוד חד-פעמי ב-SMS, או לנסות שוב מאוחר יותר.', 429);
     req.auditDetail = 'קוד שגוי';
     if (otp === 'expired' && req.session.otp?.id === s.id) {
       req.session.otp = undefined;
@@ -839,6 +868,7 @@ router.post('/login', async (req, res) => {
     return renderLogin(req, res, 'קוד שגוי', 401);
   }
   loginByIp.reset(ipKey);
+  loginByAccount.undo(acctKey);
   req.auditDetail = otp === 'ok' ? 'בקוד חד-פעמי' : 'בקוד קבוע';
   req.session.otp = undefined;
   // כניסה בקוד חד-פעמי (למשל כששכחו את הקוד) מאפשרת לקבוע קוד חדש ב-15 הדקות הקרובות בלי הקוד הנוכחי
@@ -892,11 +922,13 @@ router.post('/contacts/import', async (req, res) => {
   if (req.body.action === 'reset') { req.skipAudit = true; text = ''; return render({}); }
   let table = splitTable(text);
   if (!table.length) { req.skipAudit = true; return render({ error: 'לא הודבקו נתונים' }); }
+  // בדיקת הגודל לפני כל עיבוד (הדבקה ענקית לא תפיל את השרת)
+  if (table.length > IMPORT_MAX + 1) { req.skipAudit = true; text = ''; return render({ error: `אפשר לייבא עד ${IMPORT_MAX} שורות בפעם אחת (הודבקו ${table.length})` }); }
   const guess = guessMapping(table);
-  const width = Math.max(...table.map((r) => r.length));
+  const width = table.reduce((m, r) => Math.max(m, r.length), 0);
   // שיוך עמודות שהמשתמש בחר בתצוגה המקדימה (אם יש), אחרת הניחוש
   const chosen = Array.from({ length: width }, (_, i) => req.body[`col${i}`]);
-  const mapping = chosen.every((v) => v in IMPORT_FIELDS) ? chosen : guess.mapping;
+  const mapping = chosen.every((v) => Object.hasOwn(IMPORT_FIELDS, v)) ? chosen : guess.mapping;
   const hasHeader = req.body.has_header !== undefined ? [].concat(req.body.has_header).includes('1') : guess.hasHeader;
   const header = hasHeader ? table[0] : null;
   if (hasHeader) table = table.slice(1);
@@ -1091,8 +1123,9 @@ router.post('/contacts/:id/log', loadContact, async (req, res) => {
 router.post('/contacts/:id/unlog', loadContact, async (req, res) => {
   const d = parseISO(String(req.body.date || ''));
   if (d) {
-    await q(`DELETE FROM contact_log WHERE contact_id=$1 AND family_member_id IS NOT DISTINCT FROM $2 AND created_at >= $3`,
-      [req.contact.id, int(req.body.family_member_id), addDays(d, -14)]);
+    await q(`DELETE FROM contact_log WHERE contact_id=$1 AND family_member_id IS NOT DISTINCT FROM $2
+               AND (created_at AT TIME ZONE 'Asia/Jerusalem')::date BETWEEN $3 AND $4`,
+      [req.contact.id, int(req.body.family_member_id), toISO(addDays(d, -14)), toISO(addDays(d, CONTACT_AFTER))]);
     flash(req, 'הסימון בוטל');
   }
   res.redirect(res.locals.base + (String(req.body.back || '').startsWith('?') ? String(req.body.back).slice(0, 200) : ''));
@@ -1194,6 +1227,15 @@ router.post('/sms', async (req, res) => {
   res.redirect(back);
 });
 
+// בדיקת "הקוד הנוכחי" בהגדרות — באותה מגבלת ניסיונות של הכניסה, שעוגיית כניסה גנובה לא תאפשר לנחש את הקוד
+async function currentCodeOk(req, s) {
+  const key = `s${s.id}`;
+  if (!loginByAccount.take(key)) return false;
+  const ok = await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash);
+  if (ok) loginByAccount.undo(key);
+  return ok;
+}
+
 router.post('/settings', async (req, res) => {
   const s = req.shliach;
   const back = `${res.locals.base}/settings`;
@@ -1210,13 +1252,18 @@ router.post('/settings', async (req, res) => {
     if (rawPhone && !phone) return fail('מספר הנייד אינו תקין');
     const phoneChanged = phone !== (s.phone || '');
     // שינוי הנייד (שאליו נשלח קוד הכניסה החד-פעמי) דורש את הקוד הנוכחי, כמו החלפת קוד
-    if (phoneChanged && s.access_code_hash && !recentOtp(req) && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) {
+    if (phoneChanged && s.access_code_hash && !recentOtp(req) && !(await currentCodeOk(req, s))) {
       return fail('כדי לשנות את הנייד יש להזין את קוד הכניסה הנוכחי');
     }
     const addr = parseAddress(req.body.address);
-    await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, gender=$4, use_title=$5,
-             sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $3 ELSE sms_phone END WHERE id=$6`,
+    if (!phone && s.sms_phone === s.phone && (s.sms_weekly || s.sms_daily)) return fail('תזכורות ה-SMS נשלחות לנייד הזה — כדי להסיר אותו, כבו קודם את התזכורות או הגדירו נייד אחר לתזכורות');
+    const { rows: [u] } = await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, gender=$4, use_title=$5,
+             sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $3 ELSE sms_phone END,
+             session_version=session_version + (CASE WHEN phone IS DISTINCT FROM $3 THEN 1 ELSE 0 END)
+           WHERE id=$6 RETURNING session_version`,
       [name, house, phone, addr.gender, addr.use_title, s.id]);
+    // שינוי נייד מנתק את שאר המכשירים (כמו החלפת קוד) — המכשיר הנוכחי נשאר מחובר
+    if (phoneChanged) req.session.sh = { ...(Array.isArray(req.session.sh) ? {} : req.session.sh), [s.id]: u.session_version };
     req.auditDetail = phoneChanged ? 'כולל שינוי נייד' : undefined;
     flash(req, 'הפרטים עודכנו');
   } else if (a === 'yechi') {
@@ -1227,7 +1274,7 @@ router.post('/settings', async (req, res) => {
     await q('UPDATE shluchim SET gender=$1, use_title=$2 WHERE id=$3', [addr.gender, addr.use_title, s.id]);
     flash(req, 'הפנייה עודכנה');
   } else if (a === 'code') {
-    if (s.access_code_hash && !recentOtp(req) && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) return fail('הקוד הנוכחי שגוי');
+    if (s.access_code_hash && !recentOtp(req) && !(await currentCodeOk(req, s))) return fail('הקוד הנוכחי שגוי (או יותר מדי ניסיונות — נסו שוב מאוחר יותר)');
     const code = String(req.body.code || '').trim();
     if (!validCode(code)) return fail(CODE_RULE);
     if (code !== String(req.body.code2 || '').trim()) return fail('הקודים אינם תואמים');
@@ -1258,6 +1305,12 @@ router.post('/settings', async (req, res) => {
 app.get('/health', (req, res) => res.send('ok'));
 app.use((req, res) => res.status(404).render('error', { message: 'הדף לא נמצא' }));
 app.use((err, req, res, next) => {
+  if (res.headersSent || err?.message === 'demo request closed') return; // הלקוח כבר התנתק
+  res.locals.v ??= ASSET_V; // שגיאה לפני שהמשתנים לתבניות הוגדרו (למשל גוף בקשה גדול מדי)
+  // שגיאות לקוח (גוף גדול מדי / פגום) — הודעה ברורה, לא "שגיאת שרת"
+  if (err.status >= 400 && err.status < 500) {
+    return res.status(err.status).render('error', { message: err.type === 'entity.too.large' ? 'הנתונים שנשלחו גדולים מדי. נסו לחלק לכמה חלקים.' : 'הבקשה אינה תקינה.' });
+  }
   console.error(err);
   // ביומן רק סוג השגיאה והנתיב הכללי — לא הודעת השגיאה (עלולה לכלול נתונים)
   const where = req.route ? (req.shliach ? `/s/…${req.route.path}` : req.baseUrl + req.route.path) : req.method;

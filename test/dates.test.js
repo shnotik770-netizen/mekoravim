@@ -206,3 +206,16 @@ test('eventsInRange: טווח ארוך שנוגע בשלוש שנים עבריו
   const ev = eventsInRange({ h_day: 1, h_month: 1, h_year: null }, new Date(2025, 8, 1), new Date(2026, 7, 31));
   assert.equal(ev.length, 1);
 });
+
+test('parseBirth: שנת לידה עברית עתידית נדחית', async () => {
+  const { parseBirth } = await import('../lib/person.js');
+  assert.ok(parseBirth({ date_type: 'h', h_day: '5', h_month: '7', h_year: '5790' }).error);
+  assert.equal(parseBirth({ date_type: 'h', h_day: '5', h_month: '7', h_year: '5750' }).value.h_year, 5750);
+});
+
+test('ייבוא: ל׳ אדר ב׳ הוא שגיאה, ולא הופך בשקט לאדר א׳', async () => {
+  const { parseDateCell } = await import('../lib/import.js');
+  assert.ok(parseDateCell("ל' אדר ב' תשפ\"ד").error);
+  assert.equal(parseDateCell('ל אדר א תשפד').h_month, '12');
+  assert.equal(parseDateCell('כט אדר ב תשפד').h_month, '13');
+});

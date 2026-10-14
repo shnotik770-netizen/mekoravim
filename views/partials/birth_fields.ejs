@@ -28,7 +28,7 @@
     <p class="bd-help">בלי שנת לידה לא נוכל לחשב גיל — וזה בסדר גמור.</p>
   </div>
   <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
-    <input class="bd-input" type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= new Date().toISOString().slice(0,10) %>" aria-label="תאריך לידה לועזי">
+    <input class="bd-input" type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= typeof todayISO !== 'undefined' ? todayISO : new Date().toISOString().slice(0,10) %>" aria-label="תאריך לידה לועזי">
     <label class="bd-check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> נולד/ה אחרי השקיעה</label>
     <p class="bd-help">התאריך העברי מתחלף בשקיעה, ולכן זה משנה את יום ההולדת העברי. נמיר אוטומטית.</p>
   </div>

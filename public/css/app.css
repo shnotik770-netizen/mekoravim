@@ -469,3 +469,10 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-months i { display: block; width: 26px; border-radius: 6px 6px 2px 2px; background: var(--bd-accent); }
 .bd-months small { color: var(--bd-fg-subtle); }
 .bd-admin-detail .bd-card__head { margin-bottom: var(--bd-sp-2); }
+
+/* כפתור פתיחה לשורה מכווצת של "נוצר קשר" (גם במקלדת) */
+.bd .bd-row__toggle { all: unset; box-sizing: border-box; cursor: pointer; display: none; width: 30px; height: 30px; border-radius: 50%; place-items: center; color: var(--bd-fg-muted); font-size: .85rem; }
+.bd .bd-row--done .bd-row__toggle { display: grid; }
+.bd .bd-row--done.is-open .bd-row__toggle { transform: rotate(180deg); }
+.bd .bd-row__toggle:focus-visible { outline: 2px solid var(--bd-accent); }
+.bd-demo-bar a:not(.bd-demo-bar__wa) { display: inline-block; padding: 8px 4px; }

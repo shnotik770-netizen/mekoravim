@@ -19,6 +19,7 @@ function bindHebPreview(box) {
   const show = (html, cls) => { out.className = 'bd-heb-preview' + (cls ? ' ' + cls : ''); out.innerHTML = html; out.hidden = !html; };
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const update = async () => {
+    const my = ++seq; // כל שינוי (גם ריקון שדה) מבטל תשובות קודמות שעוד בדרך
     const g = box.querySelector('input[type=radio][value=g]').checked;
     const p = new URLSearchParams({ date_type: g ? 'g' : 'h' });
     if (g) {
@@ -31,7 +32,6 @@ function bindHebPreview(box) {
       if (!day || !month) return show('');
       p.set('h_day', day); p.set('h_month', month); p.set('h_year', field('h_year').value);
     }
-    const my = ++seq;
     try {
       const r = await (await fetch('/api/hebdate?' + p, { headers: { Accept: 'application/json' } })).json();
       if (my !== seq) return;
@@ -151,6 +151,12 @@ document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener(
   if (!ta) return;
   const form = ta.form;
   const dirty = document.querySelector('[data-import-dirty]');
+  // תיקונים שעוד לא נבדקו — אין לשמור לפני "עדכון תצוגה" (המספר על הכפתור כבר לא נכון)
+  const markDirty = () => {
+    if (dirty) dirty.hidden = false;
+    const save = form.querySelector('button[value=save]');
+    if (save && !save.disabled) { save.disabled = true; save.dataset.label = save.textContent; save.textContent = 'עדכנו את התצוגה לפני השמירה'; }
+  };
   const setCell = (line, col, value) => {
     const lines = ta.value.split('\n');
     const cells = (lines[line] ?? '').split('\t');
@@ -158,7 +164,7 @@ document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener(
     cells[col] = value.replace(/[\t\r\n]+/g, ' ');
     lines[line] = cells.join('\t');
     ta.value = lines.join('\n');
-    if (dirty) dirty.hidden = false;
+    markDirty();
   };
   form.addEventListener('input', (e) => {
     const el = e.target.closest('[data-line][data-col]');
@@ -176,7 +182,7 @@ document.querySelectorAll('[data-share]').forEach((btn) => btn.addEventListener(
     lines[line] = '';
     ta.value = lines.join('\n');
     tr.remove(); ed?.remove();
-    if (dirty) dirty.hidden = false;
+    markDirty();
   });
   // "ליצור סיווגים חדשים" — מרענן את התצוגה מיד
   form.querySelectorAll('[data-autosubmit-preview]').forEach((cb) => cb.addEventListener('change', () => {
@@ -193,10 +199,10 @@ document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('
   try {
     await navigator.clipboard.writeText(btn.dataset.copy);
     if (label) label.textContent = 'הועתק ✓';
+    btn.classList.add('is-copied');
   } catch {
     window.prompt('העתיקו את הקישור:', btn.dataset.copy);
   }
-  btn.classList.add('is-copied');
   setTimeout(() => { btn.classList.remove('is-copied'); if (label) label.textContent = orig; }, 1800);
 }));
 
@@ -245,9 +251,9 @@ function initRange(dlg) {
   const render = () => {
     const y = shown.getFullYear(), m = shown.getMonth();
     const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
-    let html = `<div class="bd-cal__nav"><button type="button" data-nav="-1" aria-label="החודש הקודם">›</button>
+    let html = `<div class="bd-cal__nav"><button type="button" data-nav="-1" aria-label="החודש הקודם"${isMissed() && y * 12 + m <= add(today, -MISSED_MAX).getFullYear() * 12 + add(today, -MISSED_MAX).getMonth() ? ' disabled' : ''}>›</button>
       <div class="bd-cal__month"><b>${MONTHS[m]} ${y}</b><small data-heb-month>&nbsp;</small></div>
-      <button type="button" data-nav="1" aria-label="החודש הבא"${isMissed() && y === today.getFullYear() && m === today.getMonth() ? ' disabled' : ''}>‹</button></div><div class="bd-cal__grid" role="grid">`;
+      <button type="button" data-nav="1" aria-label="החודש הבא"${isMissed() && y === today.getFullYear() && m === today.getMonth() ? ' disabled' : ''}>‹</button></div><div class="bd-cal__grid">`;
     html += ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((d) => `<span class="bd-cal__dow">${d}</span>`).join('');
     for (let i = 0; i < first.getDay(); i++) html += '<span></span>';
     for (let d = 1; d <= days; d++) {
@@ -336,21 +342,30 @@ initRange(document.getElementById('bd-range'));
 (() => {
   if (!document.getElementById('bd-list-title')) return;
   const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn', '.bd-layout--split > aside', '.bd-takeaway--below'];
+  let loadSeq = 0, ctrl = null;
   const load = async (url, push) => {
+    const my = ++loadSeq; // רק הבקשה האחרונה קובעת — לחיצות מהירות לא "חוזרות אחורה"
+    ctrl?.abort(); ctrl = new AbortController();
+    const focusHref = document.activeElement?.getAttribute?.('href');
     const list = document.querySelector(PARTS[2]);
     list?.classList.add('bd-swapping');
     try {
-      const r = await fetch(url, { headers: { Accept: 'text/html' } });
+      const r = await fetch(url, { headers: { Accept: 'text/html' }, signal: ctrl.signal });
       if (!r.ok || r.redirected) throw new Error();
-      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      const html = await r.text();
+      if (my !== loadSeq) return;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
       for (const sel of PARTS) {
         const cur = document.querySelector(sel), next = doc.querySelector(sel);
         if (cur && next) cur.replaceWith(next);
       }
       initRange(document.getElementById('bd-range'));
-      if (push) history.pushState({ dash: 1 }, '', url);
-    } catch { location.href = url; }
-    finally { document.querySelector(PARTS[2])?.classList.remove('bd-swapping'); }
+      if (push && new URL(url, location.href).href !== location.href) history.pushState({ dash: 1 }, '', url);
+      // הפוקוס חוזר לאותו כפתור (או לכותרת הרשימה) — לא "נעלם" לראש הדף
+      const target = (focusHref && [...document.querySelectorAll('a[href]')].find((a) => a.getAttribute('href') === focusHref)) || document.getElementById('bd-list-title');
+      if (target) { if (target.id === 'bd-list-title') target.tabIndex = -1; target.focus({ preventScroll: true }); }
+    } catch (e) { if (e.name !== 'AbortError' && my === loadSeq) location.href = url; }
+    finally { if (my === loadSeq) document.querySelector(PARTS[2])?.classList.remove('bd-swapping'); }
   };
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
@@ -375,9 +390,11 @@ initRange(document.getElementById('bd-range'));
 
 // שורה מכווצת של "נוצר קשר": לחיצה (לא על קישור/כפתור) פותחת/סוגרת את הפרטים
 document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-row-toggle]');
   const row = e.target.closest('.bd-row--done');
-  if (!row || e.target.closest('a, button, form')) return;
-  row.classList.toggle('is-open');
+  if (!row || (!t && e.target.closest('a, button, form'))) return;
+  const open = row.classList.toggle('is-open');
+  row.querySelector('[data-row-toggle]')?.setAttribute('aria-expanded', open);
 });
 
 // "יצרתי קשר" בדשבורד: נשמר בלי טעינת דף, ונפתח חלון קליל — "נשמר בהצלחה" + איך נוצר הקשר / הערה (רשות).
@@ -388,21 +405,24 @@ document.addEventListener('click', (e) => {
   const form = dlg.querySelector('[data-qlog-form]'), sub = dlg.querySelector('[data-qlog-sub]');
   let cur = null;
   const post = async (url, data) => {
-    const r = await fetch(url, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data) });
+    // keepalive: הבקשה ממשיכה גם אם הדף עובר לרקע (למשל כשנפתחת אפליקציית וואטסאפ)
+    const r = await fetch(url, { method: 'POST', keepalive: true, headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data) });
     if (!r.ok) throw new Error(r.status);
     return r.json();
   };
   const logIt = async (f, method) => {
     const btn = f.querySelector('button'); if (btn) btn.disabled = true;
+    const data = new FormData(f); if (method) data.set('note', method);
+    let r;
+    // רק אם השמירה עצמה נכשלה — שליחה רגילה של הטופס (אחרת היה נרשם פעמיים)
+    try { r = await post(f.action, data); } catch { f.submit(); return; }
     try {
-      const data = new FormData(f); if (method) data.set('note', method);
-      const r = await post(f.action, data);
       cur = { url: `${f.action}/${r.id}/note` };
       form.reset();
       if (method) { const m = form.querySelector(`input[name=method][value="${method}"]`); if (m) m.checked = true; }
       sub.textContent = `נרשם שנוצר קשר עם ${f.dataset.name || ''}${r.demo ? ' (בהדגמה זה לא נשמר באמת)' : ''}`;
       dlg.showModal();
-    } catch { f.submit(); }
+    } catch { window.bdReload ? window.bdReload() : location.reload(); }
   };
   document.addEventListener('submit', (e) => {
     const f = e.target.closest('form[data-quicklog]');
