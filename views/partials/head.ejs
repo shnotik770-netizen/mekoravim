@@ -37,7 +37,7 @@
 <div class="bd <%= _narrow ? 'bd-narrow' : 'bd-wrap' %>">
 <% if (_nav) { %>
 <header class="bd-appbar">
-  <a class="bd-brand" href="<%= base %>"><%- include('logo') %><span class="bd-brand__text"><span class="bd-brand__name"><%= shliach.name %></span><span class="bd-brand__slogan">זכרתי התקשרתי · לא מפספסים אף יום הולדת</span></span></a>
+  <a class="bd-brand" href="<%= base %>"><%- include('logo') %><span class="bd-brand__text"><span class="bd-brand__name"><%= shliach.name %><% if (shliach.chabad_house) { %> <small class="bd-brand__house"><%= shliach.chabad_house %></small><% } %></span><span class="bd-brand__slogan">זכרתי התקשרתי · לא מפספסים אף יום הולדת</span></span></a>
   <div class="bd-appbar__tools">
     <button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button>
     <% if (typeof demo !== 'undefined' && demo) { %><a href="/" class="bd-tool-btn" aria-label="יציאה"><%- include('icons', { name: 'logout' }) %></a><% } else { %><form method="post" action="<%= base %>/logout"><button class="bd-tool-btn" aria-label="יציאה" title="יציאה"><%- include('icons', { name: 'logout' }) %></button></form><% } %>

@@ -16,15 +16,29 @@
         <div class="bd-item__sub"><code class="bd-code copy"><%= url %></code></div>
         <details class="bd-mt">
           <summary class="bd-link-btn bd-link-btn--accent">✏️ עריכה</summary>
-          <form method="post" action="<%= base %>/links/<%= l.id %>" class="bd-inline">
-            <input class="bd-input" name="name" value="<%= l.name %>" maxlength="80" required aria-label="שם הקישור">
-            <select class="bd-input" name="category_id" aria-label="סיווג">
-              <option value="">ללא סיווג</option>
-              <% categories.forEach(c => { %><option value="<%= c.id %>" <%= l.category_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
-            </select>
-            <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
+          <form method="post" action="<%= base %>/links/<%= l.id %>" class="bd-stack bd-link-form">
+            <div class="bd-inline">
+              <input class="bd-input" name="name" value="<%= l.name %>" maxlength="80" required aria-label="שם הקישור">
+              <select class="bd-input" name="category_id" aria-label="סיווג">
+                <option value="">ללא סיווג</option>
+                <% categories.forEach(c => { %><option value="<%= c.id %>" <%= l.category_id === c.id ? 'selected' : '' %>><%= c.name %></option><% }) %>
+              </select>
+            </div>
+            <p class="bd-help">שינוי הסיווג חל על נרשמים חדשים בלבד.</p>
+            <p class="bd-label bd-mt">📝 התאמת הטופס שהמקורבים רואים</p>
+            <label class="bd-small">כותרת הטופס <span class="opt">(ריק = <%= shliach.name %>)</span>
+              <input class="bd-input" name="form_title" value="<%= l.form_title %>" maxlength="80" placeholder="למשל: רישום לשיעור התניא"></label>
+            <label class="bd-small">טקסט פתיחה <span class="opt">(ריק = ברירת המחדל)</span>
+              <textarea class="bd-input" name="form_intro" maxlength="300" rows="2" placeholder="נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!"><%= l.form_intro %></textarea></label>
+            <span class="bd-small">שדות טקסט נוספים <span class="opt">(עד 3 — התשובות נשמרות בהערות המקורב)</span></span>
+            <% const ex = Array.isArray(l.extra_fields) ? l.extra_fields : []; for (let i = 0; i < 3; i++) { const f = ex[i] || {}; %>
+            <div class="bd-inline bd-extra-row">
+              <input class="bd-input" name="extra_label_<%= i %>" value="<%= f.label || '' %>" maxlength="60" placeholder="<%= ['למשל: שם האבא', 'למשל: כתובת מייל', 'למשל: איך שמעת עלינו?'][i] %>" aria-label="שדה נוסף <%= i + 1 %>">
+              <label class="bd-check bd-small"><input type="checkbox" name="extra_req_<%= i %>" <%= f.required ? 'checked' : '' %>> חובה</label>
+            </div>
+            <% } %>
+            <div class="bd-actions"><button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button><a class="bd-btn bd-btn--ghost bd-btn--sm" target="_blank" rel="noopener" href="<%= url %>">תצוגת הטופס ↗</a></div>
           </form>
-          <p class="bd-help">שינוי הסיווג חל על נרשמים חדשים בלבד.</p>
         </details>
       </div>
       <div class="bd-actions">

@@ -284,3 +284,9 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-help-card__btns { display: flex; flex-wrap: wrap; gap: var(--bd-sp-3); }
 .bd-help-card__btns .bd-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 22px; }
 .bd button.bd-wa-btn, .bd a.bd-wa-btn { background: var(--bd-wa); color: #fff; }
+.bd-brand__house { font-size: .74em; font-weight: var(--bd-fw-regular, 400); color: var(--bd-fg-muted); }
+.bd-brand__house::before { content: '· '; }
+.bd-reg-house { color: var(--bd-gold); font-weight: var(--bd-fw-medium); margin: 4px 0 8px; }
+.bd-link-form label.bd-small { display: grid; gap: 4px; }
+.bd-extra-row .bd-input { flex: 1 1 200px; }
+.bd-extra-row .bd-check { white-space: nowrap; }

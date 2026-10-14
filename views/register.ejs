@@ -4,8 +4,9 @@
 <% if (!internal) { %>
 <div class="bd-center bd-mb" style="margin-bottom:24px">
   <%- include('partials/logo', { big: true }) %>
-  <h1 class="bd-title"><%= link.shliach_name %></h1>
-  <p class="bd-sub" style="font-size:var(--bd-fs-md)">נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!</p>
+  <h1 class="bd-title"><%= link.form_title || link.shliach_name %></h1>
+  <% if (link.chabad_house) { %><p class="bd-reg-house"><%= link.form_title ? link.shliach_name + ' · ' : '' %><%= link.chabad_house %></p><% } else if (link.form_title) { %><p class="bd-reg-house"><%= link.shliach_name %></p><% } %>
+  <p class="bd-sub" style="font-size:var(--bd-fs-md)"><%= link.form_intro || 'נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!' %></p>
 </div>
 <% } else { %>
 <div class="bd-pagehead"><h1 class="bd-title">הוספת מקורב</h1></div>
@@ -29,6 +30,11 @@
     <legend class="bd-label">תאריך לידה<span class="req">*</span></legend>
     <%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'main' }) %>
   </fieldset>
+
+  <% if (!internal) { (Array.isArray(link.extra_fields) ? link.extra_fields.slice(0, 3) : []).forEach((f, i) => { %>
+    <div class="bd-field"><label class="bd-label" for="ex<%= i %>"><%= f.label %><% if (f.required) { %><span class="req">*</span><% } else { %> <span class="opt">(לא חובה)</span><% } %></label>
+      <input class="bd-input" id="ex<%= i %>" name="extra_<%= i %>" maxlength="300" value="<%= values['extra_' + i] || '' %>" <%= f.required ? 'required' : '' %>></div>
+  <% }) } %>
 
   <% if (internal) { %>
     <%- include('partials/cat_select', { selected: values.category_id }) %>

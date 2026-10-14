@@ -454,6 +454,18 @@ const addFamily = (contactId, f) => q(
    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
   [contactId, f.relation, f.first_name, f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year]);
 
+// שדות טקסט נוספים שהשליח הגדיר לטופס הרישום (עד 3): בדיקת חובה, והרכבת הערה "תווית: תשובה"
+function parseExtras(link, body) {
+  const fields = Array.isArray(link.extra_fields) ? link.extra_fields.slice(0, 3) : [];
+  const lines = [];
+  for (const [i, f] of fields.entries()) {
+    const v = String(body[`extra_${i}`] || '').trim().slice(0, 300);
+    if (!v && f.required) return { error: `יש למלא: ${f.label}` };
+    if (v) lines.push(`${f.label}${/[?:？]$/.test(f.label) ? ' ' : ': '}${v}`);
+  }
+  return { notes: lines.join('\n') };
+}
+
 function parseForm(body) {
   const c = parseContact(body);
   const fam = c.error ? {} : parseFamily(body.fam);
@@ -464,7 +476,7 @@ function parseForm(body) {
 
 app.use('/r/:token', async (req, res, next) => {
   const { rows } = await q(
-    `SELECT l.*, s.name AS shliach_name FROM reg_links l JOIN shluchim s ON s.id=l.shliach_id
+    `SELECT l.*, s.name AS shliach_name, s.chabad_house FROM reg_links l JOIN shluchim s ON s.id=l.shliach_id
      WHERE l.token=$1 AND l.active AND s.active`, [req.params.token]);
   if (!rows[0]) return res.redirect('/'); // קישור רישום לא פעיל — ישר לדף הבית
   req.link = res.locals.link = rows[0];
@@ -483,9 +495,11 @@ app.post('/r/:token', async (req, res) => {
     });
   }
   const { c, fam, error } = parseForm(req.body);
-  if (error) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error, internal: false });
+  const extras = parseExtras(req.link, req.body);
+  const err = error || extras.error;
+  if (err) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error: err, internal: false });
   c.category_id = req.link.category_id;
-  c.notes = '';
+  c.notes = extras.notes; // תשובות לשדות הנוספים נשמרות בהערות המקורב
   await saveContact(req.link.shliach_id, c, fam, req.link.id);
   res.render('register_done');
 });
@@ -975,9 +989,16 @@ router.post('/links', async (req, res) => {
 router.post('/links/:id', async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 80);
   if (name) {
-    await q('UPDATE reg_links SET name=$1, category_id=$2 WHERE id=$3 AND shliach_id=$4',
-      [name, await validCategory(req.shliach.id, int(req.body.category_id)), int(req.params.id), req.shliach.id]);
-    flash(req, 'הקישור עודכן');
+    const extra = [0, 1, 2].map((i) => ({
+      label: String(req.body[`extra_label_${i}`] || '').trim().slice(0, 60),
+      required: req.body[`extra_req_${i}`] === 'on',
+    })).filter((f) => f.label);
+    await q(`UPDATE reg_links SET name=$1, category_id=$2, form_title=$3, form_intro=$4, extra_fields=$5
+             WHERE id=$6 AND shliach_id=$7`,
+      [name, await validCategory(req.shliach.id, int(req.body.category_id)),
+        String(req.body.form_title || '').trim().slice(0, 80), String(req.body.form_intro || '').trim().slice(0, 300),
+        JSON.stringify(extra), int(req.params.id), req.shliach.id]);
+    flash(req, 'הקישור והטופס עודכנו');
   }
   res.redirect(`${res.locals.base}/links`);
 });
