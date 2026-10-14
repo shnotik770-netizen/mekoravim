@@ -42,7 +42,7 @@ h1, h2, h3 { margin: 0; }
   padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
   background: rgb(15 27 51 / .72); backdrop-filter: blur(14px) saturate(1.4); border-bottom: 1px solid rgb(255 255 255 / .08); }
 .hm-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font: 900 1.15rem/1 var(--display); }
-.hm-brand img { border-radius: 10px; }
+.hm-brand img { border-radius: 0; }
 .hm-brand span { color: var(--gold); }
 
 /* ---------- באנר ראשי ---------- */

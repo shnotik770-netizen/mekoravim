@@ -1,5 +1,5 @@
 <%
-  const _title = typeof title !== 'undefined' ? title : 'ימי הולדת למקורבים';
+  const _title = typeof title !== 'undefined' ? title : 'זכרתי התקשרתי';
   const _active = typeof active !== 'undefined' ? active : '';
   const _narrow = typeof narrow !== 'undefined' && narrow;
   const _nav = typeof nav !== 'undefined' && nav;
@@ -20,8 +20,9 @@
 <link rel="manifest" href="<%= typeof manifestUrl !== 'undefined' ? manifestUrl : '/manifest.webmanifest' %>">
 <meta name="theme-color" content="#C98A1A">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ימי הולדת">
+<meta name="apple-mobile-web-app-title" content="זכרתי התקשרתי">
 <% } %>
+<link rel="icon" type="image/svg+xml" href="/img/logo.svg?v=<%= v %>">
 <link rel="icon" type="image/png" href="/icons/favicon-64.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 </head>
@@ -30,7 +31,7 @@
 <% if (typeof demo !== 'undefined' && demo) { %>
 <div class="bd-demo-bar" role="note">
   <span>🎭 <b>חשבון הדגמה</b> — לחצו על הכול, שום דבר לא נשמר</span>
-  <span class="bd-demo-bar__acts"><a href="/">לדף הבית</a><a class="bd-demo-bar__wa" href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, ראיתי את ההדגמה ואשמח לשמוע על מערכת ימי הולדת למקורבים') %>" target="_blank" rel="noopener">💬 יצירת קשר בוואטסאפ</a></span>
+  <span class="bd-demo-bar__acts"><a href="/">לדף הבית</a><a class="bd-demo-bar__wa" href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, ראיתי את ההדגמה ואשמח לשמוע על זכרתי התקשרתי') %>" target="_blank" rel="noopener">💬 יצירת קשר בוואטסאפ</a></span>
 </div>
 <% } %>
 <div class="bd <%= _narrow ? 'bd-narrow' : 'bd-wrap' %>">

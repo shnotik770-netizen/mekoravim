@@ -109,18 +109,18 @@ app.get('/', (req, res) => res.render('home'));
 function manifest({ name, short, start, scope }) {
   return {
     name, short_name: short, start_url: start, scope, id: start,
-    description: 'ימי הולדת עבריים של המקורבים — דשבורד, תזכורות ויצירת קשר',
+    description: 'זכרתי התקשרתי — לא מפספסים אף יום הולדת. ימי הולדת עבריים של המקורבים, תזכורות ויצירת קשר',
     display: 'standalone', dir: 'rtl', lang: 'he',
-    background_color: '#F7F4EE', theme_color: '#C98A1A',
+    background_color: '#FBF6EC', theme_color: '#0F1B33',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }
 app.get('/manifest.webmanifest', (req, res) => {
-  res.type('application/manifest+json').send(manifest({ name: 'ימי הולדת למקורבים', short: 'ימי הולדת', start: '/admin', scope: '/' }));
+  res.type('application/manifest+json').send(manifest({ name: 'זכרתי התקשרתי', short: 'זכרתי התקשרתי', start: '/admin', scope: '/' }));
 });
 
 app.get('/admin/login', (req, res) => {
@@ -341,7 +341,7 @@ const shliachUrl = (req, slug) => `${baseUrl(req)}/s/${slug}`;
 
 // SMS עם הקישור האישי לשליח. הקוד הקבוע נכלל רק ברגע שנקבע (אחר כך השרת לא יודע אותו)
 function welcomeMessage(s, url, code, isNew) {
-  const intro = isNew ? 'נפתח עבורך חשבון במערכת "ימי הולדת למקורבים".' : (code ? 'קוד הכניסה שלך למערכת "ימי הולדת למקורבים" עודכן.' : 'הקישור שלך למערכת "ימי הולדת למקורבים":');
+  const intro = isNew ? 'נפתח עבורך חשבון ב"זכרתי התקשרתי".' : (code ? 'קוד הכניסה שלך ל"זכרתי התקשרתי" עודכן.' : 'הקישור שלך ל"זכרתי התקשרתי":');
   const lines = [`שלום ${s.name}! 🎂`, intro, isNew || code ? `הקישור האישי שלך:\n${url}` : url];
   if (code) lines.push(`קוד הכניסה: ${code}`, '(אפשר להחליף אותו בהגדרות)');
   lines.push('אפשר גם להיכנס עם קוד חד-פעמי שיישלח לנייד הזה.');
@@ -567,7 +567,7 @@ const requireShliach = (req, res, next) => (req.authorized ? next() : res.redire
 
 router.get('/manifest.webmanifest', (req, res) => {
   const b = res.locals.base;
-  res.type('application/manifest+json').send(manifest({ name: `ימי הולדת — ${req.shliach.name}`, short: 'ימי הולדת', start: b, scope: b }));
+  res.type('application/manifest+json').send(manifest({ name: `זכרתי התקשרתי — ${req.shliach.name}`, short: 'זכרתי התקשרתי', start: b, scope: b }));
 });
 
 async function loadCategories(shliachId) {
@@ -647,7 +647,7 @@ router.post('/otp/send', async (req, res) => {
     [s.id, await bcrypt.hash(code, 10), OTP_TTL_MIN]);
   await q(`DELETE FROM login_codes WHERE created_at < now() - interval '1 day'`);
   try {
-    await sendToShliach(s, s.phone, `קוד הכניסה שלך ל"ימי הולדת למקורבים": ${code}\nבתוקף ${OTP_TTL_MIN} דקות. אין למסור אותו לאף אחד.`, 'otp');
+    await sendToShliach(s, s.phone, `קוד הכניסה שלך ל"זכרתי התקשרתי": ${code}\nבתוקף ${OTP_TTL_MIN} דקות. אין למסור אותו לאף אחד.`, 'otp');
   } catch (e) {
     console.error(`OTP לשליח ${s.id} נכשל:`, e.message);
     req.auditDetail = `שליחת SMS נכשלה: ${e.message}`; // הודעת ימות המשיח — לא מידע של השליח
