@@ -1,4 +1,5 @@
 import express from 'express';
+import { gematriya } from '@hebcal/core';
 import cookieSession from 'cookie-session';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
@@ -7,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr,
+  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents } from './lib/events.js';
@@ -106,6 +107,20 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
+
+// ימי חודש לועזי בתאריך עברי — ללוח השנה של בחירת הטווח
+app.get('/api/hebmonth', (req, res) => {
+  const y = parseInt(req.query.y, 10), m = parseInt(req.query.m, 10);
+  if (!(y >= 1900 && y <= 2200 && m >= 1 && m <= 12)) return res.status(400).json({ error: 'bad month' });
+  const days = new Date(y, m, 0).getDate();
+  const heb = Array.from({ length: days }, (_, i) => hebFromGreg(new Date(y, m - 1, i + 1), false));
+  const label = (h) => `${monthName(h.month, h.year)} ${hebYearStr(h.year)}`;
+  const a = label(heb[0]), b = label(heb[days - 1]);
+  res.set('Cache-Control', 'public, max-age=86400').json({
+    days: heb.map((h) => gematriya(h.day)),
+    month: a === b ? a : `${a.replace(/ \S+$/, a.split(' ').pop() === b.split(' ').pop() ? '' : '$&')} – ${b}`,
+  });
+});
 
 // תצוגה מקדימה של התאריך העברי בטופסי התאריך (חישוב בלבד — בלי מסד נתונים)
 app.get('/api/hebdate', (req, res) => {
@@ -620,39 +635,50 @@ async function markContacted(shliachId, events) {
 }
 
 // דשבורד (או מסך קוד כניסה)
-const VIEWS = ['today', 'week', 'month', '30'];
+const VIEWS = ['today', 'week', 'month', 'range'];
+const MAX_RANGE_DAYS = 366;
+// טווח שבחר המשתמש (?from=&to=); ברירת מחדל — 30 הימים הקרובים
+function pickRange(query, today) {
+  let a = parseISO(query.from), b = parseISO(query.to);
+  if (!a || !b) return { start: today, end: addDays(today, 29), preset: true };
+  if (b < a) [a, b] = [b, a];
+  if (b - a > MAX_RANGE_DAYS * 864e5) b = addDays(a, MAX_RANGE_DAYS - 1);
+  return { start: a, end: b, preset: false };
+}
 router.get('/', async (req, res) => {
   if (!req.authorized) return renderLogin(req, res);
   const s = req.shliach;
   const categories = await loadCategories(s.id);
   const cat = int(req.query.cat);
-  const view = VIEWS.includes(req.query.view) ? req.query.view : 'week';
+  const view = req.query.view === '30' ? 'range' : VIEWS.includes(req.query.view) ? req.query.view : 'week';
   const people = await loadPeople(s.id);
   const today = todayIL();
-  const w = weekRange(today), m = hebMonthRange(today), end30 = addDays(today, 29);
+  const w = weekRange(today), m = hebMonthRange(today), r = pickRange(view === 'range' ? req.query : {}, today);
   const from = new Date(Math.min(w.start, m.start, addDays(today, -14)));
-  const to = new Date(Math.max(w.end, m.end, end30));
+  const to = new Date(Math.max(w.end, m.end));
   const all = collectEvents(people, from, to);
-  await markContacted(s.id, all);
+  const ranged = collectEvents(people, r.start, r.end);
+  await markContacted(s.id, [...all, ...ranged]);
   const inR = (e, a, b) => e.date >= a && e.date <= b;
   const same = (e) => e.date.getTime() === today.getTime();
   const lists = {
     today: all.filter(same),
     week: all.filter((e) => inR(e, w.start, w.end)),
     month: all.filter((e) => inR(e, m.start, m.end)),
-    30: all.filter((e) => inR(e, today, end30)),
+    range: ranged,
   };
   const overdue = all.filter((e) => e.date < today && e.date >= addDays(today, -14) && !e.contacted);
-  const upcoming = all.filter((e) => e.date > w.end).slice(0, 5);
-  const next = all.find((e) => e.date > today);
+  const upcoming = collectEvents(people, addDays(w.end, 1), addDays(w.end, 60)).slice(0, 5);
+  const next = collectEvents(people, addDays(today, 1), addDays(today, 400))[0];
   const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
+  const rangeQ = view === 'range' && !r.preset ? { from: toISO(r.start), to: toISO(r.end) } : {};
   res.render('dashboard', {
-    weekInfo: weekInfo(today),
+    weekInfo: weekInfo(today), hebRangeStr, toISO,
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
-    lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, end30,
+    lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, range: r, maxRange: MAX_RANGE_DAYS,
     total: people.contacts.length, familyTotal: people.family.length,
-    qs: (o) => { const p = new URLSearchParams({ view, ...(cat ? { cat } : {}), ...o }); for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k); return `?${p}`; },
+    qs: (o) => { const p = new URLSearchParams({ view, ...rangeQ, ...(cat ? { cat } : {}), ...o }); if (p.get('view') !== 'range') { p.delete('from'); p.delete('to'); } for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k); return `?${p}`; },
   });
 });
 
@@ -1034,7 +1060,7 @@ const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.se
 
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
-    error, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
+    error, openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
     smsOn: smsConfigured(), fmtDate, quota: quotaStatus(req.shliach),
     previews: req.shliach.sms_weekly && req.shliach.sms_daily
       ? { 'שבועי': await weeklyMessageFor(req.shliach, undefined, 'weekly'), 'יומי': await weeklyMessageFor(req.shliach, undefined, 'daily') }
@@ -1074,7 +1100,26 @@ router.post('/settings', async (req, res) => {
   const fail = (error) => renderSettings(req, res, error, 400);
   const a = req.body.action;
 
-  if (a === 'address') {
+  if (a === 'profile' || a === 'code') req.openProfile = true;
+  if (a === 'profile') {
+    const name = String(req.body.name || '').trim().slice(0, 80);
+    if (!name) return fail('יש להזין שם');
+    const house = String(req.body.chabad_house || '').trim().slice(0, 80);
+    const rawPhone = String(req.body.phone || '').trim();
+    const phone = rawPhone ? normalizePhone(rawPhone) : '';
+    if (rawPhone && !phone) return fail('מספר הנייד אינו תקין');
+    const phoneChanged = phone !== (s.phone || '');
+    // שינוי הנייד (שאליו נשלח קוד הכניסה החד-פעמי) דורש את הקוד הנוכחי, כמו החלפת קוד
+    if (phoneChanged && s.access_code_hash && !recentOtp(req) && !(await bcrypt.compare(String(req.body.current || '').trim(), s.access_code_hash))) {
+      return fail('כדי לשנות את הנייד יש להזין את קוד הכניסה הנוכחי');
+    }
+    const addr = parseAddress(req.body.address);
+    await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, gender=$4, use_title=$5,
+             sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $3 ELSE sms_phone END WHERE id=$6`,
+      [name, house, phone, addr.gender, addr.use_title, s.id]);
+    req.auditDetail = phoneChanged ? 'כולל שינוי נייד' : undefined;
+    flash(req, 'הפרטים עודכנו');
+  } else if (a === 'address') {
     const addr = parseAddress(req.body.address);
     await q('UPDATE shluchim SET gender=$1, use_title=$2 WHERE id=$3', [addr.gender, addr.use_title, s.id]);
     flash(req, 'הפנייה עודכנה');

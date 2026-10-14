@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO, normalizeHeb, hebMonthRange, birthNote } from '../lib/dates.js';
+import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO, normalizeHeb, hebMonthRange, birthNote, hebRangeStr } from '../lib/dates.js';
 
 test('המרה מלועזי לעברי, כולל אחרי השקיעה', () => {
   assert.deepEqual(hebFromGreg(new Date(1990, 9, 20), false), { day: 1, month: 8, year: 5751 });
@@ -193,4 +193,16 @@ test('birthNote: הסבר רק לתאריכים שזזים', () => {
   assert.match(birthNote(14, 12, 5784), /אדר א׳.*בי״ד אדר$/);
   assert.match(birthNote(14, 13, 5784), /אדר ב׳/);
   assert.match(birthNote(14, 13, 5785), /בשנה מעוברת — בי״ד אדר ב׳/);
+});
+
+test('hebRangeStr: טווח עברי', () => {
+  assert.equal(hebRangeStr(new Date(2026, 9, 11), new Date(2026, 9, 17)), 'ל׳ תשרי–ו׳ חשוון');
+  assert.equal(hebRangeStr(new Date(2026, 9, 20), new Date(2026, 9, 24)), 'ט׳–י״ג חשוון');
+  assert.match(hebRangeStr(new Date(2026, 8, 1), new Date(2026, 8, 30)), /תשפ״ו–.*תשפ״ז$/);
+});
+
+test('eventsInRange: טווח ארוך שנוגע בשלוש שנים עבריות', () => {
+  // 1.9.2025 (ט׳ אלול תשפ״ה) עד 31.8.2026 — כולל כל תשפ״ו
+  const ev = eventsInRange({ h_day: 1, h_month: 1, h_year: null }, new Date(2025, 8, 1), new Date(2026, 7, 31));
+  assert.equal(ev.length, 1);
 });

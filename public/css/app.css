@@ -299,3 +299,53 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-heb-preview__next { color: var(--bd-fg-muted); }
 .bd-heb-preview__note { color: var(--bd-gold); font-weight: var(--bd-fw-medium); }
 .bd-heb-preview--bad { background: color-mix(in srgb, var(--bd-bad) 8%, transparent); border-color: color-mix(in srgb, var(--bd-bad) 35%, transparent); color: var(--bd-bad); }
+
+/* כותרת הרשימה בדשבורד: עברי · לועזי · תוספת (פרשה / מספר ימים) */
+.bd-dates { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; }
+.bd-dates > * + *::before { content: '·'; margin: 0 7px; color: var(--bd-fg-subtle); font-weight: 400; }
+.bd-dates bdi { color: var(--bd-fg-muted); }
+.bd-dates__extra { color: var(--bd-fg-muted); font-weight: 400; }
+
+/* חלון בחירת טווח */
+.bd-range { width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 0; border-radius: 20px;
+  background: var(--bd-surface); color: var(--bd-fg); box-shadow: 0 24px 60px rgb(0 0 0 / .3); }
+.bd-range::backdrop { background: rgb(15 27 51 / .45); backdrop-filter: blur(2px); }
+.bd-range__form { display: grid; gap: var(--bd-sp-3); padding: var(--bd-sp-4); }
+.bd-range__head { display: flex; align-items: center; justify-content: space-between; }
+.bd-range__title { margin: 0; font-size: var(--bd-fs-md); }
+.bd .bd-range__x { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: var(--bd-fg-muted); }
+.bd .bd-range__x:hover { background: var(--bd-today-bg); }
+.bd-range__presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.bd .bd-range__presets button { all: unset; cursor: pointer; padding: 6px 12px; border-radius: 999px; font-size: var(--bd-fs-sm);
+  border: 1px solid var(--bd-today-line); background: var(--bd-today-bg); color: var(--bd-fg); }
+.bd .bd-range__presets button:hover { border-color: var(--bd-gold); }
+.bd-range__fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bd-sp-2); }
+.bd-range__fields label { display: grid; gap: 2px; }
+.bd-range__sum { margin: 0; text-align: center; font-weight: var(--bd-fw-medium); color: var(--bd-gold); min-height: 1.4em; }
+.bd-cal__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.bd .bd-cal__nav button { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; font-size: 22px; color: var(--bd-fg-muted); }
+.bd .bd-cal__nav button:hover { background: var(--bd-today-bg); }
+.bd-cal__month { text-align: center; line-height: 1.25; }
+.bd-cal__month small { display: block; color: var(--bd-gold); font-size: var(--bd-fs-sm); }
+.bd-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px 0; }
+.bd-cal__dow { text-align: center; font-size: 12px; color: var(--bd-fg-subtle); padding: 2px 0 4px; }
+.bd .bd-cal__day { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; align-content: center; height: 46px; border-radius: 10px; line-height: 1.1; }
+.bd-cal__day span { font-weight: var(--bd-fw-medium); font-size: 15px; }
+.bd-cal__day small { font-size: 10px; color: var(--bd-fg-subtle); }
+.bd .bd-cal__day:hover { background: var(--bd-today-bg); }
+.bd .bd-cal__day.is-shabbat span { color: var(--bd-fg-muted); }
+.bd .bd-cal__day.is-today { box-shadow: inset 0 0 0 1.5px var(--bd-gold); }
+.bd .bd-cal__day.is-in { background: color-mix(in srgb, var(--bd-accent) 12%, transparent); border-radius: 0; }
+.bd .bd-cal__day.is-start, .bd .bd-cal__day.is-end { background: var(--bd-accent); color: #fff; }
+.bd .bd-cal__day.is-start small, .bd .bd-cal__day.is-end small { color: rgb(255 255 255 / .85); }
+.bd .bd-cal__day:focus-visible { outline: 2px solid var(--bd-accent); }
+
+/* הגדרות: כפתור אחד "שינוי פרטים" שפותח את הפרטים והחלפת הקוד */
+.bd-profile__btn { list-style: none; cursor: pointer; min-height: var(--bd-tap); font-size: var(--bd-fs-md); }
+.bd-profile__btn::-webkit-details-marker { display: none; }
+.bd-profile__box[open] .bd-profile__btn { margin-bottom: var(--bd-sp-2); }
+.bd-profile__code { padding-top: var(--bd-sp-4); border-top: 1px solid var(--bd-line); }
+.bd-range { overflow-x: hidden; box-sizing: border-box; }
+.bd-range__form > *, .bd-range__fields > * { min-width: 0; }
+.bd-range__fields .bd-input { width: 100%; box-sizing: border-box; min-width: 0; }
+.bd-cal__day small { min-height: 1em; }

@@ -214,3 +214,88 @@ document.querySelectorAll('[data-filter]').forEach((input) => {
     if (empty) empty.hidden = shown > 0;
   });
 });
+
+// בחירת טווח בדשבורד: חלון עם לוח שנה (לחיצה ראשונה = התחלה, שנייה = סוף), טווחים מוכנים ושדות תאריך
+(() => {
+  const dlg = document.getElementById('bd-range');
+  const form = dlg?.querySelector('[data-range-form]');
+  if (!form) return;
+  const cal = form.querySelector('[data-cal]'), sum = form.querySelector('[data-range-sum]');
+  const fromI = form.elements.from, toI = form.elements.to;
+  const MAX = +form.dataset.max || 366;
+  const parse = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const today = parse(form.dataset.today) || new Date();
+  const fmt = (d) => `${d.getDate()}.${d.getMonth() + 1}${d.getFullYear() !== today.getFullYear() ? '.' + d.getFullYear() : ''}`;
+  // ימים עבריים לכל חודש מוצג — מהשרת (נשמר במטמון לפי חודש)
+  const hebCache = new Map();
+  const loadHeb = (y, m) => {
+    const k = `${y}-${m + 1}`;
+    if (!hebCache.has(k)) hebCache.set(k, fetch(`/api/hebmonth?y=${y}&m=${m + 1}`).then((r) => r.json()).catch(() => null));
+    return hebCache.get(k);
+  };
+  const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  let a = parse(fromI.value), b = parse(toI.value), shown = new Date((a || today).getFullYear(), (a || today).getMonth(), 1), picking = false;
+
+  const render = () => {
+    const y = shown.getFullYear(), m = shown.getMonth();
+    const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+    let html = `<div class="bd-cal__nav"><button type="button" data-nav="-1" aria-label="החודש הקודם">›</button>
+      <div class="bd-cal__month"><b>${MONTHS[m]} ${y}</b><small data-heb-month>&nbsp;</small></div>
+      <button type="button" data-nav="1" aria-label="החודש הבא">‹</button></div><div class="bd-cal__grid" role="grid">`;
+    html += ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((d) => `<span class="bd-cal__dow">${d}</span>`).join('');
+    for (let i = 0; i < first.getDay(); i++) html += '<span></span>';
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(y, m, d), t = +dt;
+      const cls = ['bd-cal__day'];
+      if (a && b && t > +a && t < +b) cls.push('is-in');
+      if (a && t === +a) cls.push('is-start');
+      if (b && t === +b) cls.push('is-end');
+      if (t === +today) cls.push('is-today');
+      if (dt.getDay() === 6) cls.push('is-shabbat');
+      html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}" aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
+    }
+    cal.innerHTML = html + '</div>';
+    loadHeb(y, m).then((h) => {
+      if (!h?.days || shown.getFullYear() !== y || shown.getMonth() !== m) return;
+      cal.querySelector('[data-heb-month]').textContent = h.month;
+      cal.querySelectorAll('[data-day] small').forEach((el, i) => { el.textContent = h.days[i] || ''; });
+    });
+    const n = a && b ? Math.round((b - a) / 864e5) + 1 : 0;
+    sum.textContent = a && b ? `${fmt(a)} – ${fmt(b)} · ${n} ימים` : a ? 'בחרו תאריך סיום' : 'בחרו תאריך התחלה';
+    form.querySelector('button:not([type])').disabled = !(a && b);
+  };
+  const set = (x, y2) => {
+    a = x; b = y2;
+    if (a && b && b < a) [a, b] = [b, a];
+    if (a && b && (b - a) / 864e5 >= MAX) b = add(a, MAX - 1);
+    fromI.value = a ? iso(a) : ''; toI.value = b ? iso(b) : '';
+    render();
+  };
+  cal.addEventListener('click', (e) => {
+    const nav = e.target.closest('[data-nav]');
+    if (nav) { shown = new Date(shown.getFullYear(), shown.getMonth() + +nav.dataset.nav, 1); return render(); }
+    const day = e.target.closest('[data-day]');
+    if (!day) return;
+    const d = parse(day.dataset.day);
+    if (!picking || !a || d < a) { picking = true; set(d, null); } else { picking = false; set(a, d); }
+  });
+  form.querySelector('.bd-range__presets').addEventListener('click', (e) => {
+    const p = e.target.closest('[data-preset]')?.dataset.preset;
+    if (!p) return;
+    picking = false;
+    if (p === 'next-week') { const s = add(today, 7 - today.getDay()); set(s, add(s, 6)); } else set(today, add(today, +p - 1));
+    shown = new Date(a.getFullYear(), a.getMonth(), 1); render();
+  });
+  [fromI, toI].forEach((el) => el.addEventListener('change', () => {
+    picking = false; set(parse(fromI.value), parse(toI.value));
+    if (a) { shown = new Date(a.getFullYear(), a.getMonth(), 1); render(); }
+  }));
+  document.querySelectorAll('[data-range-open]').forEach((el) => el.addEventListener('click', (e) => {
+    if (typeof dlg.showModal !== 'function') return; // דפדפן ישן — הקישור מציג 30 יום
+    e.preventDefault(); render(); dlg.showModal();
+  }));
+  dlg.querySelector('[data-range-close]').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+})();

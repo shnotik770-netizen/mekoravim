@@ -1,11 +1,18 @@
 <%- include('partials/head', { title: 'דשבורד', nav: true, active: 'dashboard' }) %>
 <%
-  const fmt = (d) => d.getDate() + '.' + (d.getMonth() + 1);
+  const fmt = (d) => d.getDate() + '.' + (d.getMonth() + 1) + (d.getFullYear() !== today.getFullYear() ? '.' + d.getFullYear() : '');
+  const span = (a, b) => +a === +b ? fmt(a) : fmt(a) + '–' + fmt(b);
   const monthWord = monthRange.name.split(' ')[0];
-  const titles = { today: ['היום', hebToday], week: ['השבוע', fmt(weekRange.start) + '–' + fmt(weekRange.end), weekInfo.heb + ' · ' + weekInfo.parsha],
-    month: ['חודש ' + monthWord, fmt(monthRange.start) + '–' + fmt(monthRange.end)], 30: ['30 הימים הקרובים', fmt(today) + '–' + fmt(end30)] };
+  const days = Math.round((range.end - range.start) / 864e5) + 1;
+  // כותרת לכל תצוגה: [כותרת, תאריך עברי, תאריך לועזי, תוספת]
+  const titles = {
+    today: ['היום', hebToday, fmt(today), 'יום ' + DAY_NAMES[today.getDay()]],
+    week: ['השבוע', weekInfo.heb, span(weekRange.start, weekRange.end), weekInfo.parsha],
+    month: ['חודש ' + monthWord, monthRange.name, span(monthRange.start, monthRange.end)],
+    range: [range.preset ? '30 הימים הקרובים' : 'טווח נבחר', hebRangeStr(range.start, range.end), span(range.start, range.end), days + ' ימים'],
+  };
   const back = qs({});
-  const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord], ['30', '30 יום']];
+  const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord]];
 %>
 <% if (sms.on && sms.low) { %>
 <div class="bd-msg bd-msg--warn bd-sms-alert" role="alert"><span>⚠️ <b>שימו לב:</b> <% if (sms.empty) { %>יתרת ה-SMS לתזכורות ימי הולדת נגמרה — התזכורות האוטומטיות הופסקו.<% } else { %>יתרת ה-SMS לתזכורות ימי הולדת עומדת להסתיים (נותרו עוד <bdi class="bd-num"><%= sms.left %></bdi> יחידות).<% } %> לחידוש המכסה פנו למנהל.</span></div>
@@ -27,12 +34,12 @@
   </a>
   <a class="bd-stat" href="<%= qs({ view: 'week' }) %>" aria-pressed="<%= view === 'week' %>">
     <span class="bd-stat__label">השבוע</span><span class="bd-stat__value bd-num"><%= lists.week.length %></span>
-    <span class="bd-stat__hint bd-num"><%= titles.week[1] %></span>
+    <span class="bd-stat__hint bd-num"><%= titles.week[2] %></span>
     <span class="bd-stat__hint"><%= weekInfo.parsha %></span>
   </a>
   <a class="bd-stat" href="<%= qs({ view: 'month' }) %>" aria-pressed="<%= view === 'month' %>">
     <span class="bd-stat__label">בחודש <%= monthWord %></span><span class="bd-stat__value bd-num"><%= lists.month.length %></span>
-    <span class="bd-stat__hint bd-num"><%= titles.month[1] %></span>
+    <span class="bd-stat__hint bd-num"><%= titles.month[2] %></span>
   </a>
   <a class="bd-stat" href="<%= base %>/contacts">
     <span class="bd-stat__label">מקורבים</span><span class="bd-stat__value bd-num"><%= total %></span>
@@ -67,10 +74,11 @@
 <div class="bd-layout bd-layout--split">
   <section class="bd-card" aria-labelledby="bd-list-title">
     <div class="bd-card__head">
-      <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %><small class="bd-num"><%= titles[view][1] %></small></h2>
-      <% if (titles[view][2]) { %><p class="bd-week-heb"><%= titles[view][2] %></p><% } %>
+      <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %></h2>
+      <p class="bd-week-heb bd-dates"><span><%= titles[view][1] %></span><bdi class="bd-num"><%= titles[view][2] %></bdi><% if (titles[view][3]) { %><span class="bd-dates__extra"><%= titles[view][3] %></span><% } %></p>
       <div class="bd-seg" role="tablist" aria-label="טווח">
         <% segs.forEach(([k, l]) => { %><a role="tab" href="<%= qs({ view: k }) %>" aria-selected="<%= view === k %>"><%= l %></a><% }) %>
+        <a role="tab" href="<%= qs({ view: 'range' }) %>" aria-selected="<%= view === 'range' %>" data-range-open aria-haspopup="dialog">📅 טווח</a>
       </div>
     </div>
     <ul class="bd-list">
@@ -120,4 +128,27 @@
     <% } %>
   </aside>
 </div>
+<dialog class="bd-range" id="bd-range" aria-labelledby="bd-range-title">
+  <form method="get" class="bd-range__form" data-range-form data-today="<%= toISO(today) %>" data-max="<%= maxRange %>">
+    <input type="hidden" name="view" value="range">
+    <% if (cat) { %><input type="hidden" name="cat" value="<%= cat %>"><% } %>
+    <div class="bd-range__head">
+      <h2 class="bd-range__title" id="bd-range-title">בחירת טווח תאריכים</h2>
+      <button type="button" class="bd-range__x" data-range-close aria-label="סגירה">✕</button>
+    </div>
+    <div class="bd-range__presets" role="group" aria-label="טווחים מוכנים">
+      <button type="button" data-preset="7">7 ימים</button>
+      <button type="button" data-preset="30">30 ימים</button>
+      <button type="button" data-preset="90">3 חודשים</button>
+      <button type="button" data-preset="next-week">שבוע הבא</button>
+    </div>
+    <div class="bd-cal" data-cal></div>
+    <div class="bd-range__fields">
+      <label><span class="bd-help">מתאריך</span><input class="bd-input" type="date" name="from" value="<%= toISO(range.start) %>" required></label>
+      <label><span class="bd-help">עד תאריך</span><input class="bd-input" type="date" name="to" value="<%= toISO(range.end) %>" required></label>
+    </div>
+    <p class="bd-range__sum" data-range-sum aria-live="polite"></p>
+    <button class="bd-btn bd-btn--primary bd-btn--block">הצגת ימי ההולדת בטווח</button>
+  </form>
+</dialog>
 <%- include('partials/foot') %>

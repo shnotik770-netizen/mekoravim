@@ -68,27 +68,33 @@
 </div>
 
 <aside class="bd-stack">
-<section class="bd-card">
-  <h2 class="bd-section-title">פנייה</h2>
-  <p class="bd-help bd-mb">איך לפנות אליכם במערכת ובהודעות — למשל "שלום, <%= displayName(shliach) %>".</p>
-  <form method="post" class="bd-inline">
-    <input type="hidden" name="action" value="address">
-    <select class="bd-input" name="address" aria-label="פנייה" data-autosubmit>
-      <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(shliach) === k ? 'selected' : '' %>><%= label %></option><% }) %>
-    </select>
-    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
-  </form>
-</section>
-<section class="bd-card">
-  <h2 class="bd-section-title">החלפת קוד כניסה</h2>
-  <p class="bd-help bd-mb">החלפת הקוד מנתקת את כל שאר המכשירים המחוברים.<% if (canOtp) { %> אפשר תמיד להיכנס גם עם קוד חד-פעמי שנשלח ב-SMS לנייד <bdi class="bd-num" dir="ltr"><%= shliach.phone %></bdi>.<% } %></p>
-  <form method="post">
-    <input type="hidden" name="action" value="code">
-    <% if (needCurrent) { %><div class="bd-field"><label class="bd-label" for="cur">קוד נוכחי</label><input class="bd-input" id="cur" type="password" name="current" required autocomplete="current-password"><span class="bd-help">שכחתם? צאו מהחשבון, היכנסו עם קוד חד-פעמי ב-SMS, ואז אפשר לקבוע קוד חדש בלי הקוד הנוכחי.</span></div><% } %>
-    <div class="bd-field"><label class="bd-label" for="nc">קוד חדש</label><input class="bd-input" id="nc" type="password" name="code" required minlength="6" autocomplete="new-password"><span class="bd-help">6 תווים לפחות, לא רצף ולא תו חוזר</span></div>
-    <div class="bd-field"><label class="bd-label" for="nc2">אימות</label><input class="bd-input" id="nc2" type="password" name="code2" required minlength="6" autocomplete="new-password"></div>
-    <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">שמירה</button>
-  </form>
+<section class="bd-card bd-profile">
+  <details class="bd-profile__box" <%= typeof openProfile !== 'undefined' && openProfile ? 'open' : '' %>>
+    <summary class="bd-btn bd-btn--soft bd-btn--block bd-profile__btn">⚙️ שינוי פרטים</summary>
+    <form method="post" class="bd-stack bd-mt">
+      <input type="hidden" name="action" value="profile">
+      <h2 class="bd-section-title">הפרטים שלי</h2>
+      <div class="bd-field"><label class="bd-label" for="pf-name">שם</label><input class="bd-input" id="pf-name" name="name" value="<%= shliach.name %>" required maxlength="80" autocomplete="name"></div>
+      <div class="bd-field"><label class="bd-label" for="pf-house">בית חב״ד <span class="opt">(רשות)</span></label><input class="bd-input" id="pf-house" name="chabad_house" value="<%= shliach.chabad_house || '' %>" maxlength="80"></div>
+      <div class="bd-field"><label class="bd-label" for="pf-phone">נייד</label><input class="bd-input" id="pf-phone" name="phone" type="tel" dir="ltr" value="<%= shliach.phone || '' %>" autocomplete="tel" inputmode="tel"><span class="bd-help">אליו נשלח קוד חד-פעמי לכניסה.</span></div>
+      <div class="bd-field"><label class="bd-label" for="pf-addr">פנייה</label>
+        <select class="bd-input" id="pf-addr" name="address">
+          <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(shliach) === k ? 'selected' : '' %>><%= label %></option><% }) %>
+        </select>
+        <span class="bd-help">איך לפנות אליכם במערכת ובהודעות — למשל "שלום, <%= displayName(shliach) %>".</span></div>
+      <% if (needCurrent) { %><div class="bd-field"><label class="bd-label" for="pf-cur">קוד כניסה נוכחי <span class="opt">(רק אם משנים את הנייד)</span></label><input class="bd-input" id="pf-cur" type="password" name="current" autocomplete="current-password"></div><% } %>
+      <button class="bd-btn bd-btn--primary bd-btn--block">שמירת הפרטים</button>
+    </form>
+    <form method="post" class="bd-stack bd-mt bd-profile__code">
+      <input type="hidden" name="action" value="code">
+      <h2 class="bd-section-title">החלפת קוד כניסה</h2>
+      <p class="bd-help">החלפת הקוד מנתקת את כל שאר המכשירים המחוברים.<% if (canOtp) { %> אפשר תמיד להיכנס גם עם קוד חד-פעמי שנשלח ב-SMS לנייד <bdi class="bd-num" dir="ltr"><%= shliach.phone %></bdi>.<% } %></p>
+      <% if (needCurrent) { %><div class="bd-field"><label class="bd-label" for="cur">קוד נוכחי</label><input class="bd-input" id="cur" type="password" name="current" required autocomplete="current-password"><span class="bd-help">שכחתם? צאו מהחשבון, היכנסו עם קוד חד-פעמי ב-SMS, ואז אפשר לקבוע קוד חדש בלי הקוד הנוכחי.</span></div><% } %>
+      <div class="bd-field"><label class="bd-label" for="nc">קוד חדש</label><input class="bd-input" id="nc" type="password" name="code" required minlength="6" autocomplete="new-password"><span class="bd-help">6 תווים לפחות, לא רצף ולא תו חוזר</span></div>
+      <div class="bd-field"><label class="bd-label" for="nc2">אימות</label><input class="bd-input" id="nc2" type="password" name="code2" required minlength="6" autocomplete="new-password"></div>
+      <button class="bd-btn bd-btn--primary bd-btn--block">החלפת הקוד</button>
+    </form>
+  </details>
 </section>
 </aside>
 </div>
