@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo,
+  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents } from './lib/events.js';
@@ -17,7 +17,7 @@ import { seedDemoAccount } from './lib/demo.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
-import { parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
+import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROD = process.env.NODE_ENV === 'production';
@@ -106,6 +106,23 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
+
+// תצוגה מקדימה של התאריך העברי בטופסי התאריך (חישוב בלבד — בלי מסד נתונים)
+app.get('/api/hebdate', (req, res) => {
+  const b = parseBirth(Object.fromEntries(Object.entries(req.query).map(([k, v]) => [k, String(v).slice(0, 20)])));
+  if (b.error) return res.json({ error: b.error });
+  const { h_day: day, h_month: month, h_year: year } = b.value;
+  const today = todayIL();
+  const next = nextBirthday({ h_day: day, h_month: month, h_year: year }, today);
+  res.set('Cache-Control', 'no-store').json({
+    label: hebDateStr(day, month, year),
+    note: birthNote(day, month, year),
+    next: next && {
+      label: next.actualLabel, greg: fmtGreg(next.date), day: DAY_NAMES[next.date.getDay()], age: next.age,
+      today: +next.date === +today,
+    },
+  });
+});
 
 // "שמירה כאפליקציה" (PWA): מניפסט כללי, ומניפסט אישי לכל שליח שנפתח ישר לדשבורד שלו
 function manifest({ name, short, start, scope }) {

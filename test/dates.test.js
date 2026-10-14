@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO, normalizeHeb, hebMonthRange } from '../lib/dates.js';
+import { hebFromGreg, hebOccurrence, eventsInRange, parseHebYear, hebDateStr, toISO, normalizeHeb, hebMonthRange, birthNote } from '../lib/dates.js';
 
 test('המרה מלועזי לעברי, כולל אחרי השקיעה', () => {
   assert.deepEqual(hebFromGreg(new Date(1990, 9, 20), false), { day: 1, month: 8, year: 5751 });
@@ -183,4 +183,14 @@ test('פנייה: הרב / הרבנית, בלי תואר, ובלי להכפיל 
   assert.deepEqual(parseAddress('f1'), { gender: 'f', use_title: true });
   assert.deepEqual(parseAddress('xx'), { gender: 'm', use_title: true });
   assert.equal(g({ gender: 'f' }, 'משתמש', 'משתמשת'), 'משתמשת');
+});
+
+test('birthNote: הסבר רק לתאריכים שזזים', () => {
+  assert.equal(birthNote(3, 7, 5780), null);
+  assert.equal(birthNote(29, 8, 5785), null);
+  assert.match(birthNote(30, 8, 5785), /בכ״ט חשוון/);
+  assert.match(birthNote(30, 9, null), /בכ״ט כסלו/);
+  assert.match(birthNote(14, 12, 5784), /אדר א׳.*בי״ד אדר$/);
+  assert.match(birthNote(14, 13, 5784), /אדר ב׳/);
+  assert.match(birthNote(14, 13, 5785), /בשנה מעוברת — בי״ד אדר ב׳/);
 });

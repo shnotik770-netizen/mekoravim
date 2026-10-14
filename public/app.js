@@ -7,6 +7,45 @@ function bindDatebox(box) {
   };
   box.querySelectorAll('input[type=radio]').forEach((r) => r.addEventListener('change', sync));
   sync();
+  bindHebPreview(box);
+}
+
+// תצוגה מקדימה: התאריך העברי מיד בהזנה, והסבר כשיום ההולדת לא חל באותו תאריך כל שנה
+function bindHebPreview(box) {
+  const out = box.querySelector('[data-heb-preview]');
+  if (!out) return;
+  const field = (k) => box.querySelector(`[name="${k}"], [name$="[${k}]"]`);
+  let timer, seq = 0;
+  const show = (html, cls) => { out.className = 'bd-heb-preview' + (cls ? ' ' + cls : ''); out.innerHTML = html; out.hidden = !html; };
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const update = async () => {
+    const g = box.querySelector('input[type=radio][value=g]').checked;
+    const p = new URLSearchParams({ date_type: g ? 'g' : 'h' });
+    if (g) {
+      const d = field('g_date').value;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return show('');
+      p.set('g_date', d);
+      if (field('after_sunset').checked) p.set('after_sunset', '1');
+    } else {
+      const day = field('h_day').value, month = field('h_month').value;
+      if (!day || !month) return show('');
+      p.set('h_day', day); p.set('h_month', month); p.set('h_year', field('h_year').value);
+    }
+    const my = ++seq;
+    try {
+      const r = await (await fetch('/api/hebdate?' + p, { headers: { Accept: 'application/json' } })).json();
+      if (my !== seq) return;
+      if (r.error) return show(`<span>⚠️ ${esc(r.error)}</span>`, 'bd-heb-preview--bad');
+      let html = g ? `<span class="bd-heb-preview__date">📅 בתאריך עברי: <b>${esc(r.label)}</b></span>` : '';
+      if (r.next) html += `<span class="bd-heb-preview__next">${r.next.today ? '🎂 יום ההולדת היום!' : `יום ההולדת הבא: יום ${esc(r.next.day)}, ${esc(r.next.label)} · <bdi class="bd-num">${esc(r.next.greg)}</bdi>`}${r.next.age ? ` · גיל ${r.next.age}` : ''}</span>`;
+      if (r.note) html += `<span class="bd-heb-preview__note">💡 ${esc(r.note)}</span>`;
+      show(html, r.note ? 'bd-heb-preview--note' : '');
+    } catch { show(''); }
+  };
+  const later = () => { clearTimeout(timer); timer = setTimeout(update, 250); };
+  box.addEventListener('input', later);
+  box.addEventListener('change', later);
+  update();
 }
 document.querySelectorAll('.datebox').forEach(bindDatebox);
 

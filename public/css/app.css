@@ -290,3 +290,12 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-link-form label.bd-small { display: grid; gap: 4px; }
 .bd-extra-row .bd-input { flex: 1 1 200px; }
 .bd-extra-row .bd-check { white-space: nowrap; }
+
+/* תצוגה מקדימה של התאריך העברי בטופס */
+.bd-heb-preview { display: grid; gap: 4px; margin-top: var(--bd-sp-3); padding: 10px 12px; border-radius: 12px;
+  background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); font-size: var(--bd-fs-sm); line-height: 1.45; }
+.bd-heb-preview[hidden] { display: none; }
+.bd-heb-preview__date b { font-size: 1.08em; }
+.bd-heb-preview__next { color: var(--bd-fg-muted); }
+.bd-heb-preview__note { color: var(--bd-gold); font-weight: var(--bd-fw-medium); }
+.bd-heb-preview--bad { background: color-mix(in srgb, var(--bd-bad) 8%, transparent); border-color: color-mix(in srgb, var(--bd-bad) 35%, transparent); color: var(--bd-bad); }
