@@ -286,7 +286,9 @@ function initRange(dlg) {
     const p = e.target.closest('[data-preset]')?.dataset.preset;
     if (!p) return;
     picking = false;
-    if (p === 'next-week') { const s = add(today, 7 - today.getDay()); set(s, add(s, 6)); } else set(today, add(today, +p - 1));
+    if (p === 'next-week') { const s = add(today, 7 - today.getDay()); set(s, add(s, 6)); }
+    else if (form.dataset.mode === 'missed') set(add(today, -+p), add(today, -1)); // אחורה: עד אתמול
+    else set(today, add(today, +p - 1));
     shown = new Date(a.getFullYear(), a.getMonth(), 1); render();
   });
   [fromI, toI].forEach((el) => el.addEventListener('change', () => {
@@ -295,14 +297,28 @@ function initRange(dlg) {
   }));
   dlg.querySelector('[data-range-close]').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-  dlg.openRange = () => { render(); dlg.showModal(); };
+  const title = dlg.querySelector('.bd-range__title'), submit = form.querySelector('button:not([type])');
+  dlg.openRange = (mode = 'range') => {
+    const missed = mode === 'missed';
+    form.dataset.mode = mode; form.elements.view.value = missed ? 'missed' : 'range';
+    title.textContent = missed ? 'ימי הולדת שעברו — בחירת טווח' : 'בחירת טווח תאריכים';
+    submit.textContent = missed ? 'הצגת מי שלא בירכו בטווח' : 'הצגת ימי ההולדת בטווח';
+    form.querySelectorAll('[data-future]').forEach((el) => { el.hidden = missed; });
+    // מעבר בין מצבים: טווח ברירת מחדל מתאים (שבועיים אחורה / 30 יום קדימה)
+    if (missed && !(b && b < today)) set(add(today, -14), add(today, -1));
+    if (!missed && form.dataset.was === 'missed') set(today, add(today, 29));
+    form.dataset.was = mode;
+    picking = false; shown = new Date((a || today).getFullYear(), (a || today).getMonth(), 1);
+    render(); dlg.showModal();
+  };
+  form.dataset.was = form.elements.view.value;
 }
 initRange(document.getElementById('bd-range'));
 
 // דשבורד: מעבר בין היום / השבוע / החודש / טווח / סיווג בלי טעינת דף — נשארים באותו מקום בדף
 (() => {
   if (!document.getElementById('bd-list-title')) return;
-  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range'];
+  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn'];
   const load = async (url, push) => {
     const list = document.querySelector(PARTS[2]);
     list?.classList.add('bd-swapping');
@@ -323,8 +339,8 @@ initRange(document.getElementById('bd-range'));
     if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
     const opener = e.target.closest('[data-range-open]');
     const dlg = document.getElementById('bd-range');
-    if (opener && dlg?.openRange && typeof dlg.showModal === 'function') { e.preventDefault(); return dlg.openRange(); }
-    const a = e.target.closest('.bd-stats a, .bd-chips a, .bd-seg a');
+    if (opener && dlg?.openRange && typeof dlg.showModal === 'function') { e.preventDefault(); return dlg.openRange(opener.dataset.rangeOpen || 'range'); }
+    const a = e.target.closest('.bd-stats a, .bd-chips a, .bd-seg a, .bd-missed-chips a, a.bd-missed-btn, a.bd-alert__more');
     if (!a || !a.getAttribute('href')?.startsWith('?')) return;
     e.preventDefault();
     load(a.href, true);
@@ -338,3 +354,10 @@ initRange(document.getElementById('bd-range'));
   });
   window.addEventListener('popstate', () => load(location.href, false));
 })();
+
+// שורה מכווצת של "נוצר קשר": לחיצה (לא על קישור/כפתור) פותחת/סוגרת את הפרטים
+document.addEventListener('click', (e) => {
+  const row = e.target.closest('.bd-row--done');
+  if (!row || e.target.closest('a, button, form')) return;
+  row.classList.toggle('is-open');
+});

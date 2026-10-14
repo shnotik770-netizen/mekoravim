@@ -10,6 +10,7 @@
     week: ['השבוע', weekInfo.heb, span(weekRange.start, weekRange.end), weekInfo.parsha],
     month: ['חודש ' + monthWord, monthRange.name, span(monthRange.start, monthRange.end)],
     range: [range.preset ? '30 הימים הקרובים' : 'טווח נבחר', hebRangeStr(range.start, range.end), span(range.start, range.end), days + ' ימים'],
+    missed: ['עברו בלי ברכה', hebRangeStr(missed.start, missed.end), span(missed.start, missed.end), lists.missed.length ? lists.missed.length + ' ממתינים' : ''],
   };
   const back = qs({});
   const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord]];
@@ -47,6 +48,7 @@
     <% } else { %>אין ימי הולדת היום<% if (next) { %> · הבא: <b><%= next.name %></b> ב<%= next.label %><% } %><% } %>
     <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
   </p><% } %>
+<% if (total) { %><a class="bd-missed-btn" href="<%= qs({ view: 'missed' }) %>" aria-pressed="<%= view === 'missed' %>">⏳ ימי הולדת שעברו בלי ברכה<% if (overdue.length) { %> <span class="bd-missed-btn__n bd-num"><%= overdue.length %></span><% } %><span class="bd-missed-btn__hint">שבועיים אחרונים · אפשר לבחור טווח</span></a><% } %>
 <% if (!total) { %><p class="bd-empty-start">עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a>, <a href="<%= base %>/contacts/new">הוסיפו מקורב</a> או <a href="<%= base %>/contacts/import">ייבאו רשימה מאקסל</a>.</p><% } %>
 
 <a class="bd-sms-usage <%= sms.on && sms.low ? 'bd-sms-usage--low' : '' %>" href="<%= base %>/settings#sms" aria-label="יחידות SMS לתזכורות ימי הולדת">
@@ -82,12 +84,18 @@
       </div>
       <div class="bd-seg" role="tablist" aria-label="טווח">
         <% segs.forEach(([k, l]) => { %><a role="tab" href="<%= qs({ view: k }) %>" aria-selected="<%= view === k %>"><%= l %></a><% }) %>
-        <a role="tab" href="<%= qs({ view: 'range' }) %>" aria-selected="<%= view === 'range' %>" data-range-open aria-haspopup="dialog">📅 טווח</a>
+        <a role="tab" href="<%= qs({ view: 'range' }) %>" aria-selected="<%= view === 'range' %>" data-range-open="range" aria-haspopup="dialog">📅 טווח</a>
       </div>
+      <% if (view === 'missed') { %>
+      <div class="bd-missed-chips" role="group" aria-label="כמה זמן אחורה">
+        <% MISSED_DAYS.forEach(d => { %><a class="bd-chip" href="<%= qs({ view: 'missed', days: d }) %>" aria-pressed="<%= missed.days === d %>"><%= { 7: 'שבוע', 14: 'שבועיים', 30: 'חודש', 90: '3 חודשים' }[d] %></a><% }) %>
+        <a class="bd-chip" href="<%= qs({ view: 'missed', days: 14 }) %>" data-range-open="missed" aria-pressed="<%= !missed.days %>" aria-haspopup="dialog">📅 טווח אחר</a>
+      </div>
+      <% } %>
     </div>
     <ul class="bd-list">
       <% if (!list.length) { %>
-        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
+        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
       <% } %>
       <% list.forEach(e => { %><%- include('partials/event_row', { e, back }) %><% }) %>
     </ul>
@@ -112,6 +120,7 @@
           </li>
           <% }) %>
         </ul>
+        <a class="bd-alert__more" href="<%= qs({ view: 'missed' }) %>">הצגה ברשימה ובחירת טווח ←</a>
       </div>
       <% } else { %>
       <div class="bd-card bd-side-card"><div class="bd-ok-note"><%- include('partials/icons', { name: 'check' }) %>כל הברכות מהשבועיים האחרונים נשלחו</div></div>
@@ -134,7 +143,7 @@
 </div>
 <dialog class="bd-range" id="bd-range" aria-labelledby="bd-range-title">
   <form method="get" class="bd-range__form" data-range-form data-today="<%= toISO(today) %>" data-max="<%= maxRange %>">
-    <input type="hidden" name="view" value="range">
+    <input type="hidden" name="view" value="<%= view === 'missed' ? 'missed' : 'range' %>">
     <% if (cat) { %><input type="hidden" name="cat" value="<%= cat %>"><% } %>
     <div class="bd-range__head">
       <h2 class="bd-range__title" id="bd-range-title">בחירת טווח תאריכים</h2>
@@ -144,12 +153,12 @@
       <button type="button" data-preset="7">7 ימים</button>
       <button type="button" data-preset="30">30 ימים</button>
       <button type="button" data-preset="90">3 חודשים</button>
-      <button type="button" data-preset="next-week">שבוע הבא</button>
+      <button type="button" data-preset="next-week" data-future>שבוע הבא</button>
     </div>
     <div class="bd-cal" data-cal></div>
     <div class="bd-range__fields">
-      <label><span class="bd-help">מתאריך</span><input class="bd-input" type="date" name="from" value="<%= toISO(range.start) %>" required></label>
-      <label><span class="bd-help">עד תאריך</span><input class="bd-input" type="date" name="to" value="<%= toISO(range.end) %>" required></label>
+      <label><span class="bd-help">מתאריך</span><input class="bd-input" type="date" name="from" value="<%= toISO(view === 'missed' ? missed.start : range.start) %>" required></label>
+      <label><span class="bd-help">עד תאריך</span><input class="bd-input" type="date" name="to" value="<%= toISO(view === 'missed' ? missed.end : range.end) %>" required></label>
     </div>
     <p class="bd-range__sum" data-range-sum aria-live="polite"></p>
     <button class="bd-btn bd-btn--primary bd-btn--block">הצגת ימי ההולדת בטווח</button>

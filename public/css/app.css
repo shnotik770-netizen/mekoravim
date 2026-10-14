@@ -398,3 +398,24 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 /* ראש המסך: הכול בשורה אחת — שם השליח מתקצר במקום לשבור שורה */
 .bd .bd-appbar .bd-who { flex: 1 1 0; }
 .bd .bd-takeaway--below { margin: -4px 0 var(--bd-sp-4); padding: 12px 14px; border-radius: 14px; background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); line-height: 1.6; font-size: var(--bd-fs-sm); }
+
+/* ימי הולדת שעברו בלי ברכה */
+.bd .bd-missed-btn { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 var(--bd-sp-4); padding: 12px 14px; border-radius: 14px;
+  background: var(--bd-surface); border: 1px solid var(--bd-line); box-shadow: var(--bd-shadow); color: var(--bd-fg); font-weight: var(--bd-fw-medium); text-decoration: none; }
+.bd .bd-missed-btn:hover { border-color: color-mix(in srgb, var(--bd-bad) 40%, var(--bd-line)); }
+.bd .bd-missed-btn[aria-pressed="true"] { border-color: var(--bd-bad); background: var(--bd-bad-soft); }
+.bd-missed-btn__n { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; background: var(--bd-bad); color: #fff; font-size: .8rem; }
+.bd-missed-btn__hint { flex-basis: 100%; font-size: .78rem; font-weight: 400; color: var(--bd-fg-subtle); }
+.bd-missed-chips { flex-basis: 100%; order: 3; display: flex; flex-wrap: wrap; gap: 6px; }
+.bd .bd-alert__more { display: inline-block; margin-top: 8px; font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium); color: var(--bd-accent); }
+
+/* מי שכבר "נוצר קשר" — מכווץ לשורה אחת (לחיצה על השורה פותחת) */
+.bd .bd-row--done:not(.is-open) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "date who actions"; padding-block: 8px; gap: 10px; cursor: pointer; }
+.bd .bd-row--done:not(.is-open) .bd-row__date { flex-direction: row; align-items: baseline; }
+.bd .bd-row--done:not(.is-open) .bd-row__heb { font-size: var(--bd-fs-sm); margin: 0; }
+.bd .bd-row--done:not(.is-open) .bd-row__name { font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium); }
+.bd .bd-row--done:not(.is-open) :is(.bd-row__dow, .bd-row__greg, .bd-row__meta, .bd-kin, .bd-tag, .bd-icon-btn) { display: none; }
+.bd .bd-row--done:not(.is-open) .bd-row__line { flex-wrap: nowrap; }
+.bd .bd-row--done:not(.is-open) .bd-row__name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bd .bd-row--done:not(.is-open) .bd-done-pill { min-height: 30px; padding-block: 2px; font-size: .78rem; }
+.bd .bd-row--done.is-open { cursor: pointer; }

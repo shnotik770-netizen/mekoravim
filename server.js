@@ -638,7 +638,7 @@ async function loadCategories(shliachId) {
 async function markContacted(shliachId, events) {
   const { rows } = await q(
     `SELECT l.contact_id, l.family_member_id, l.created_at FROM contact_log l JOIN contacts c ON c.id=l.contact_id
-     WHERE c.shliach_id=$1 AND l.created_at > now() - interval '75 days'`, [shliachId]);
+     WHERE c.shliach_id=$1 AND l.created_at > $2`, [shliachId, addDays(events.reduce((m, e) => (e.date < m ? e.date : m), todayIL()), -15)]);
   for (const e of events) {
     const from = addDays(e.date, -14);
     e.contacted = rows.some((l) => l.contact_id === e.contact.id && (l.family_member_id ?? null) === (e.member?.id ?? null) && l.created_at >= from);
@@ -646,7 +646,22 @@ async function markContacted(shliachId, events) {
 }
 
 // דשבורד (או מסך קוד כניסה)
-const VIEWS = ['today', 'week', 'month', 'range'];
+const VIEWS = ['today', 'week', 'month', 'range', 'missed'];
+const MISSED_DAYS = [7, 14, 30, 90];
+// ימי הולדת שעברו: ?days= (ברירת מחדל שבועיים) או ?from=&to= — תמיד עד אתמול
+function pickMissed(query, today) {
+  const yesterday = addDays(today, -1);
+  let a = parseISO(query.from), b = parseISO(query.to);
+  if (a && b) {
+    if (b < a) [a, b] = [b, a];
+    if (b > yesterday) b = yesterday;
+    if (a > b) a = b;
+    if (b - a > MAX_RANGE_DAYS * 864e5) a = addDays(b, -(MAX_RANGE_DAYS - 1));
+    return { start: a, end: b, days: null };
+  }
+  const days = MISSED_DAYS.includes(int(query.days)) ? int(query.days) : 14;
+  return { start: addDays(today, -days), end: yesterday, days };
+}
 const MAX_RANGE_DAYS = 366;
 // טווח שבחר המשתמש (?from=&to=); ברירת מחדל — 30 הימים הקרובים
 function pickRange(query, today) {
@@ -669,7 +684,9 @@ router.get('/', async (req, res) => {
   const to = new Date(Math.max(w.end, m.end));
   const all = collectEvents(people, from, to);
   const ranged = collectEvents(people, r.start, r.end);
-  await markContacted(s.id, [...all, ...ranged]);
+  const mr = pickMissed(view === 'missed' ? req.query : {}, today);
+  const missedAll = view === 'missed' ? collectEvents(people, mr.start, mr.end) : [];
+  await markContacted(s.id, [...all, ...ranged, ...missedAll]);
   const inR = (e, a, b) => e.date >= a && e.date <= b;
   const same = (e) => e.date.getTime() === today.getTime();
   const lists = {
@@ -677,19 +694,27 @@ router.get('/', async (req, res) => {
     week: all.filter((e) => inR(e, w.start, w.end)),
     month: all.filter((e) => inR(e, m.start, m.end)),
     range: ranged,
+    missed: missedAll.filter((e) => !e.contacted).reverse(), // מהקרוב לרחוק
   };
   const overdue = all.filter((e) => e.date < today && e.date >= addDays(today, -14) && !e.contacted);
   const upcoming = collectEvents(people, addDays(w.end, 1), addDays(w.end, 60)).slice(0, 5);
   const next = collectEvents(people, addDays(today, 1), addDays(today, 400))[0];
   const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
-  const rangeQ = view === 'range' && !r.preset ? { from: toISO(r.start), to: toISO(r.end) } : {};
+  const viewQ = view === 'range' ? (r.preset ? {} : { from: toISO(r.start), to: toISO(r.end) })
+    : view === 'missed' ? (mr.days ? (mr.days === 14 ? {} : { days: mr.days }) : { from: toISO(mr.start), to: toISO(mr.end) }) : {};
   res.render('dashboard', {
     weekInfo: weekInfo(today), hebRangeStr, toISO,
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
-    lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, range: r, maxRange: MAX_RANGE_DAYS,
+    lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, range: r, missed: mr, MISSED_DAYS, maxRange: MAX_RANGE_DAYS,
     total: people.contacts.length, familyTotal: people.family.length,
-    qs: (o) => { const p = new URLSearchParams({ view, ...rangeQ, ...(cat ? { cat } : {}), ...o }); if (p.get('view') !== 'range') { p.delete('from'); p.delete('to'); } for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k); return `?${p}`; },
+    qs: (o) => {
+      const keep = !o.view || o.view === view ? viewQ : {};
+      const p = new URLSearchParams({ view, ...keep, ...(cat ? { cat } : {}), ...o });
+      if ('days' in o) { p.delete('from'); p.delete('to'); }
+      for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k);
+      return `?${p}`;
+    },
   });
 });
 
