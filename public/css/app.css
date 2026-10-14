@@ -444,3 +444,16 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-cal__day.is-off span { text-decoration: line-through; font-weight: 400; }
 .bd .bd-back-normal { order: 2; }
 .bd .bd-cal__nav button:disabled { opacity: .25; cursor: default; }
+
+/* טלפון: שם האתר והסלוגן קטנים יותר, כדי ששם השליח ייכנס במלואו (עד 2 שורות, בלי חיתוך) */
+@media (max-width: 480px) {
+  .bd .bd-appbar { gap: 8px; }
+  .bd .bd-appbar .bd-brand { gap: 6px; }
+  .bd .bd-appbar .bd-logo--mark { width: 32px; height: 32px; }
+  .bd .bd-brand__app { font-size: .9rem; }
+  .bd .bd-brand__slogan { font-size: .58rem; }
+  .bd .bd-who { padding-inline-start: 8px; }
+  .bd .bd-who__name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; font-size: .8rem; }
+  .bd .bd-who__house { font-size: .68rem; }
+  .bd .bd-appbar .bd-tool-btn { width: 36px; height: 36px; }
+}
