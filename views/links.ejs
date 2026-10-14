@@ -7,7 +7,10 @@
 <section class="bd-card">
   <h2 class="bd-section-title">הקישורים שלי</h2>
   <% if (!links.length) { %><div class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🔗</div>עדיין לא נוצרו קישורים</div><% } %>
-  <ul class="bd-items">
+  <% if (links.length > 1) { %><div class="bd-search bd-mb"><%- include('partials/icons', { name: 'search' }) %><input class="bd-input" type="search" placeholder="חיפוש קישור לפי שם או סיווג…" data-filter="#links-list" aria-label="חיפוש קישור לפי שם או סיווג…"></div>
+  <p class="bd-help bd-mb" data-filter-empty="#links-list" hidden>לא נמצאו תוצאות.</p>
+  <% } %>
+  <ul class="bd-items" id="links-list">
   <% links.forEach(l => { const url = site + '/r/' + l.token; %>
     <li class="bd-item <%= l.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">

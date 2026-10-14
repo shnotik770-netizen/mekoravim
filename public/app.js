@@ -160,3 +160,18 @@ document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('
   btn.classList.add('is-copied');
   setTimeout(() => { btn.classList.remove('is-copied'); if (label) label.textContent = orig; }, 1800);
 }));
+
+// חיפוש מיידי ברשימה: <input data-filter="#list"> מסנן את פריטי הרשימה לפי הטקסט שלהם (גם בלי ניקוד/רווחים כפולים)
+document.querySelectorAll('[data-filter]').forEach((input) => {
+  const list = document.querySelector(input.dataset.filter);
+  const empty = document.querySelector(`[data-filter-empty="${input.dataset.filter}"]`);
+  if (!list) return;
+  const norm = (t) => t.replace(/[֑-ׇ"'׳״\-\s]+/g, ' ').trim().toLowerCase();
+  const items = [...list.children].map((li) => ({ li, text: norm((li.querySelector('.bd-item__main') || li).textContent) }));
+  input.addEventListener('input', () => {
+    const qv = norm(input.value);
+    let shown = 0;
+    for (const { li, text } of items) { const on = !qv || text.includes(qv); li.hidden = !on; shown += on; }
+    if (empty) empty.hidden = shown > 0;
+  });
+});

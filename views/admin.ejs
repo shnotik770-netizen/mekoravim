@@ -37,7 +37,10 @@
   <h2 class="bd-section-title">שלוחים <span class="bd-muted bd-num" style="font-weight:400">(<%= shluchim.length %>)</span></h2>
   <p class="bd-help bd-mb">כאן רואים רק שם וקישור. רשימות המקורבים לא מוצגות למנהל.</p>
   <% if (!shluchim.length) { %><div class="bd-empty">עדיין אין שלוחים.</div><% } %>
-  <ul class="bd-items">
+  <% if (shluchim.length > 1) { %><div class="bd-search bd-mb"><%- include('partials/icons', { name: 'search' }) %><input class="bd-input" type="search" placeholder="חיפוש שליח לפי שם, בית חב״ד או טלפון…" data-filter="#shluchim-list" aria-label="חיפוש שליח לפי שם, בית חב״ד או טלפון…"></div>
+  <p class="bd-help bd-mb" data-filter-empty="#shluchim-list" hidden>לא נמצאו תוצאות.</p>
+  <% } %>
+  <ul class="bd-items" id="shluchim-list">
   <% shluchim.forEach(s => { %>
     <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">
