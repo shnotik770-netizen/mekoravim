@@ -1072,6 +1072,7 @@ const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.se
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
     error, openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
+    catCounts: Object.fromEntries((await q('SELECT category_id, count(*)::int AS n FROM contacts WHERE shliach_id=$1 AND category_id IS NOT NULL GROUP BY 1', [req.shliach.id])).rows.map((r) => [r.category_id, r.n])),
     smsOn: smsConfigured(), fmtDate, quota: quotaStatus(req.shliach),
     previews: req.shliach.sms_weekly && req.shliach.sms_daily
       ? { 'שבועי': await weeklyMessageFor(req.shliach, undefined, 'weekly'), 'יומי': await weeklyMessageFor(req.shliach, undefined, 'daily') }

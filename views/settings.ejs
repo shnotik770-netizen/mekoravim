@@ -5,36 +5,40 @@
 <div class="bd-stack">
   <section class="bd-card">
     <h2 class="bd-section-title">סיווגי מקורבים</h2>
-    <ul class="bd-items bd-mb">
+    <ul class="bd-cats">
     <% categories.forEach(c => { %>
-      <li class="bd-item">
-        <form method="post" class="bd-item__main bd-stack">
-          <input type="hidden" name="action" value="cat_update"><input type="hidden" name="id" value="<%= c.id %>">
-          <div class="bd-inline">
-            <input class="bd-input" name="name" value="<%= c.name %>" maxlength="40" required aria-label="שם הסיווג">
-            <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
+      <li class="bd-cat">
+        <details>
+          <summary><span class="bd-dot bd-dot--lg" style="--tag:<%= c.color %>"></span><span class="bd-cat__name"><%= c.name %></span><span class="bd-cat__count"><%= catCounts[c.id] || 0 %> מקורבים</span><span class="bd-cat__edit">עריכה</span></summary>
+          <div class="bd-cat__body">
+            <form method="post" class="bd-stack">
+              <input type="hidden" name="action" value="cat_update"><input type="hidden" name="id" value="<%= c.id %>">
+              <input class="bd-input" name="name" value="<%= c.name %>" maxlength="40" required aria-label="שם הסיווג">
+              <div class="bd-swatches" role="radiogroup" aria-label="צבע">
+                <% COLORS.forEach(col => { %><label><input type="radio" name="color" value="<%= col %>" <%= col === c.color ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
+              </div>
+              <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
+            </form>
+            <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
+              <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
+              <button class="bd-link-btn bd-cat__del">מחיקת הסיווג</button>
+            </form>
           </div>
-          <div class="bd-swatches" role="radiogroup" aria-label="צבע">
-            <% COLORS.forEach(col => { %><label><input type="radio" name="color" value="<%= col %>" <%= col === c.color ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
-          </div>
-        </form>
-        <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
-          <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
-          <button class="bd-link-btn">מחיקה</button>
-        </form>
+        </details>
       </li>
     <% }) %>
     </ul>
-    <form method="post" class="bd-group bd-stack">
-      <input type="hidden" name="action" value="cat_add">
-      <div class="bd-inline">
-        <input class="bd-input" name="name" placeholder="סיווג חדש" maxlength="40" required aria-label="סיווג חדש">
+    <details class="bd-cat-add">
+      <summary class="bd-btn bd-btn--soft bd-btn--sm">+ הוספת סיווג</summary>
+      <form method="post" class="bd-stack bd-cat__body">
+        <input type="hidden" name="action" value="cat_add">
+        <input class="bd-input" name="name" placeholder="שם הסיווג" maxlength="40" required aria-label="סיווג חדש">
+        <div class="bd-swatches" role="radiogroup" aria-label="צבע">
+          <% COLORS.forEach((col, i) => { %><label><input type="radio" name="color" value="<%= col %>" <%= i === 0 ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
+        </div>
         <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
-      </div>
-      <div class="bd-swatches" role="radiogroup" aria-label="צבע">
-        <% COLORS.forEach((col, i) => { %><label><input type="radio" name="color" value="<%= col %>" <%= i === 0 ? 'checked' : '' %> aria-label="<%= col %>"><span style="--c:<%= col %>"></span></label><% }) %>
-      </div>
-    </form>
+      </form>
+    </details>
   </section>
 
   <section class="bd-card" id="sms">

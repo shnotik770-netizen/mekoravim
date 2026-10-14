@@ -270,11 +270,16 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-logo--mark.bd-logo--lg { width: 84px; height: 84px; border-radius: 0; }
 .bd-mark { width: 100%; height: 100%; display: block; }
 
-/* שם השליח + סלוגן בראש המסך */
-.bd-brand__text { display: grid; line-height: 1.2; min-width: 0; }
-.bd-brand__name { font-weight: var(--bd-fw-bold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bd-brand__slogan { font-size: .72rem; font-weight: var(--bd-fw-medium); color: var(--bd-gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bd .bd-appbar .bd-brand { min-width: 0; flex: 1 1 auto; }
+/* ראש המסך: לוגו + שם האתר והסלוגן (ימין), ולידם שם השליח ובית חב״ד */
+.bd .bd-appbar .bd-brand { flex: none; gap: 10px; }
+.bd-brand__text { display: grid; line-height: 1.15; }
+.bd-brand__app { font: 900 1.15rem/1.1 'Frank Ruhl Libre', var(--bd-font, serif); color: var(--bd-fg); white-space: nowrap; }
+.bd-brand__app span { color: var(--bd-gold); }
+.bd-brand__slogan { font-size: .72rem; font-weight: var(--bd-fw-medium); color: var(--bd-fg-muted); white-space: nowrap; }
+.bd-who { min-width: 0; flex: 1 1 auto; display: grid; line-height: 1.2; padding-inline-start: var(--bd-sp-3); border-inline-start: 2px solid var(--bd-today-line); }
+.bd-who__name { font-weight: var(--bd-fw-bold); font-size: var(--bd-fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-who__house { font-size: .74rem; color: var(--bd-gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd .bd-appbar__tools { margin-inline-start: 0; }
 
 /* כרטיס יצירת קשר ושיתוף בהגדרות */
 .bd-help-card__brand { display: flex; align-items: center; gap: var(--bd-sp-3); margin-bottom: var(--bd-sp-3); }
@@ -358,3 +363,37 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 
 /* "יחי אדוננו" בתחתית (מנהל תמיד; שליח — לפי בחירה בהגדרות) */
 .bd-yechi { margin: var(--bd-sp-6, 32px) 0 var(--bd-sp-4); text-align: center; color: var(--bd-gold); font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); letter-spacing: .2px; }
+
+/* דשבורד: 4 ריבועי הסיכום בשורה אחת גם בטלפון */
+@media (max-width: 640px) {
+  .bd .bd-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .bd .bd-stat { min-height: 0; padding: 10px 6px; gap: 2px; text-align: center; align-items: center; border-radius: 14px; }
+  .bd .bd-stat__label { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bd .bd-stat__value { font-size: 1.5rem; }
+  .bd .bd-stat__hint { font-size: .62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bd .bd-stat__hint:empty { display: none; }
+}
+.bd-empty-start { margin: -4px 0 var(--bd-sp-4); padding: 12px 14px; border-radius: 14px; background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); line-height: 1.6; }
+
+/* הגדרות: רשימת סיווגים — שורה רגילה, "עריכה" פותחת שם/צבע/מחיקה */
+.bd-cats { list-style: none; margin: 0 0 var(--bd-sp-3); padding: 0; }
+.bd-cat { border-bottom: 1px solid var(--bd-line); }
+.bd-cat:last-child { border-bottom: 0; }
+.bd-cat summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 2px; }
+.bd-cat summary::-webkit-details-marker, .bd-cat-add summary::-webkit-details-marker { display: none; }
+.bd-cat__name { font-weight: var(--bd-fw-medium); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-cat__count { color: var(--bd-fg-subtle); font-size: var(--bd-fs-sm); white-space: nowrap; }
+.bd-cat__edit { color: var(--bd-accent); font-size: var(--bd-fs-sm); font-weight: var(--bd-fw-medium); white-space: nowrap; }
+.bd-cat details[open] .bd-cat__edit { color: var(--bd-fg-muted); }
+.bd-cat details[open] .bd-cat__edit::after { content: ' ▴'; }
+.bd-cat__body { display: grid; gap: var(--bd-sp-2); padding: 4px 0 14px; }
+.bd-cat__body form { margin: 0; }
+.bd .bd-cat__del { color: var(--bd-bad); }
+.bd-cat-add summary { list-style: none; display: inline-flex; cursor: pointer; }
+.bd-cat-add[open] summary { margin-bottom: var(--bd-sp-2); }
+.bd .bd-cat details > .bd-cat__body { margin-top: 0; }
+.bd .bd-cat__body .bd-stack > * + * { margin-top: 10px; }
+.bd .bd-cat__body form > .bd-input { margin-top: 0; }
+.bd .bd-cat__body .bd-btn { justify-self: start; width: auto; }
+/* ראש המסך: הכול בשורה אחת — שם השליח מתקצר במקום לשבור שורה */
+.bd .bd-appbar .bd-who { flex: 1 1 0; }
