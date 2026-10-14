@@ -74,8 +74,10 @@
 <div class="bd-layout bd-layout--split">
   <section class="bd-card" aria-labelledby="bd-list-title">
     <div class="bd-card__head">
-      <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %></h2>
-      <p class="bd-week-heb bd-dates"><span><%= titles[view][1] %></span><bdi class="bd-num"><%= titles[view][2] %></bdi><% if (titles[view][3]) { %><span class="bd-dates__extra"><%= titles[view][3] %></span><% } %></p>
+      <div class="bd-titlerow">
+        <h2 class="bd-card__title" id="bd-list-title"><%= titles[view][0] %></h2>
+        <p class="bd-dates"><span class="bd-dates__heb"><%= titles[view][1] %></span><span class="bd-dates__greg"><bdi class="bd-num"><%= titles[view][2] %></bdi><% if (titles[view][3]) { %> · <%= titles[view][3] %><% } %></span></p>
+      </div>
       <div class="bd-seg" role="tablist" aria-label="טווח">
         <% segs.forEach(([k, l]) => { %><a role="tab" href="<%= qs({ view: k }) %>" aria-selected="<%= view === k %>"><%= l %></a><% }) %>
         <a role="tab" href="<%= qs({ view: 'range' }) %>" aria-selected="<%= view === 'range' %>" data-range-open aria-haspopup="dialog">📅 טווח</a>

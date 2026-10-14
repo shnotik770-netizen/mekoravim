@@ -122,6 +122,13 @@ app.get('/api/hebmonth', (req, res) => {
   });
 });
 
+// טווח בתאריך עברי — לסיכום בחלון בחירת הטווח
+app.get('/api/hebrange', (req, res) => {
+  const a = parseISO(req.query.from), b = parseISO(req.query.to);
+  if (!a || !b || b < a) return res.status(400).json({ error: 'bad range' });
+  res.set('Cache-Control', 'public, max-age=86400').json({ label: hebRangeStr(a, b) });
+});
+
 // תצוגה מקדימה של התאריך העברי בטופסי התאריך (חישוב בלבד — בלי מסד נתונים)
 app.get('/api/hebdate', (req, res) => {
   const b = parseBirth(Object.fromEntries(Object.entries(req.query).map(([k, v]) => [k, String(v).slice(0, 20)])));

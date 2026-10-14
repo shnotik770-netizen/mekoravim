@@ -300,11 +300,13 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-heb-preview__note { color: var(--bd-gold); font-weight: var(--bd-fw-medium); }
 .bd-heb-preview--bad { background: color-mix(in srgb, var(--bd-bad) 8%, transparent); border-color: color-mix(in srgb, var(--bd-bad) 35%, transparent); color: var(--bd-bad); }
 
-/* כותרת הרשימה בדשבורד: עברי · לועזי · תוספת (פרשה / מספר ימים) */
-.bd-dates { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; }
-.bd-dates > * + *::before { content: '·'; margin: 0 7px; color: var(--bd-fg-subtle); font-weight: 400; }
-.bd-dates bdi { color: var(--bd-fg-muted); }
-.bd-dates__extra { color: var(--bd-fg-muted); font-weight: 400; }
+/* כותרת הרשימה בדשבורד: הכותרת, ולידה בשתי שורות — עברי / לועזי (+ פרשה / מספר ימים) */
+.bd-titlerow { display: flex; align-items: center; gap: var(--bd-sp-3); min-width: 0; }
+.bd-titlerow .bd-card__title { margin: 0; white-space: nowrap; }
+.bd-dates { margin: 0; padding-inline-start: var(--bd-sp-3); border-inline-start: 2px solid var(--bd-today-line);
+  display: grid; gap: 1px; line-height: 1.3; font-size: var(--bd-fs-sm); min-width: 0; }
+.bd-dates__heb { color: var(--bd-gold); font-weight: var(--bd-fw-medium); }
+.bd-dates__greg { color: var(--bd-fg-muted); }
 
 /* חלון בחירת טווח */
 .bd-range { width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 0; border-radius: 20px;
@@ -321,7 +323,9 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-range__presets button:hover { border-color: var(--bd-gold); }
 .bd-range__fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bd-sp-2); }
 .bd-range__fields label { display: grid; gap: 2px; }
-.bd-range__sum { margin: 0; text-align: center; font-weight: var(--bd-fw-medium); color: var(--bd-gold); min-height: 1.4em; }
+.bd-range__sum { margin: 0; text-align: center; min-height: 2.6em; line-height: 1.3; display: grid; align-content: center; }
+.bd-range__sum b { color: var(--bd-gold); font-weight: var(--bd-fw-medium); }
+.bd-range__sum span { color: var(--bd-fg-muted); font-size: var(--bd-fs-sm); }
 .bd-cal__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .bd .bd-cal__nav button { all: unset; cursor: pointer; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; font-size: 22px; color: var(--bd-fg-muted); }
 .bd .bd-cal__nav button:hover { background: var(--bd-today-bg); }
@@ -349,3 +353,5 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-range__form > *, .bd-range__fields > * { min-width: 0; }
 .bd-range__fields .bd-input { width: 100%; box-sizing: border-box; min-width: 0; }
 .bd-cal__day small { min-height: 1em; }
+
+.bd-swapping { opacity: .55; transition: opacity .15s; pointer-events: none; }

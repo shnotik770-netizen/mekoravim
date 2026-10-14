@@ -216,8 +216,7 @@ document.querySelectorAll('[data-filter]').forEach((input) => {
 });
 
 // בחירת טווח בדשבורד: חלון עם לוח שנה (לחיצה ראשונה = התחלה, שנייה = סוף), טווחים מוכנים ושדות תאריך
-(() => {
-  const dlg = document.getElementById('bd-range');
+function initRange(dlg) {
   const form = dlg?.querySelector('[data-range-form]');
   if (!form) return;
   const cal = form.querySelector('[data-cal]'), sum = form.querySelector('[data-range-sum]');
@@ -228,16 +227,19 @@ document.querySelectorAll('[data-filter]').forEach((input) => {
   const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   const today = parse(form.dataset.today) || new Date();
   const fmt = (d) => `${d.getDate()}.${d.getMonth() + 1}${d.getFullYear() !== today.getFullYear() ? '.' + d.getFullYear() : ''}`;
-  // ימים עבריים לכל חודש מוצג — מהשרת (נשמר במטמון לפי חודש)
-  const hebCache = new Map();
-  const loadHeb = (y, m) => {
-    const k = `${y}-${m + 1}`;
-    if (!hebCache.has(k)) hebCache.set(k, fetch(`/api/hebmonth?y=${y}&m=${m + 1}`).then((r) => r.json()).catch(() => null));
-    return hebCache.get(k);
-  };
+  // ימים עבריים לכל חודש מוצג — מהשרת (נשמר במטמון)
+  const cache = new Map();
+  const getJSON = (url) => { if (!cache.has(url)) cache.set(url, fetch(url).then((r) => r.json()).catch(() => null)); return cache.get(url); };
   const MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   let a = parse(fromI.value), b = parse(toI.value), shown = new Date((a || today).getFullYear(), (a || today).getMonth(), 1), picking = false;
 
+  const summary = () => {
+    if (!(a && b)) { sum.innerHTML = `<span>${a ? 'בחרו תאריך סיום' : 'בחרו תאריך התחלה'}</span>`; return; }
+    const n = Math.round((b - a) / 864e5) + 1, key = iso(a) + iso(b);
+    sum.dataset.key = key;
+    sum.innerHTML = `<b>&nbsp;</b><span><bdi>${fmt(a)} – ${fmt(b)}</bdi> · ${n} ימים</span>`;
+    getJSON(`/api/hebrange?from=${iso(a)}&to=${iso(b)}`).then((h) => { if (h?.label && sum.dataset.key === key) sum.querySelector('b').textContent = h.label; });
+  };
   const render = () => {
     const y = shown.getFullYear(), m = shown.getMonth();
     const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
@@ -257,13 +259,12 @@ document.querySelectorAll('[data-filter]').forEach((input) => {
       html += `<button type="button" class="${cls.join(' ')}" data-day="${iso(dt)}" aria-pressed="${!!(a && b && t >= +a && t <= +b)}"><span>${d}</span><small></small></button>`;
     }
     cal.innerHTML = html + '</div>';
-    loadHeb(y, m).then((h) => {
+    getJSON(`/api/hebmonth?y=${y}&m=${m + 1}`).then((h) => {
       if (!h?.days || shown.getFullYear() !== y || shown.getMonth() !== m) return;
       cal.querySelector('[data-heb-month]').textContent = h.month;
       cal.querySelectorAll('[data-day] small').forEach((el, i) => { el.textContent = h.days[i] || ''; });
     });
-    const n = a && b ? Math.round((b - a) / 864e5) + 1 : 0;
-    sum.textContent = a && b ? `${fmt(a)} – ${fmt(b)} · ${n} ימים` : a ? 'בחרו תאריך סיום' : 'בחרו תאריך התחלה';
+    summary();
     form.querySelector('button:not([type])').disabled = !(a && b);
   };
   const set = (x, y2) => {
@@ -292,10 +293,48 @@ document.querySelectorAll('[data-filter]').forEach((input) => {
     picking = false; set(parse(fromI.value), parse(toI.value));
     if (a) { shown = new Date(a.getFullYear(), a.getMonth(), 1); render(); }
   }));
-  document.querySelectorAll('[data-range-open]').forEach((el) => el.addEventListener('click', (e) => {
-    if (typeof dlg.showModal !== 'function') return; // דפדפן ישן — הקישור מציג 30 יום
-    e.preventDefault(); render(); dlg.showModal();
-  }));
   dlg.querySelector('[data-range-close]').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.openRange = () => { render(); dlg.showModal(); };
+}
+initRange(document.getElementById('bd-range'));
+
+// דשבורד: מעבר בין היום / השבוע / החודש / טווח / סיווג בלי טעינת דף — נשארים באותו מקום בדף
+(() => {
+  if (!document.getElementById('bd-list-title')) return;
+  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range'];
+  const load = async (url, push) => {
+    const list = document.querySelector(PARTS[2]);
+    list?.classList.add('bd-swapping');
+    try {
+      const r = await fetch(url, { headers: { Accept: 'text/html' } });
+      if (!r.ok || r.redirected) throw new Error();
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      for (const sel of PARTS) {
+        const cur = document.querySelector(sel), next = doc.querySelector(sel);
+        if (cur && next) cur.replaceWith(next);
+      }
+      initRange(document.getElementById('bd-range'));
+      if (push) history.pushState({ dash: 1 }, '', url);
+    } catch { location.href = url; }
+    finally { document.querySelector(PARTS[2])?.classList.remove('bd-swapping'); }
+  };
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const opener = e.target.closest('[data-range-open]');
+    const dlg = document.getElementById('bd-range');
+    if (opener && dlg?.openRange && typeof dlg.showModal === 'function') { e.preventDefault(); return dlg.openRange(); }
+    const a = e.target.closest('.bd-stats a, .bd-chips a, .bd-seg a');
+    if (!a || !a.getAttribute('href')?.startsWith('?')) return;
+    e.preventDefault();
+    load(a.href, true);
+  });
+  document.addEventListener('submit', (e) => {
+    const form = e.target.closest('[data-range-form]');
+    if (!form) return;
+    e.preventDefault();
+    form.closest('dialog')?.close();
+    load(location.pathname + '?' + new URLSearchParams(new FormData(form)), true);
+  });
+  window.addEventListener('popstate', () => load(location.href, false));
 })();
