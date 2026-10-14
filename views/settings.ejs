@@ -68,6 +68,13 @@
 </div>
 
 <aside class="bd-stack">
+<section class="bd-card">
+  <form method="post" class="bd-yechi-toggle">
+    <input type="hidden" name="action" value="yechi">
+    <label class="bd-check"><input type="checkbox" name="show_yechi" <%= shliach.show_yechi ? 'checked' : '' %> data-autosubmit> הצג "יחי אדוננו" בתחתית הדפים</label>
+    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+  </form>
+</section>
 <section class="bd-card bd-profile">
   <details class="bd-profile__box" <%= typeof openProfile !== 'undefined' && openProfile ? 'open' : '' %>>
     <summary class="bd-btn bd-btn--soft bd-btn--block bd-profile__btn">⚙️ שינוי פרטים</summary>

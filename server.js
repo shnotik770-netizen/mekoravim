@@ -165,6 +165,8 @@ app.get('/manifest.webmanifest', (req, res) => {
   res.type('application/manifest+json').send(manifest({ name: 'זכרתי התקשרתי', short: 'זכרתי התקשרתי', start: '/admin', scope: '/' }));
 });
 
+// דפי המנהל: "יחי אדוננו" בתחתית
+app.use('/admin', (req, res, next) => { res.locals.yechi = true; next(); });
 app.get('/admin/login', (req, res) => {
   if (req.session.admin > Date.now()) return res.redirect('/admin');
   res.render('admin_login', { error: null });
@@ -558,6 +560,7 @@ router.use(async (req, res, next) => {
   if (!rows[0]) return res.redirect('/'); // קישור שליח לא פעיל / לא קיים — ישר לדף הבית
   const s = rows[0];
   req.shliach = res.locals.shliach = s;
+  res.locals.yechi = !!s.show_yechi; // לפי בחירת השליח בהגדרות (ברירת מחדל: לא מוצג)
   if (req.demo) {
     res.locals.base = '/demo';
     res.locals.noApp = true;
@@ -1127,6 +1130,9 @@ router.post('/settings', async (req, res) => {
       [name, house, phone, addr.gender, addr.use_title, s.id]);
     req.auditDetail = phoneChanged ? 'כולל שינוי נייד' : undefined;
     flash(req, 'הפרטים עודכנו');
+  } else if (a === 'yechi') {
+    await q('UPDATE shluchim SET show_yechi=$1 WHERE id=$2', [req.body.show_yechi === 'on', s.id]);
+    flash(req, req.body.show_yechi === 'on' ? 'יחי אדוננו יוצג בתחתית הדפים' : 'יחי אדוננו הוסתר');
   } else if (a === 'address') {
     const addr = parseAddress(req.body.address);
     await q('UPDATE shluchim SET gender=$1, use_title=$2 WHERE id=$3', [addr.gender, addr.use_title, s.id]);

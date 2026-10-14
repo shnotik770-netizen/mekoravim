@@ -355,3 +355,6 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-cal__day small { min-height: 1em; }
 
 .bd-swapping { opacity: .55; transition: opacity .15s; pointer-events: none; }
+
+/* "יחי אדוננו" בתחתית (מנהל תמיד; שליח — לפי בחירה בהגדרות) */
+.bd-yechi { margin: var(--bd-sp-6, 32px) 0 var(--bd-sp-4); text-align: center; color: var(--bd-gold); font-weight: var(--bd-fw-medium); font-size: var(--bd-fs-sm); letter-spacing: .2px; }
