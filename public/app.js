@@ -455,3 +455,13 @@ document.addEventListener('click', (e) => {
   ask?.querySelector('[data-wa-cancel]').addEventListener('click', () => ask.close());
   ask?.addEventListener('click', (e) => { if (e.target === ask) ask.close(); });
 })();
+
+// קישור שקופץ לטופס וממקם את הסמן בשדה הראשון (למשל "+ שליח חדש" בדף המנהל)
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[data-focus]');
+  const el = a && document.querySelector(a.dataset.focus);
+  if (!el) return;
+  e.preventDefault();
+  el.closest('section, aside, form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => el.focus({ preventScroll: true }), 350);
+});

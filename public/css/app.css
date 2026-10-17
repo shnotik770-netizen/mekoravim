@@ -481,3 +481,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-log-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .bd-log-filters .bd-input { width: auto; flex: 1 1 160px; min-width: 0; }
 @media (max-width: 520px) { .bd-log-filters .bd-input { flex-basis: calc(50% - 4px); } }
+
+/* ב״ה בראש כל דף */
+.bd-bh { padding: 3px 12px 0; text-align: right; font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--bd-fg-muted); }
+.bd .bd-appbar a.bd-add-shliach { color: #fff; margin-inline-start: auto; white-space: nowrap; }

@@ -220,3 +220,13 @@ test('ייבוא: ל׳ אדר ב׳ הוא שגיאה, ולא הופך בשקט �
   assert.equal(parseDateCell('ל אדר א תשפד').h_month, '12');
   assert.equal(parseDateCell('כט אדר ב תשפד').h_month, '13');
 });
+
+test('טלפון: ישראלי ומחו"ל לוואטסאפ', async () => {
+  const { phoneIntl, phoneError } = await import('../lib/person.js');
+  assert.equal(phoneIntl('050-1234567'), '972501234567');
+  assert.equal(phoneIntl('+1 718 555 1234'), '17185551234');
+  assert.equal(phoneIntl('0044 20 7946 0958'), '442079460958');
+  assert.equal(phoneIntl('+972 50-123-4567'), '972501234567');
+  assert.equal(phoneError('+1 718 555 1234'), null);
+  assert.ok(phoneError('123'));
+});

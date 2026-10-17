@@ -2,8 +2,7 @@
   const isToday = e.date.getTime() === today.getTime();
   const past = e.date < today;
   const done = e.contacted;
-  const digits = String(e.contact.phone || '').replace(/\D/g, '');
-  const intl = digits ? '972' + digits.replace(/^0/, '') : '';
+  const intl = phoneIntl(e.contact.phone); // ישראלי או מחו"ל
   const first = e.member ? e.member.first_name : (e.contact.first_name || e.contact.last_name);
   const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : '';
   const isDemo = typeof demo !== 'undefined' && demo; // בהדגמה: וואטסאפ בלי מספר (רק נוסח הברכה), בלי חיוג
@@ -34,7 +33,7 @@
     <% if (done) { %><button type="button" class="bd-row__toggle" data-row-toggle aria-expanded="false" aria-label="פרטים ופעולות ל<%= e.name %>">▾</button><% } %>
     <% if (wa) { %>
       <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
-      <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:<%= e.contact.phone %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>
+      <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:+<%= intl %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>
     <% } %>
     <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>"<% if (!done) { %> data-quicklog data-name="<%= e.name %>"<% } %>>
       <input type="hidden" name="back" value="<%= back %>">

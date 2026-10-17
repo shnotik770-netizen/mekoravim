@@ -14,7 +14,7 @@
       <div class="bd-actions">
         <% const isDemo = typeof demo !== 'undefined' && demo; %>
         <% if (wa && !isDemo) { %><a class="bd-icon-btn bd-icon-btn--wa" href="<%= wa %>" target="_blank" rel="noopener" aria-label="וואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
-        <% if (c.phone && !isDemo) { %><a class="bd-icon-btn" href="tel:<%= c.phone %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a><% } %>
+        <% if (c.phone && !isDemo) { %><a class="bd-icon-btn" href="tel:+<%= phoneIntl(c.phone) %>" aria-label="חיוג"><%- include('partials/icons', { name: 'phone' }) %></a><% } %>
       </div>
     </div>
     <div class="bd-facts">
@@ -78,7 +78,7 @@
           <div class="bd-field"><label class="bd-label" for="e-ln">שם משפחה</label><input class="bd-input" id="e-ln" name="last_name" value="<%= values.last_name %>" maxlength="60"></div>
           <p class="bd-help bd-names-note">מספיק שם פרטי <b>או</b> שם משפחה.</p>
         </div>
-        <div class="bd-field"><label class="bd-label" for="e-ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>"></div>
+        <div class="bd-field"><label class="bd-label" for="e-ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>"><span class="bd-help">מחו״ל? עם קידומת מדינה, למשל +1 718 555 1234</span></div>
         <fieldset class="bd-field"><legend class="bd-label">תאריך לידה</legend><%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'edit' }) %></fieldset>
         <%- include('partials/cat_select', { selected: values.category_id }) %>
         <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea></div>

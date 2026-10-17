@@ -18,7 +18,7 @@ import { seedDemoAccount } from './lib/demo.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
-import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, RELATIONS } from './lib/person.js';
+import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, phoneIntl, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROD = process.env.NODE_ENV === 'production';
@@ -42,7 +42,7 @@ const ADMIN_SESSION_MS = 12 * 3600 * 1000;
 
 // פלטת הסיווגים מחבילת העיצוב (styleguide)
 const DEFAULT_CATEGORIES = [
-  ['מקורב קרוב', '#4F6BD8'], ['משתתף בשיעורים', '#2E9E6B'], ['תורם', '#C98A1A'], ['חדש', '#9A5BC9'],
+  ['מקורבים', '#4F6BD8'], ['משתתף בשיעורים', '#2E9E6B'], ['תורם', '#C98A1A'], ['חדש', '#9A5BC9'],
 ];
 const COLORS = ['#4F6BD8', '#2E9E6B', '#C98A1A', '#9A5BC9', '#D2475B', '#1A93A8', '#6B6F7B'];
 
@@ -83,7 +83,7 @@ app.use((req, res, next) => {
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   res.locals.v = ASSET_V;
   res.locals.todayISO = toISO(todayIL()); // "היום" לפי שעון ישראל (למשל max בשדה תאריך לידה)
-  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword });
+  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl });
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
@@ -484,7 +484,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   if (quota.value === null) quota.value = await getDefaultQuota();
   const addr = parseAddress(req.body.address);
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
-  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota, gender, use_title) VALUES ($1,$2,$3,$4,$4,$5,$6,$7) RETURNING id', [name, house, randomToken(9), phone, quota.value, addr.gender, addr.use_title]);
+  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota, gender, use_title, sms_weekly, sms_enabled) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,TRUE,TRUE) RETURNING id', [name, house, randomToken(9), phone, quota.value, addr.gender, addr.use_title]);
   const id = rows[0].id;
   req.auditShliachId = id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {

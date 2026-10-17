@@ -2,6 +2,7 @@
 <header class="bd-appbar">
   <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
   <nav class="bd-nav"><a href="/admin" aria-current="page">שלוחים</a><a href="/admin/log">יומן פעולות</a><a href="/">🏠 דף הבית</a><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
+  <a class="bd-btn bd-btn--primary bd-btn--sm bd-add-shliach" href="#new-shliach" data-focus="#sn">＋ שליח חדש</a>
 </header>
 <%
   const tile = (k) => `/admin${d === k ? '' : '?d=' + k}#detail`;
@@ -74,7 +75,7 @@
     <p>קוד כניסה: <code class="bd-code bd-code--big copy"><%= info.code %></code></p>
     <p class="bd-help bd-mt">הקוד מוצג עכשיו בלבד — העבירו אותו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
   <% } %>
-  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= info.phone ? '972' + info.phone.replace(/^0/, '') : '' %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
+  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= phoneIntl(info.phone) %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
 </section>
 <% } %>
 
@@ -97,7 +98,7 @@
           <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות: נוצלו מתוך המכסה"><span>📱 <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
           <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
         <div class="bd-item__sub">
-          <% if (s.phone) { %><a href="https://wa.me/972<%= s.phone.replace(/^0/, '') %>" target="_blank" rel="noopener" class="bd-num">📱 <%= s.phone %></a> · <% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span> <% } %>
+          <% if (s.phone) { %><a href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener" class="bd-num">📱 <%= s.phone %></a> · <% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span> <% } %>
           <code class="bd-code copy"><%= base %>/s/<%= s.slug %></code>
         </div>
       </div>
@@ -142,7 +143,7 @@
   <% }) %>
   </ul>
 </section>
-<aside class="bd-card">
+<aside class="bd-card" id="new-shliach">
   <h2 class="bd-section-title">שליח חדש</h2>
   <form method="post" action="/admin/shluchim">
     <div class="bd-field"><label class="bd-label" for="sn">שם השליח / השלוחה<span class="req">*</span></label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>

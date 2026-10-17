@@ -112,10 +112,10 @@
         <div class="bd-alert__title"><%- include('partials/icons', { name: 'bell' }) %>ממתינים לברכה</div>
         <p class="bd-help" style="margin-bottom:8px">ימי הולדת מהשבועיים האחרונים שעוד לא סומנו "נוצר קשר"</p>
         <ul class="bd-mini">
-          <% overdue.forEach(e => { const d = String(e.contact.phone || '').replace(/\D/g, ''); %>
+          <% overdue.forEach(e => { const d = phoneIntl(e.contact.phone); %>
           <li>
             <span class="bd-mini__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><div class="bd-mini__date"><%= e.label %><%= e.note ? ' (' + e.actualLabel + ')' : '' %> · <span class="bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span></div></span>
-            <% if (d) { %><a class="bd-icon-btn bd-icon-btn--wa" href="https://wa.me/972<%= d.replace(/^0/, '') %>" target="_blank" rel="noopener" aria-label="וואטסאפ ל<%= e.name %>"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
+            <% if (d) { %><a class="bd-icon-btn bd-icon-btn--wa" href="https://wa.me/<%= d %>" target="_blank" rel="noopener" aria-label="וואטסאפ ל<%= e.name %>"><%- include('partials/icons', { name: 'chat' }) %></a><% } %>
             <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/log" data-quicklog data-name="<%= e.name %>">
               <input type="hidden" name="back" value="<%= back %>">
               <% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
