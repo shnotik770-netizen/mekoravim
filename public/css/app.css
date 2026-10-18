@@ -502,8 +502,10 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 /* מנהל: רשימת שלוחים — כל שורה פותחת את דף השליח */
 .bd-admin-search { margin-bottom: var(--bd-sp-3); }
 .bd .bd-item--shliach { padding: 0; }
-.bd a.bd-shliach-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 4px; color: var(--bd-fg); text-decoration: none; border-radius: 10px; }
-.bd a.bd-shliach-row:hover { background: var(--bd-surface-2); }
+.bd .bd-shliach-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 4px; }
+.bd a.bd-shliach-name { color: var(--bd-accent); font-weight: var(--bd-fw-bold); text-decoration: none; }
+.bd a.bd-shliach-phone { color: #128C4A; font-weight: var(--bd-fw-medium); text-decoration: none; }
+.bd a.bd-shliach-row__go { text-decoration: none; padding: 4px 8px; }
 .bd-shliach-row .bd-item__main { display: grid; gap: 4px; min-width: 0; flex: 1; }
 .bd-shliach-row .bd-item__sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .bd-shliach-row__go { font-size: 1.4rem; color: var(--bd-fg-subtle); }

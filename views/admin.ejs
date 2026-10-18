@@ -76,25 +76,25 @@
 <div class="bd-layout bd-layout--split">
 <section class="bd-card">
   <h2 class="bd-section-title">שלוחים <span class="bd-muted bd-num" style="font-weight:400">(<%= shluchim.length %>)</span></h2>
-  <p class="bd-help bd-mb">לחיצה על שליח פותחת את כל הפרטים והפעולות. רשימות המקורבים לא מוצגות למנהל.</p>
+  <p class="bd-help bd-mb">לחיצה על שם השליח פותחת את תפריט הניהול; לחיצה על הטלפון — וואטסאפ. רשימות המקורבים לא מוצגות למנהל.</p>
   <% if (!shluchim.length) { %><div class="bd-empty">עדיין אין שלוחים.</div><% } %>
   <ul class="bd-items" id="shluchim-list">
   <% shluchim.forEach(s => { %>
     <li class="bd-item bd-item--shliach <%= s.active ? '' : 'bd-item--off' %>">
-      <a class="bd-shliach-row" href="/admin/shluchim/<%= s.id %>" aria-label="תפריט מלא — <%= s.name %>">
+      <div class="bd-shliach-row">
         <span class="bd-item__main">
-          <span class="bd-item__title"><%= s.name %>
+          <span class="bd-item__title"><a class="bd-shliach-name" href="/admin/shluchim/<%= s.id %>" title="תפריט ניהול השליח"><%= s.name %></a>
             <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %></span>
           <span class="bd-item__sub">
             <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
-            <% if (s.phone) { %><span class="bd-num" dir="ltr">📱 <%= s.phone %></span><% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span><% } %>
+            <% if (s.phone) { %><a class="bd-num bd-shliach-phone" dir="ltr" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener" title="וואטסאפ לשליח">💬 <%= s.phone %></a><% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span><% } %>
             <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות"><span>SMS <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
             <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
             <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %>
           </span>
         </span>
-        <span class="bd-shliach-row__go" aria-hidden="true">‹</span>
-      </a>
+        <a class="bd-shliach-row__go" href="/admin/shluchim/<%= s.id %>" aria-label="תפריט ניהול — <%= s.name %>">‹</a>
+      </div>
     </li>
   <% }) %>
   </ul>
