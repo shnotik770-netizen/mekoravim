@@ -89,6 +89,8 @@
             <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
             <% if (s.phone) { %><a class="bd-num bd-shliach-phone" dir="ltr" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener" title="וואטסאפ לשליח">💬 <%= s.phone %></a><% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span><% } %>
             <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות"><span>SMS <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
+            <% const rnear = s.records_used >= Math.floor(s.records_quota * 0.9); %>
+            <span class="bd-status <%= rnear ? 'bd-status--bad' : '' %>" title="רשומות (מקורבים ובני משפחה) מתוך המכסה"><span>📇 <bdi class="bd-num"><%= s.records_used %>/<%= s.records_quota %></bdi> רשומות</span></span>
             <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
             <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %>
           </span>

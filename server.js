@@ -206,9 +206,11 @@ function requireAdmin(req, res, next) {
 
 // המנהל רואה רק שם, קישור וסטטוס — לא את נתוני המקורבים
 app.get('/admin', requireAdmin, async (req, res) => {
-  const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, access_code_hash IS NOT NULL AS has_code,
-                              sms_weekly, sms_daily, sms_quota, sms_used_birthdays, sms_alert_threshold, phone
-                            FROM shluchim ORDER BY created_at DESC`);
+  const { rows } = await q(`SELECT s.id, s.name, s.chabad_house, s.slug, s.active, s.created_at, s.access_code_hash IS NOT NULL AS has_code,
+                              s.sms_weekly, s.sms_daily, s.sms_quota, s.sms_used_birthdays, s.sms_alert_threshold, s.phone, s.records_quota,
+                              (SELECT count(*) FROM contacts c WHERE c.shliach_id=s.id)::int
+                              + (SELECT count(*) FROM family_members f JOIN contacts c ON c.id=f.contact_id WHERE c.shliach_id=s.id)::int AS records_used
+                            FROM shluchim s ORDER BY s.created_at DESC`);
   const info = takeReveal(req.session.reveal);
   req.session.reveal = undefined;
   const { rows: [summary] } = await q(`SELECT
