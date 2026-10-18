@@ -107,7 +107,7 @@
     <div class="bd-bubble">
       <% if (l.member_name) { %><div class="bd-bubble__who">🎂 יום הולדת של <%= l.member_name %></div><% } %>
       <div class="bd-bubble__text"><%= l.note || '✓ נוצר קשר' %></div>
-      <div class="bd-bubble__meta"><span class="bd-num" dir="ltr"><%= fmtTime(l.created_at) %></span>
+      <div class="bd-bubble__meta"><span><%= hebStamp(l.created_at) %> · <span class="bd-num" dir="ltr"><%= fmtTime(l.created_at) %></span></span>
         <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?
 
 ⚠️ המחיקה בלתי הפיכה."><button class="bd-bubble__del" aria-label="מחיקת הרישום" title="מחיקה">🗑</button></form>

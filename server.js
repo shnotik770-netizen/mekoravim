@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr,
+  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents } from './lib/events.js';
@@ -84,7 +84,7 @@ app.use((req, res, next) => {
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   res.locals.v = ASSET_V;
   res.locals.todayISO = toISO(todayIL()); // "היום" לפי שעון ישראל (למשל max בשדה תאריך לידה)
-  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl });
+  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl, hebStamp });
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
