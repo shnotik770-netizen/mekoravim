@@ -465,3 +465,10 @@ document.addEventListener('click', (e) => {
   el.closest('section, aside, form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   setTimeout(() => el.focus({ preventScroll: true }), 350);
 });
+
+// כרטיסים מתקפלים — זוכרים מה כווץ (לכל כותרת)
+document.querySelectorAll('details[data-fold]').forEach((d) => {
+  const key = 'fold:' + location.pathname.split('/')[1] + ':' + (d.id || d.querySelector('summary')?.textContent.trim());
+  try { if (localStorage.getItem(key) === '0') d.open = false; } catch {}
+  d.addEventListener('toggle', () => { try { d.open ? localStorage.removeItem(key) : localStorage.setItem(key, '0'); } catch {} });
+});

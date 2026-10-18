@@ -514,3 +514,12 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-action-box { padding: 12px; border: 1px solid var(--bd-line); border-radius: 14px; display: grid; gap: 6px; align-content: start; }
 .bd-action-box p { margin: 0; }
 .bd-action-box .bd-inline .bd-input { min-width: 0; }
+
+/* כרטיסים מתקפלים (דף שליח במנהל) */
+.bd .bd-fold > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--bd-sp-2); width: 100%; margin-bottom: 0; user-select: none; }
+.bd .bd-fold[open] > summary { margin-bottom: var(--bd-sp-3); }
+.bd .bd-fold > summary::after { content: '▾'; font-size: .8em; color: var(--bd-fg-muted); transition: transform .15s; }
+.bd .bd-fold:not([open]) > summary::after { transform: rotate(90deg); }
+.bd .bd-fold > summary:focus-visible { outline: 2px solid var(--bd-accent, currentColor); outline-offset: 2px; border-radius: 4px; }
+.bd-grid2 > .bd-fold { align-self: start; }
+.bd-fold--plain { padding: 0; }

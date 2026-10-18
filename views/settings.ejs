@@ -48,7 +48,7 @@
     <p class="bd-help bd-mb">רק התזכורות יורדות מהיתרה (הודעה ארוכה = כמה יחידות). קודי כניסה והודעות ניסיון על חשבון המערכת. לחידוש המכסה פנו למנהל.</p>
     <% if (!smsOn) { %><div class="bd-msg bd-msg--err">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</div><% } %>
     <form method="post" action="<%= base %>/sms">
-      <div class="bd-field"><label class="bd-label" for="sms-ph">מספר נייד לקבלת ההודעה</label><input class="bd-input" id="sms-ph" name="sms_phone" type="tel" dir="ltr" style="text-align:right" inputmode="tel" value="<%= shliach.sms_phone %>" placeholder="050-0000000"></div>
+      <p class="bd-help bd-mb"><% if (shliach.phone) { %>ההודעות נשלחות לנייד שלך: <bdi class="bd-num" dir="ltr"><%= shliach.phone %></bdi> (לשינוי — בפרטים האישיים)<% } else { %><span class="bd-err">אין נייד בפרטים האישיים — הוסיפו נייד כדי לקבל תזכורות.</span><% } %></p>
       <fieldset class="bd-field"><legend class="bd-label">אילו תזכורות לשלוח (אפשר את שתיהן)</legend>
         <label class="bd-check"><input type="checkbox" name="sms_weekly" <%= shliach.sms_weekly ? 'checked' : '' %>> <span><b>שבועי</b> — ביום ראשון: כל ימי ההולדת של השבוע</span></label>
         <label class="bd-check bd-mt"><input type="checkbox" name="sms_daily" <%= shliach.sms_daily ? 'checked' : '' %>> <span><b>יומי</b> — כל בוקר: ימי ההולדת של היום (רק בימים שיש)</span></label>
@@ -62,7 +62,7 @@
       <summary class="bd-link-btn bd-link-btn--accent">תצוגה מקדימה של ההודעה</summary>
       <% Object.entries(previews).forEach(([label, text]) => { %><% if (label) { %><p class="bd-label bd-mt"><%= label %></p><% } %><pre class="bd-sms-preview"><%= text %></pre><% }) %>
     </details>
-    <% if (smsOn && shliach.sms_phone) { %>
+    <% if (smsOn && shliach.phone) { %>
     <form method="post" action="<%= base %>/sms" class="bd-mt">
       <input type="hidden" name="action" value="test">
       <button class="bd-btn bd-btn--ghost bd-btn--sm">שליחת הודעת ניסיון עכשיו</button>
@@ -94,7 +94,7 @@
       <h2 class="bd-section-title">הפרטים שלי</h2>
       <div class="bd-field"><label class="bd-label" for="pf-name">שם</label><input class="bd-input" id="pf-name" name="name" value="<%= shliach.name %>" required maxlength="80" autocomplete="name"></div>
       <div class="bd-field"><label class="bd-label" for="pf-house">בית חב״ד <span class="opt">(רשות)</span></label><input class="bd-input" id="pf-house" name="chabad_house" value="<%= shliach.chabad_house || '' %>" maxlength="80"></div>
-      <div class="bd-field"><label class="bd-label" for="pf-phone">נייד</label><input class="bd-input" id="pf-phone" name="phone" type="tel" dir="ltr" value="<%= shliach.phone || '' %>" autocomplete="tel" inputmode="tel"><span class="bd-help">אליו נשלח קוד חד-פעמי לכניסה.</span></div>
+      <div class="bd-field"><label class="bd-label" for="pf-phone">נייד</label><input class="bd-input" id="pf-phone" name="phone" type="tel" dir="ltr" value="<%= shliach.phone || '' %>" autocomplete="tel" inputmode="tel"><span class="bd-help">אליו נשלחים קוד הכניסה החד-פעמי ותזכורות ה-SMS.</span></div>
       <div class="bd-field"><label class="bd-label" for="pf-addr">פנייה</label>
         <select class="bd-input" id="pf-addr" name="address">
           <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(shliach) === k ? 'selected' : '' %>><%= label %></option><% }) %>

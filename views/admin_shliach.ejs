@@ -25,11 +25,10 @@
 <p class="bd-help bd-mb">דשבורד למנהל — רק מספרים ופעולות, בלי שמות, טלפונים או פרטים של מקורבים.</p>
 <%- include('partials/reveal', { info }) %>
 
-<section class="bd-card bd-mb bd-admin-actions" id="actions">
-  <h2 class="bd-section-title">פעולות ופרטי השליח</h2>
+<details class="bd-card bd-mb bd-admin-actions bd-fold" id="actions" open data-fold><summary class="bd-section-title">פעולות ופרטי השליח</summary>
   <div class="bd-actions-grid">
     <div class="bd-action-box">
-      <b>📱 נייד</b>
+      <b>📱 נייד (כניסה ותזכורות SMS)</b>
       <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %></p>
         <div class="bd-inline">
           <a class="bd-btn bd-btn--soft bd-btn--sm" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener">💬 וואטסאפ</a>
@@ -84,14 +83,15 @@
       </form>
     </div>
   </div>
-</section>
+</details>
 
-<section class="bd-card bd-mb">
-  <h2 class="bd-section-title">בריאות החשבון</h2>
+<details class="bd-card bd-mb bd-fold" open data-fold><summary class="bd-section-title">בריאות החשבון</summary>
   <% if (!alerts.length) { %><div class="bd-msg bd-msg--ok"><span>✓ הכול תקין</span></div><% } %>
   <div class="bd-stack"><% alerts.forEach(([lvl, text]) => { %><div class="bd-msg <%= alertCls[lvl] %>"><span><%= lvl === 'bad' ? '⛔' : lvl === 'warn' ? '⚠️' : 'ℹ️' %> <%= text %></span></div><% }) %></div>
-</section>
+</details>
 
+<details class="bd-fold bd-fold--plain bd-mb" open data-fold>
+<summary class="bd-section-title">נתונים</summary>
 <div class="bd-stats">
   <div class="bd-stat bd-stat--today"><span class="bd-stat__label">ימי הולדת היום</span><span class="bd-stat__value bd-num"><%= bdays.today %></span>
     <span class="bd-stat__hint">השבוע <span class="bd-num"><%= bdays.week %></span> · ב<%= bdays.monthName %> <span class="bd-num"><%= bdays.month %></span></span></div>
@@ -110,40 +110,22 @@
   <div class="bd-stat"><span class="bd-stat__label">יתרת SMS לתזכורות</span><span class="bd-stat__value bd-num" <%- quota.low ? 'style="color:var(--bd-bad)"' : '' %>><%= quota.left %></span>
     <span class="bd-stat__hint">מתוך <span class="bd-num"><%= quota.quota %></span></span></div>
 </div>
+</details>
 
 <div class="bd-grid2 bd-mb">
-  <section class="bd-card">
-    <h2 class="bd-section-title">פעילות השליח לפי שבוע</h2>
+  <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">פעילות השליח לפי שבוע</summary>
     <%- include('partials/bars', { cols: weeks.map(w => ({ label: w.label, segs: [w.n] })), colors: ['bd-bars__c1'], legend: ['פעולות'], aria: 'פעולות השליח ב-12 השבועות האחרונים' }) %>
-  </section>
-  <section class="bd-card">
-    <h2 class="bd-section-title">מקורבים חדשים לפי חודש</h2>
+  </details>
+  <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">מקורבים חדשים לפי חודש</summary>
     <%- include('partials/bars', { cols: months.map(m => ({ label: m.label, segs: [m.links, m.manual] })), colors: ['bd-bars__c1', 'bd-bars__c2'], legend: ['דרך קישור רישום', 'הוספה ידנית'], aria: 'מקורבים חדשים בחצי השנה האחרונה' }) %>
-  </section>
-  <section class="bd-card">
-    <h2 class="bd-section-title">יחידות SMS לפי חודש</h2>
+  </details>
+  <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">יחידות SMS לפי חודש</summary>
     <%- include('partials/bars', { cols: smsMonths.map(m => ({ label: m.label, segs: [m.reminders, m.system] })), colors: ['bd-bars__c1', 'bd-bars__c2'], legend: ['תזכורות (מהמכסה)', 'הודעות מערכת'], aria: 'יחידות SMS בחצי השנה האחרונה' }) %>
-  </section>
+  </details>
 </div>
 
-<div class="bd-layout bd-layout--split">
-<div class="bd-stack">
-  <section class="bd-card">
-    <h2 class="bd-section-title">היסטוריית פעולות</h2>
-    <form method="get" class="bd-mb">
-      <select class="bd-input" name="o" aria-label="סינון" data-autosubmit style="max-width:240px">
-        <option value="">כל הפעולות</option>
-        <option value="problems" <%= problems ? 'selected' : '' %>>רק תקלות וכישלונות</option>
-      </select>
-    </form>
-    <%- include('partials/log_table', { rows, more, page, showShliach: false, OUTCOMES, ACTORS, fmtTime,
-      pageUrl: (n) => '?' + new URLSearchParams({ ...(problems ? { o: 'problems' } : {}), page: n }) }) %>
-  </section>
-</div>
-
-<aside class="bd-stack">
-  <section class="bd-card">
-    <h2 class="bd-section-title">פעילות</h2>
+<div class="bd-grid2 bd-mb">
+  <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">פעילות</summary>
     <div class="bd-facts">
       <div class="bd-fact"><b>פעולה אחרונה</b><span class="bd-num" dir="ltr"><%= ago(activity.last_action) %></span></div>
       <div class="bd-fact"><b>פעולות ב-30 יום</b><span class="bd-num"><%= activity.actions30 %></span></div>
@@ -152,9 +134,8 @@
       <div class="bd-fact"><b>קישורי רישום</b><span><span class="bd-num"><%= counts.links_active %></span> פעילים מתוך <span class="bd-num"><%= counts.links %></span></span></div>
       <div class="bd-fact"><b>סיווגים</b><span class="bd-num"><%= counts.categories %></span></div>
     </div>
-  </section>
-  <section class="bd-card" id="records">
-    <h2 class="bd-section-title">מכסת רשומות</h2>
+  </details>
+  <details class="bd-card bd-fold" id="records" open data-fold><summary class="bd-section-title">מכסת רשומות</summary>
     <p class="bd-help bd-mb">מקורבים ובני משפחה. כשהמכסה מלאה השליח לא יכול להוסיף רשומות (גם לא בקישורי הרישום) עד שתורחב.</p>
     <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
     <p class="bd-small bd-mt">בשימוש <b class="bd-num"><%= records.used %></b> מתוך <b class="bd-num"><%= records.quota %></b> · נותרו <b class="bd-num"><%= records.left %></b></p>
@@ -165,17 +146,8 @@
         <button class="bd-btn bd-btn--ghost bd-btn--sm">קביעה</button>
       </form>
     </div>
-  </section>
-  <section class="bd-card bd-danger" id="danger">
-    <h2 class="bd-section-title">סגירת חשבון</h2>
-    <p class="bd-help bd-mb">מוחק לצמיתות את השליח ואת כל המקורבים, בני המשפחה, הקישורים והיסטוריית הקשר שלו. כדאי שהשליח ייצא קודם את הרשימה (הגדרות ← ייצוא).</p>
-    <form method="post" action="/admin/shluchim/<%= s.id %>/delete" class="bd-inline" data-confirm="למחוק לצמיתות את החשבון של <%= s.name %> וכל המידע שבו?">
-      <input class="bd-input" name="confirm" placeholder='הקלידו "מחיקה"' aria-label="אישור מחיקה" style="flex:0 0 140px">
-      <button class="bd-btn bd-btn--sm bd-btn--danger">מחיקת החשבון</button>
-    </form>
-  </section>
-  <section class="bd-card">
-    <h2 class="bd-section-title">SMS</h2>
+  </details>
+  <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">SMS</summary>
     <div class="bd-facts">
       <div class="bd-fact"><b>תזכורות</b><span><%= [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join(' + ') || 'כבוי' %></span></div>
       <div class="bd-fact"><b>מכסה לתזכורות</b><span>הוקצו <span class="bd-num"><%= quota.quota %></span> · נוצלו <span class="bd-num"><%= quota.used %></span> · יתרה <span class="bd-num <%= quota.low ? 'bd-err' : '' %>"><%= quota.left %></span></span></div>
@@ -186,7 +158,24 @@
       <% sms.forEach(k => { %><li class="bd-item"><div class="bd-item__main"><%= kindName[k.kind] || k.kind %></div><span class="bd-small"><span class="bd-num"><%= k.n %></span> הודעות · <span class="bd-num"><%= k.units %></span> יחידות</span></li><% }) %>
     </ul>
     <% if (s.sms_last_error) { %><p class="bd-err bd-mt">שגיאה אחרונה: <%= s.sms_last_error %></p><% } %>
-  </section>
-</aside>
+  </details>
+  <details class="bd-card bd-danger bd-fold" id="danger" open data-fold><summary class="bd-section-title">סגירת חשבון</summary>
+    <p class="bd-help bd-mb">מוחק לצמיתות את השליח ואת כל המקורבים, בני המשפחה, הקישורים והיסטוריית הקשר שלו. כדאי שהשליח ייצא קודם את הרשימה (הגדרות ← ייצוא).</p>
+    <form method="post" action="/admin/shluchim/<%= s.id %>/delete" class="bd-inline" data-confirm="למחוק לצמיתות את החשבון של <%= s.name %> וכל המידע שבו?">
+      <input class="bd-input" name="confirm" placeholder='הקלידו "מחיקה"' aria-label="אישור מחיקה" style="flex:0 0 140px">
+      <button class="bd-btn bd-btn--sm bd-btn--danger">מחיקת החשבון</button>
+    </form>
+  </details>
 </div>
+
+  <details class="bd-card bd-fold" id="log" open data-fold><summary class="bd-section-title">היסטוריית פעולות</summary>
+    <form method="get" class="bd-mb">
+      <select class="bd-input" name="o" aria-label="סינון" data-autosubmit style="max-width:240px">
+        <option value="">כל הפעולות</option>
+        <option value="problems" <%= problems ? 'selected' : '' %>>רק תקלות וכישלונות</option>
+      </select>
+    </form>
+    <%- include('partials/log_table', { rows, more, page, showShliach: false, OUTCOMES, ACTORS, fmtTime,
+      pageUrl: (n) => '?' + new URLSearchParams({ ...(problems ? { o: 'problems' } : {}), page: n }) }) %>
+  </details>
 <%- include('partials/foot') %>

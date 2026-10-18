@@ -563,7 +563,7 @@ app.post('/admin/shluchim/:id/phone', requireAdmin, async (req, res) => {
   const phone = normalizePhone(req.body.phone);
   if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   // שינוי נייד = שינוי היעד של קודי הכניסה — מנתקים סשנים קיימים
-  await q(`UPDATE shluchim SET phone=$1, sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $1 ELSE sms_phone END, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
+  await q(`UPDATE shluchim SET phone=$1, sms_phone=$1, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
   flash(req, 'הטלפון עודכן');
   res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
@@ -588,7 +588,7 @@ async function recordsCheck(shliachId) {
   await q('UPDATE shluchim SET records_alert=$1 WHERE id=$2', [st.level, shliachId]);
   if (st.level > st.alert) {
     const { rows: [s] } = await q('SELECT * FROM shluchim WHERE id=$1', [shliachId]);
-    const phone = normalizePhone(s?.sms_phone) || normalizePhone(s?.phone);
+    const phone = normalizePhone(s?.phone);
     const msg = st.full
       ? `זכרתי התקשרתי: הגעתם למכסת ${st.quota} הרשומות (מקורבים ובני משפחה) — לא ניתן להוסיף עוד. להרחבה פנו למנהל: 053-340-4770`
       : `זכרתי התקשרתי: נוצלו ${st.used} מתוך ${st.quota} רשומות (נותרו ${st.left}). להרחבה פנו למנהל: 053-340-4770`;
@@ -1172,7 +1172,7 @@ router.post('/contacts/:id/remind', loadContact, async (req, res) => {
   const days = remindDays(req.body.remind_days);
   await q('UPDATE contacts SET remind_days=$1 WHERE id=$2', [days, req.contact.id]);
   const s = req.shliach;
-  const phone = normalizePhone(s.sms_phone) || normalizePhone(s.phone);
+  const phone = normalizePhone(s.phone);
   flash(req, days === null ? 'התזכורת על המקורב בוטלה'
     : `נשמר — תקבלו SMS ${remindText(days)}${phone ? '' : ' (שימו לב: אין מספר נייד בהגדרות)'}`);
   res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
@@ -1318,11 +1318,9 @@ router.post('/sms', async (req, res) => {
     return res.redirect(back);
   }
   const weekly = req.body.sms_weekly === 'on', daily = req.body.sms_daily === 'on';
-  const phone = String(req.body.sms_phone || '').trim();
-  if (phone && !normalizePhone(phone)) return renderSettings(req, res, 'מספר הנייד לקבלת SMS אינו תקין', 400);
-  if ((weekly || daily) && !phone) return renderSettings(req, res, 'כדי להפעיל SMS יש להזין מספר נייד', 400);
-  await q('UPDATE shluchim SET sms_phone=$1, sms_weekly=$2, sms_daily=$3, sms_enabled=$4 WHERE id=$5',
-    [normalizePhone(phone) || '', weekly, daily, weekly || daily, s.id]);
+  if ((weekly || daily) && !normalizePhone(s.phone)) return renderSettings(req, res, 'כדי להפעיל תזכורות יש להזין מספר נייד בפרטים האישיים', 400);
+  await q('UPDATE shluchim SET sms_weekly=$1, sms_daily=$2, sms_enabled=$3 WHERE id=$4',
+    [weekly, daily, weekly || daily, s.id]);
   const what = [weekly && 'בכל יום ראשון — ימי ההולדת של השבוע', daily && 'בכל יום חול שיש בו ימי הולדת — ימי ההולדת של היום'].filter(Boolean);
   flash(req, what.length ? `נשמר — תקבלו SMS ${what.join(', וגם ')}` : 'נשמר — התזכורות כבויות');
   res.redirect(back);
@@ -1357,9 +1355,9 @@ router.post('/settings', async (req, res) => {
       return fail('כדי לשנות את הנייד יש להזין את קוד הכניסה הנוכחי');
     }
     const addr = parseAddress(req.body.address);
-    if (!phone && s.sms_phone === s.phone && (s.sms_weekly || s.sms_daily)) return fail('תזכורות ה-SMS נשלחות לנייד הזה — כדי להסיר אותו, כבו קודם את התזכורות או הגדירו נייד אחר לתזכורות');
+    if (!phone && (s.sms_weekly || s.sms_daily)) return fail('תזכורות ה-SMS נשלחות לנייד הזה — כדי להסיר אותו, כבו קודם את התזכורות');
     const { rows: [u] } = await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, gender=$4, use_title=$5,
-             sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $3 ELSE sms_phone END,
+             sms_phone=$3,
              session_version=session_version + (CASE WHEN phone IS DISTINCT FROM $3 THEN 1 ELSE 0 END)
            WHERE id=$6 RETURNING session_version`,
       [name, house, phone, addr.gender, addr.use_title, s.id]);
