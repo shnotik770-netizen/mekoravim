@@ -1,0 +1,11 @@
+<% if (info) { %>
+<section class="bd-card bd-highlight bd-mb">
+  <h2 class="bd-section-title">פרטי הכניסה של <%= info.name %></h2>
+  <p class="bd-mb">קישור קבוע: <code class="bd-code copy"><%= base %>/s/<%= info.slug %></code></p>
+  <% if (info.code) { %>
+    <p>קוד כניסה: <code class="bd-code bd-code--big copy"><%= info.code %></code></p>
+    <p class="bd-help bd-mt">הקוד מוצג עכשיו בלבד — העבירו אותו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
+  <% } %>
+  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= phoneIntl(info.phone) %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
+</section>
+<% } %>

@@ -292,7 +292,7 @@ app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
   const id = int(req.params.id);
   const add = parseQuota(req.body.add), set = parseQuota(req.body.quota), th = parseQuota(req.body.threshold);
   const err = add.error || set.error || th.error;
-  if (err) { flashErr(req, err); return res.redirect('/admin'); }
+  if (err) { flashErr(req, err); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   if (add.value) await q('UPDATE shluchim SET sms_quota = least(sms_quota + $1, $3) WHERE id=$2', [add.value, id, MAX_QUOTA]);
   if (set.value !== null) await q('UPDATE shluchim SET sms_quota=$1 WHERE id=$2', [set.value, id]);
   if (req.body.threshold !== undefined) await q('UPDATE shluchim SET sms_alert_threshold=$1 WHERE id=$2', [th.value, id]);
@@ -300,7 +300,7 @@ app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
   await q(`UPDATE shluchim SET sms_last_error=NULL WHERE id=$1 AND sms_used_birthdays < sms_quota AND sms_last_error LIKE 'יתרת ה-SMS%'`, [id]);
   const { rows } = await q('SELECT sms_quota, sms_used_birthdays, sms_alert_threshold FROM shluchim WHERE id=$1', [id]);
   if (rows[0]) { const st = quotaStatus(rows[0]); flash(req, `המכסה עודכנה: ${st.quota} יחידות, נוצלו ${st.used}, יתרה ${st.left} (התראה מתחת ל-${st.threshold})`); }
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 // סגירת חשבון שליח: מוחק את השליח וכל המידע שלו (מקורבים, בני משפחה, קישורים, יומני SMS) — בלתי הפיך
@@ -451,7 +451,9 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
   const { rows: all } = await q('SELECT id, name FROM shluchim ORDER BY name');
   const page = Math.max(1, int(req.query.page) || 1);
   const log = await loadLog({ shliachId: id, problems: req.query.o === 'problems', page });
-  res.render('admin_shliach', { records: await recordsStatus(id),
+  const reveal = takeReveal(req.session.reveal);
+  req.session.reveal = undefined;
+  res.render('admin_shliach', { records: await recordsStatus(id), info: reveal && reveal.id === id ? reveal : null, base: baseUrl(req), smsOn: smsConfigured(),
     s: sh, counts, activity, sms, months, weeks, smsMonths, bdays, alerts, all, quota, ...log, page, problems: req.query.o === 'problems',
     OUTCOMES, ACTORS, fmtTime, base: baseUrl(req),
   });
@@ -529,44 +531,44 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
 // קוד קבוע חדש (ריק = אקראי) ושליחתו ב-SMS
 app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
   const code = codeFrom(req);
-  if (!code) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
+  if (!code) { flashErr(req, CODE_RULE); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   const s = await setCode(req, int(req.params.id), code);
-  if (!s) return res.redirect('/admin');
+  if (!s) return res.redirect(`/admin/shluchim/${int(req.params.id)}`);
   const sent = s.phone ? await sendWelcome(req, s, code) : { ok: false, error: 'לשליח אין נייד' };
   const msg = 'הקוד הוחלף וכל המכשירים המחוברים נותקו.';
   if (sent.ok) flash(req, `${msg} הקישור והקוד נשלחו ב-SMS ל-${s.phone}`); else flashErr(req, `${msg} ה-SMS לא נשלח (${sent.error})`);
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 // שליחה חוזרת של הקישור בלבד (את הקוד הקבוע השרת לא יודע — שומר רק hash)
 app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
   const { rows } = await q('SELECT id, name, slug, phone, gender, use_title FROM shluchim WHERE id=$1', [int(req.params.id)]);
   const s = rows[0];
-  if (!s) return res.redirect('/admin');
-  if (!s.phone) { flashErr(req, 'לשליח אין נייד'); return res.redirect('/admin'); }
+  if (!s) return res.redirect(`/admin/shluchim/${int(req.params.id)}`);
+  if (!s.phone) { flashErr(req, 'לשליח אין נייד'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   const sent = await sendWelcome(req, s, null);
   if (sent.ok) flash(req, `הקישור נשלח ב-SMS ל-${s.phone}`); else flashErr(req, `ה-SMS לא נשלח: ${sent.error}`);
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 app.post('/admin/shluchim/:id/house', requireAdmin, async (req, res) => {
   await q('UPDATE shluchim SET chabad_house=$1 WHERE id=$2', [String(req.body.chabad_house || '').trim().slice(0, 80), int(req.params.id)]);
   flash(req, 'שם בית חב״ד עודכן');
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 app.post('/admin/shluchim/:id/phone', requireAdmin, async (req, res) => {
   const phone = normalizePhone(req.body.phone);
-  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect('/admin'); }
+  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   // שינוי נייד = שינוי היעד של קודי הכניסה — מנתקים סשנים קיימים
   await q(`UPDATE shluchim SET phone=$1, sms_phone=CASE WHEN sms_phone='' OR sms_phone=phone THEN $1 ELSE sms_phone END, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
   flash(req, 'הטלפון עודכן');
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 app.post('/admin/shluchim/:id/toggle', requireAdmin, async (req, res) => {
   await q('UPDATE shluchim SET active = NOT active WHERE id=$1', [int(req.params.id)]);
-  res.redirect('/admin');
+  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
 /* ----------------------------- שמירת מקורבים ----------------------------- */

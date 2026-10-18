@@ -23,6 +23,68 @@
   </form>
 </div>
 <p class="bd-help bd-mb">דשבורד למנהל — רק מספרים ופעולות, בלי שמות, טלפונים או פרטים של מקורבים.</p>
+<%- include('partials/reveal', { info }) %>
+
+<section class="bd-card bd-mb bd-admin-actions" id="actions">
+  <h2 class="bd-section-title">פעולות ופרטי השליח</h2>
+  <div class="bd-actions-grid">
+    <div class="bd-action-box">
+      <b>📱 נייד</b>
+      <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %></p>
+        <div class="bd-inline">
+          <a class="bd-btn bd-btn--soft bd-btn--sm" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener">💬 וואטסאפ</a>
+          <a class="bd-btn bd-btn--ghost bd-btn--sm" href="tel:+<%= phoneIntl(s.phone) %>">📞 חיוג</a>
+        </div>
+      <% } else { %><p class="bd-err">אין נייד לשליח</p><% } %>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/phone" class="bd-inline bd-mt">
+        <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" placeholder="נייד השליח" required aria-label="נייד השליח">
+        <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון</button>
+      </form>
+    </div>
+    <div class="bd-action-box">
+      <b>🔗 כניסה לחשבון</b>
+      <p class="bd-help">הקישור האישי של השליח (לא להעביר לאחרים).</p>
+      <div class="bd-inline">
+        <button type="button" class="bd-btn bd-btn--ghost bd-btn--sm bd-copy-btn" data-copy="<%= base %>/s/<%= s.slug %>"><span>העתקת הקישור</span></button>
+        <form method="post" action="/admin/shluchim/<%= s.id %>/send-link"><button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button></form>
+      </div>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-inline bd-mt" data-confirm="לקבוע קוד חדש? הקוד הקודם יפסיק לעבוד וכל המכשירים ינותקו.">
+        <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
+        <button class="bd-btn bd-btn--primary bd-btn--sm">קוד חדש + SMS</button>
+      </form>
+      <% if (!s.has_code) { %><p class="bd-help">לשליח אין קוד קבוע — נכנס רק בקוד חד-פעמי ב-SMS.</p><% } %>
+    </div>
+    <div class="bd-action-box">
+      <b>📱 SMS לתזכורות</b>
+      <p class="bd-small">הוקצו <b class="bd-num"><%= quota.quota %></b> · נוצלו <b class="bd-num"><%= quota.used %></b> · יתרה <b class="bd-num <%= quota.low ? 'bd-err' : '' %>"><%= quota.left %></b></p>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/quota" class="bd-stack">
+        <div class="bd-inline">
+          <input class="bd-input" name="add" type="number" min="1" max="100000" placeholder="הוספת יחידות (למשל 1000)" aria-label="הוספת יחידות">
+          <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
+        </div>
+        <details>
+          <summary class="bd-link-btn bd-link-btn--accent">הגדרות מתקדמות</summary>
+          <div class="bd-stack">
+            <label class="bd-small">מכסה כוללת<input class="bd-input" name="quota" type="number" min="0" max="100000" placeholder="<%= quota.quota %>"></label>
+            <label class="bd-small">סף התראה (ריק = 10%)<input class="bd-input" name="threshold" type="number" min="0" max="100000" value="<%= s.sms_alert_threshold ?? '' %>" placeholder="<%= quota.threshold %>"></label>
+            <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
+          </div>
+        </details>
+      </form>
+    </div>
+    <div class="bd-action-box">
+      <b>🏠 בית חב״ד</b>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/house" class="bd-inline">
+        <input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80" placeholder="שם בית חב״ד" aria-label="שם בית חב״ד">
+        <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון</button>
+      </form>
+      <p class="bd-mt"><a class="bd-link-btn bd-link-btn--accent" href="#records">📇 מכסת רשומות ←</a></p>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/toggle" class="bd-mt" data-confirm="<%= s.active ? 'להשבית את החשבון? השליח לא יוכל להיכנס והתזכורות ייעצרו.' : 'להפעיל מחדש את החשבון?' %>">
+        <button class="bd-btn bd-btn--sm <%= s.active ? 'bd-btn--ghost' : 'bd-btn--primary' %>"><%= s.active ? '⏸ השבתת החשבון' : '▶ הפעלת החשבון' %></button>
+      </form>
+    </div>
+  </div>
+</section>
 
 <section class="bd-card bd-mb">
   <h2 class="bd-section-title">בריאות החשבון</h2>

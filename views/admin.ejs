@@ -4,6 +4,10 @@
   <nav class="bd-nav"><a href="/admin" aria-current="page">שלוחים</a><a href="/admin/log">יומן פעולות</a><a href="/">🏠 דף הבית</a><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
   <a class="bd-btn bd-btn--primary bd-btn--sm bd-add-shliach" href="#new-shliach" data-focus="#sn">＋ שליח חדש</a>
 </header>
+<% if (shluchim.length) { %>
+<div class="bd-search bd-admin-search"><%- include('partials/icons', { name: 'search' }) %><input class="bd-input" type="search" placeholder="חיפוש שליח לפי שם, בית חב״ד או טלפון…" data-filter="#shluchim-list" aria-label="חיפוש שליח"></div>
+<p class="bd-help bd-mb" data-filter-empty="#shluchim-list" hidden>לא נמצאו שלוחים.</p>
+<% } %>
 <%
   const tile = (k) => `/admin${d === k ? '' : '?d=' + k}#detail`;
   const KIND = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', contact: 'תזכורת על מקורב', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
@@ -67,78 +71,30 @@
   </form>
 </div>
 
-<% if (info) { %>
-<section class="bd-card bd-highlight bd-mb">
-  <h2 class="bd-section-title">פרטי הכניסה של <%= info.name %></h2>
-  <p class="bd-mb">קישור קבוע: <code class="bd-code copy"><%= base %>/s/<%= info.slug %></code></p>
-  <% if (info.code) { %>
-    <p>קוד כניסה: <code class="bd-code bd-code--big copy"><%= info.code %></code></p>
-    <p class="bd-help bd-mt">הקוד מוצג עכשיו בלבד — העבירו אותו לשליח. השליח יכול להחליף אותו בהגדרות.</p>
-  <% } %>
-  <a class="bd-btn bd-btn--soft bd-btn--sm bd-mt" target="_blank" rel="noopener" href="https://wa.me/<%= phoneIntl(info.phone) %>?text=<%= encodeURIComponent('הקישור שלך למערכת ימי ההולדת: ' + base + '/s/' + info.slug + (info.code ? '\nקוד כניסה: ' + info.code : '')) %>">💬 שליחה בוואטסאפ<%= info.phone ? ' ל-' + info.phone : '' %></a>
-</section>
-<% } %>
+<%- include('partials/reveal', { info }) %>
 
 <div class="bd-layout bd-layout--split">
 <section class="bd-card">
   <h2 class="bd-section-title">שלוחים <span class="bd-muted bd-num" style="font-weight:400">(<%= shluchim.length %>)</span></h2>
-  <p class="bd-help bd-mb">כאן רואים רק שם וקישור. רשימות המקורבים לא מוצגות למנהל.</p>
+  <p class="bd-help bd-mb">לחיצה על שליח פותחת את כל הפרטים והפעולות. רשימות המקורבים לא מוצגות למנהל.</p>
   <% if (!shluchim.length) { %><div class="bd-empty">עדיין אין שלוחים.</div><% } %>
-  <% if (shluchim.length > 1) { %><div class="bd-search bd-mb"><%- include('partials/icons', { name: 'search' }) %><input class="bd-input" type="search" placeholder="חיפוש שליח לפי שם, בית חב״ד או טלפון…" data-filter="#shluchim-list" aria-label="חיפוש שליח לפי שם, בית חב״ד או טלפון…"></div>
-  <p class="bd-help bd-mb" data-filter-empty="#shluchim-list" hidden>לא נמצאו תוצאות.</p>
-  <% } %>
   <ul class="bd-items" id="shluchim-list">
   <% shluchim.forEach(s => { %>
-    <li class="bd-item <%= s.active ? '' : 'bd-item--off' %>">
-      <div class="bd-item__main">
-        <div class="bd-item__title"><a href="/admin/shluchim/<%= s.id %>" title="דשבורד שליח"><%= s.name %></a>
-          <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %>
-          <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
-          <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
-          <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות: נוצלו מתוך המכסה"><span>📱 <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
-          <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %></div>
-        <div class="bd-item__sub">
-          <% if (s.phone) { %><a href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener" class="bd-num">📱 <%= s.phone %></a> · <% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span> <% } %>
-          <code class="bd-code copy"><%= base %>/s/<%= s.slug %></code>
-        </div>
-      </div>
-      <details class="bd-menu">
-        <summary class="bd-btn bd-btn--ghost bd-btn--sm">פעולות ▾</summary>
-        <div class="bd-menu__body">
-          <a class="bd-btn bd-btn--ghost bd-btn--sm" href="/admin/shluchim/<%= s.id %>">📊 דשבורד שליח</a>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/send-link">
-            <button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button>
-          </form>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-stack" data-confirm="לקבוע קוד חדש? הקוד הקודם יפסיק לעבוד וכל המכשירים ינותקו.">
-            <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">
-            <button class="bd-btn bd-btn--primary bd-btn--sm">קוד חדש ושליחה ב-SMS</button>
-          </form>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/quota" class="bd-stack">
-            <p class="bd-small bd-muted">SMS לתזכורות: הוקצו <b class="bd-num"><%= st.quota %></b> · נוצלו <b class="bd-num"><%= st.used %></b> · יתרה <b class="bd-num"><%= st.left %></b></p>
-            <div class="bd-inline">
-              <input class="bd-input" name="add" type="number" min="1" max="100000" placeholder="הוספת יחידות" aria-label="הוספת יחידות">
-              <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
-            </div>
-            <details>
-              <summary class="bd-link-btn bd-link-btn--accent">הגדרות מתקדמות</summary>
-              <div class="bd-stack">
-                <label class="bd-small">מכסה כוללת<input class="bd-input" name="quota" type="number" min="0" max="100000" placeholder="<%= st.quota %>"></label>
-                <label class="bd-small">סף התראה (ריק = 10%)<input class="bd-input" name="threshold" type="number" min="0" max="100000" value="<%= s.sms_alert_threshold ?? '' %>" placeholder="<%= st.threshold %>"></label>
-                <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
-              </div>
-            </details>
-          </form>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/house" class="bd-stack">
-            <input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80" placeholder="שם בית חב״ד" aria-label="שם בית חב״ד">
-            <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון שם בית חב״ד</button>
-          </form>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/phone" class="bd-stack">
-            <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" placeholder="נייד השליח" required aria-label="נייד השליח">
-            <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון טלפון</button>
-          </form>
-          <form method="post" action="/admin/shluchim/<%= s.id %>/toggle"><button class="bd-link-btn <%= s.active ? '' : 'bd-link-btn--accent' %>"><%= s.active ? 'השבתת החשבון' : 'הפעלת החשבון' %></button></form>
-        </div>
-      </details>
+    <li class="bd-item bd-item--shliach <%= s.active ? '' : 'bd-item--off' %>">
+      <a class="bd-shliach-row" href="/admin/shluchim/<%= s.id %>" aria-label="תפריט מלא — <%= s.name %>">
+        <span class="bd-item__main">
+          <span class="bd-item__title"><%= s.name %>
+            <% if (s.chabad_house) { %><span class="bd-muted" style="font-weight:400">· <%= s.chabad_house %></span><% } %></span>
+          <span class="bd-item__sub">
+            <% const st = quotaStatus(s), kinds = [s.sms_weekly && 'שבועי', s.sms_daily && 'יומי'].filter(Boolean).join('+'); %>
+            <% if (s.phone) { %><span class="bd-num" dir="ltr">📱 <%= s.phone %></span><% } else { %><span class="bd-status bd-status--bad">חסר טלפון</span><% } %>
+            <span class="bd-status <%= st.low ? 'bd-status--bad' : (kinds ? 'bd-status--accent' : '') %>" title="יחידות SMS לתזכורות"><span>SMS <%= kinds ? kinds + ' · ' : '' %><bdi class="bd-num"><%= st.used %>/<%= st.quota %></bdi></span></span>
+            <% if (!s.has_code) { %><span class="bd-status">רק קוד ב-SMS</span><% } %>
+            <% if (!s.active) { %><span class="bd-status bd-status--bad">מושבת</span><% } %>
+          </span>
+        </span>
+        <span class="bd-shliach-row__go" aria-hidden="true">‹</span>
+      </a>
     </li>
   <% }) %>
   </ul>

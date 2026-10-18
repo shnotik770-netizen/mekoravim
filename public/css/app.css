@@ -498,3 +498,17 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-privacy-note .bd-check { margin-top: 4px; font-weight: var(--bd-fw-medium); }
 .bd .bd-btn--danger { background: var(--bd-bad); color: #fff; }
 .bd-danger { border-color: color-mix(in srgb, var(--bd-bad) 30%, var(--bd-line)); }
+
+/* מנהל: רשימת שלוחים — כל שורה פותחת את דף השליח */
+.bd-admin-search { margin-bottom: var(--bd-sp-3); }
+.bd .bd-item--shliach { padding: 0; }
+.bd a.bd-shliach-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 4px; color: var(--bd-fg); text-decoration: none; border-radius: 10px; }
+.bd a.bd-shliach-row:hover { background: var(--bd-surface-2); }
+.bd-shliach-row .bd-item__main { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.bd-shliach-row .bd-item__sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bd-shliach-row__go { font-size: 1.4rem; color: var(--bd-fg-subtle); }
+/* דף שליח: פעולות */
+.bd-actions-grid { display: grid; gap: var(--bd-sp-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.bd-action-box { padding: 12px; border: 1px solid var(--bd-line); border-radius: 14px; display: grid; gap: 6px; align-content: start; }
+.bd-action-box p { margin: 0; }
+.bd-action-box .bd-inline .bd-input { min-width: 0; }
