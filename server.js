@@ -776,20 +776,30 @@ async function demoAccount(req, res, next) {
   else if (++hit.n > 90) return res.status(429).render('error', { message: 'יותר מדי בקשות להדגמה — נסו שוב בעוד דקה' });
   if (demoHits.size > 5000) demoHits.clear();
 
-  // לכל היותר DEMO_MAX בקשות הדגמה במקביל (כל אחת מחזיקה חיבור למסד) — שלא יתפסו את כל החיבורים של משתמשים אמיתיים
-  if (!(await demoSlot())) return res.status(503).render('error', { message: 'יש עומס על חשבון ההדגמה — נסו שוב בעוד רגע' });
-  let client;
-  try { client = await pool.connect(); } catch (e) { demoRelease(); return next(e); }
-  const store = { client, demo: true, dead: false };
-  let done = false;
+  // לכל היותר DEMO_MAX בקשות הדגמה במקביל (כל אחת מחזיקה חיבור למסד) — שלא יתפסו את כל החיבורים של משתמשים אמיתיים.
+  // המאזינים לסיום נרשמים מיד: גולש שסוגר את הדף בזמן ההמתנה/הטעינה לא משאיר "מקום" תפוס לתמיד
+  const store = { client: null, demo: true, dead: false };
+  let slot = false, closed = false, released = false;
   const finish = () => {
-    if (done) return;
-    done = true;
+    if (released) return;
+    released = true;
     store.dead = true; // שאילתות מאוחרות של אותה בקשה ייכשלו במקום לרוץ על חיבור משוחרר
-    client.query('ROLLBACK').catch(() => {}).finally(() => { client.release(); demoRelease(); });
+    const c = store.client;
+    if (c) c.query('ROLLBACK').catch(() => {}).finally(() => { c.release(); demoRelease(); });
+    else demoRelease();
   };
-  res.on('finish', finish);
-  res.on('close', finish);
+  const onEnd = () => { closed = true; if (slot) finish(); };
+  res.on('finish', onEnd);
+  res.on('close', onEnd);
+  slot = await demoSlot();
+  if (!slot) return closed ? undefined : res.status(503).render('error', { message: 'יש עומס על חשבון ההדגמה — נסו שוב בעוד רגע' });
+  if (closed) return finish();
+  // רשת ביטחון: בקשת הדגמה לא מחזיקה מקום יותר מ-30 שניות
+  setTimeout(finish, 30000).unref();
+  let client;
+  try { client = await pool.connect(); } catch (e) { finish(); return next(e); }
+  if (released) return client.release(); // הדף נסגר בזמן ההתחברות — המקום כבר שוחרר
+  store.client = client;
   req.demo = true;
   res.locals.demo = true;
   // אחרי פעולה: ההודעה מבהירה שבהדגמה זה לא נשמר
