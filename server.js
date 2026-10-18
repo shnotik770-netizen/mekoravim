@@ -13,6 +13,7 @@ import {
 
 import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
+import { noteDemo, noteDemoReject, report as loadReport, alertSettings, saveAlertSettings, sendTestAlert, POOL_MAX } from './lib/monitor.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
@@ -261,9 +262,26 @@ app.get('/admin', requireAdmin, async (req, res) => {
       (SELECT coalesce(sum(units),0) FROM sms_log WHERE created_at >= (date_trunc('month', now() AT TIME ZONE 'Asia/Jerusalem') AT TIME ZONE 'Asia/Jerusalem'))::int AS sms_month,
       (SELECT count(*) FROM activity_log WHERE created_at > now() - interval '24 hours'
          AND (outcome='error' OR (actor IN ('system','public') AND outcome IN ('fail','blocked'))))::int AS problems24`);
-  const d = ['shluchim', 'contacts', 'sms', 'problems'].includes(req.query.d) ? req.query.d : null;
+  const d = ['shluchim', 'contacts', 'sms', 'problems', 'load'].includes(req.query.d) ? req.query.d : null;
   res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus, summary,
-    d, detail: d ? await adminDetail(d) : null, fmtDate });
+    d, detail: d === 'load' ? { ...loadReport(), settings: await alertSettings() } : d ? await adminDetail(d) : null, fmtDate,
+    load: loadReport(), POOL_MAX, fmtTime });
+});
+
+// מעקב עומס: נייד להתראות וסף (% מתקרת החיבורים)
+app.post('/admin/alerts', requireAdmin, async (req, res) => {
+  const raw = String(req.body.phone || '').trim();
+  const phone = raw ? normalizePhone(raw) : '';
+  if (raw && !phone) flashErr(req, 'מספר הנייד להתראות אינו תקין');
+  else {
+    await saveAlertSettings({ phone, pct: parseInt(req.body.pct, 10) || 80 });
+    flash(req, 'הגדרות ההתראה נשמרו');
+  }
+  res.redirect('/admin?d=load#detail');
+});
+app.post('/admin/alerts/test', requireAdmin, async (req, res) => {
+  try { await sendTestAlert(); flash(req, 'הודעת ניסיון נשלחה'); } catch (e) { flashErr(req, `לא נשלח: ${e.message}`); }
+  res.redirect('/admin?d=load#detail');
 });
 
 // פירוט לכל אחד מ-4 ריבועי הסיכום בדף המנהל — מספרים בלבד, בלי שמות או טלפונים של מקורבים
@@ -773,17 +791,20 @@ const demoHits = new Map();
 const DEMO_MAX = 3;
 let demoActive = 0;
 const demoWaiting = [];
+const demoNote = () => noteDemo(demoActive, demoWaiting.length, DEMO_MAX);
 function demoSlot() {
-  if (demoActive < DEMO_MAX) { demoActive++; return Promise.resolve(true); }
+  if (demoActive < DEMO_MAX) { demoActive++; demoNote(); return Promise.resolve(true); }
   if (demoWaiting.length >= 30) return Promise.resolve(false);
   return new Promise((resolve) => {
-    const w = { resolve, timer: setTimeout(() => { demoWaiting.splice(demoWaiting.indexOf(w), 1); resolve(false); }, 8000) };
+    const w = { resolve, timer: setTimeout(() => { demoWaiting.splice(demoWaiting.indexOf(w), 1); demoNote(); resolve(false); }, 8000) };
     demoWaiting.push(w);
+    demoNote();
   });
 }
 function demoRelease() {
   const w = demoWaiting.shift();
   if (w) { clearTimeout(w.timer); w.resolve(true); } else demoActive--;
+  demoNote();
 }
 async function demoAccount(req, res, next) {
   const now = Date.now(), hit = demoHits.get(req.ip);
@@ -807,7 +828,7 @@ async function demoAccount(req, res, next) {
   res.on('finish', onEnd);
   res.on('close', onEnd);
   slot = await demoSlot();
-  if (!slot) return closed ? undefined : res.status(503).render('error', { message: 'יש עומס על חשבון ההדגמה — נסו שוב בעוד רגע' });
+  if (!slot) { noteDemoReject(); return closed ? undefined : res.status(503).render('error', { message: 'יש עומס על חשבון ההדגמה — נסו שוב בעוד רגע' }); }
   if (closed) return finish();
   // רשת ביטחון: בקשת הדגמה לא מחזיקה מקום יותר מ-30 שניות
   setTimeout(finish, 30000).unref();

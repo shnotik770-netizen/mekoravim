@@ -542,3 +542,13 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-row--yz .bd-row__name a { color: var(--bd-fg); }
 .bd-row--yz .bd-row__heb { color: var(--bd-fg-muted); }
 .bd-item--yz .bd-item__title { color: var(--bd-fg); }
+
+/* דף המנהל: 5 ריבועי סיכום; גרף עומס לפי שעה */
+.bd .bd-admin-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 640px) { .bd .bd-admin-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.bd-load-bars { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); align-items: end; gap: 2px; height: 104px; margin: 4px 0 var(--bd-sp-2); direction: ltr; }
+.bd-load-bars > div { display: grid; justify-items: center; align-content: end; gap: 2px; min-width: 0; }
+.bd-load-bars i { display: block; width: 100%; max-width: 18px; border-radius: 4px 4px 1px 1px; background: var(--bd-accent); }
+.bd-load-bars i.warn { background: var(--bd-gold, #C9A227); }
+.bd-load-bars i.bad { background: var(--bd-bad); }
+.bd-load-bars small { font-size: .6rem; color: var(--bd-fg-muted); }

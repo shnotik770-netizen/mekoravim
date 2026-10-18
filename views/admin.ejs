@@ -19,10 +19,12 @@
   <a class="bd-stat" href="<%= tile('contacts') %>" aria-pressed="<%= d === 'contacts' %>"><span class="bd-stat__label">מקורבים במערכת</span><span class="bd-stat__value bd-num"><%= summary.contacts %></span><span class="bd-stat__more">פירוט ▾</span></a>
   <a class="bd-stat" href="<%= tile('sms') %>" aria-pressed="<%= d === 'sms' %>"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span><span class="bd-stat__more">פירוט ▾</span></a>
   <a class="bd-stat" href="<%= tile('problems') %>" aria-pressed="<%= d === 'problems' %>"><span class="bd-stat__label">תקלות ב-24 שעות</span><span class="bd-stat__value bd-num" <%- summary.problems24 ? 'style="color:var(--bd-bad)"' : '' %>><%= summary.problems24 %></span><span class="bd-stat__more">פירוט ▾</span></a>
+  <% const hot = load.day.inUse >= Math.ceil(POOL_MAX * 0.8) || load.day.waiting > 0; %>
+  <a class="bd-stat" href="<%= tile('load') %>" aria-pressed="<%= d === 'load' %>"><span class="bd-stat__label">עומס (שיא 24 ש׳)</span><span class="bd-stat__value bd-num" <%- hot ? 'style="color:var(--bd-bad)"' : '' %>><%= load.day.inUse %>/<%= POOL_MAX %></span><span class="bd-stat__more">פירוט ▾</span></a>
 </div>
 <% if (detail) { %>
 <section class="bd-card bd-mb bd-admin-detail" id="detail">
-  <div class="bd-card__head"><h2 class="bd-section-title"><%= { shluchim: 'שלוחים — פירוט', contacts: 'מקורבים — פירוט', sms: 'SMS החודש — פירוט', problems: 'תקלות — פירוט' }[d] %></h2><a class="bd-link-btn" href="/admin">סגירה ✕</a></div>
+  <div class="bd-card__head"><h2 class="bd-section-title"><%= { shluchim: 'שלוחים — פירוט', contacts: 'מקורבים — פירוט', sms: 'SMS החודש — פירוט', problems: 'תקלות — פירוט', load: 'עומס — חיבורים בו-זמנית' }[d] %></h2><a class="bd-link-btn" href="/admin">סגירה ✕</a></div>
   <% if (d === 'shluchim') { %>
     <div class="bd-minis">
       <span><b class="bd-num"><%= detail.t.total %></b> סה״כ</span><span><b class="bd-num"><%= detail.t.active %></b> פעילים</span><span><b class="bd-num"><%= detail.t.inactive %></b> מושבתים</span>
@@ -52,6 +54,35 @@
       <% detail.rows.forEach(r => { const st = quotaStatus(r); %><tr><td><a href="/admin/shluchim/<%= r.id %>"><%= r.name %></a></td><td class="bd-num"><%= r.month_units %></td><td class="bd-num"><%= st.quota %></td><td class="bd-num"><%= st.used %></td>
         <td class="bd-num" <%- st.low ? 'style="color:var(--bd-bad);font-weight:600"' : '' %>><%= st.left %></td><td><%= [r.sms_weekly && 'שבועי', r.sms_daily && 'יומי'].filter(Boolean).join(' + ') || '—' %></td></tr><% }) %>
     </tbody></table></div>
+  <% } else if (d === 'load') { const L = detail; const pc = (n) => Math.round(n / POOL_MAX * 100); %>
+    <p class="bd-help bd-mb">למסד הנתונים יש <b class="bd-num"><%= POOL_MAX %></b> חיבורים, משותפים לשלוחים ולהדגמה (ההדגמה מוגבלת ל-<span class="bd-num"><%= L.now.demoMax || 3 %></span> בו-זמנית, עם תור של עד 8 שניות). כשכל החיבורים תפוסים בקשות ממתינות — והאתר מאט.</p>
+    <div class="bd-minis">
+      <span>עכשיו: <b class="bd-num"><%= L.now.inUse %>/<%= POOL_MAX %></b> חיבורים<% if (L.now.waiting) { %> · <b class="bd-num" style="color:var(--bd-bad)"><%= L.now.waiting %></b> ממתינים<% } %></span>
+      <span>הדגמה עכשיו: <b class="bd-num"><%= L.now.demoActive %></b> פעילות · <b class="bd-num"><%= L.now.demoQueue %></b> בתור</span>
+      <span>שיא בשעה האחרונה: <b class="bd-num"><%= L.hour.inUse %>/<%= POOL_MAX %></b></span>
+      <span>שיא ב-24 שעות: <b class="bd-num" <%- pc(L.day.inUse) >= 80 ? 'style="color:var(--bd-bad)"' : '' %>><%= L.day.inUse %>/<%= POOL_MAX %></b> (<span class="bd-num"><%= pc(L.day.inUse) %>%</span>)</span>
+      <span>ממתינים לחיבור (שיא 24 ש׳): <b class="bd-num"><%= L.day.waiting %></b></span>
+      <span>נדחו בהדגמה ("עומס") ב-24 ש׳: <b class="bd-num"><%= L.day.rejects %></b></span>
+    </div>
+    <p class="bd-label bd-mt">שיא חיבורים לפי שעה (24 השעות האחרונות)</p>
+    <div class="bd-load-bars" aria-label="שיא חיבורים בו-זמנית לפי שעה">
+      <% L.hours.forEach(h => { const lvl = pc(h.inUse) >= 80 ? 'bad' : pc(h.inUse) >= 60 ? 'warn' : ''; %><div title="עד <%= new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' }).format(h.end) %>: שיא <%= h.inUse %>/<%= POOL_MAX %><%= h.rejects ? ' · ' + h.rejects + ' נדחו בהדגמה' : '' %>"><i class="<%= lvl %>" style="height:<%= Math.max(2, Math.round(h.inUse / POOL_MAX * 80)) %>px"></i><small class="bd-num"><%= new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hourCycle: 'h23' }).format(h.end) %></small></div><% }) %>
+    </div>
+    <p class="bd-help">הנתונים נאספים מאז הפעלת השרת האחרונה (<span class="bd-num" dir="ltr"><%= fmtTime(L.startedAt) %></span>) ומתאפסים בכל עדכון גרסה. התראות שנשלחו נשמרות גם ביומן הפעולות.</p>
+    <% if (L.alerts.length) { %>
+      <p class="bd-label bd-mt">התראות אחרונות</p>
+      <ul class="bd-items"><% L.alerts.forEach(a => { %><li class="bd-item"><div class="bd-item__main"><div class="bd-item__title bd-small"><%= a.text %></div><div class="bd-item__sub"><bdi class="bd-num" dir="ltr"><%= fmtTime(a.at) %></bdi> · <%= a.sent ? 'נשלח ב-SMS' : 'לא נשלח: ' + a.error %></div></div></li><% }) %></ul>
+    <% } %>
+    <p class="bd-label bd-mt">🔔 התראת SMS למנהל</p>
+    <form method="post" action="/admin/alerts" class="bd-inline">
+      <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right;flex:0 1 180px" value="<%= L.settings.phone %>" placeholder="נייד המנהל" aria-label="נייד להתראות">
+      <label class="bd-small">התראה מ-<select class="bd-input" name="pct" style="flex:0 0 auto">
+        <% [60, 70, 80, 90].forEach(p => { %><option value="<%= p %>" <%= L.settings.pct === p ? 'selected' : '' %>><%= p %>% (<%= Math.ceil(POOL_MAX * p / 100) %>/<%= POOL_MAX %>)</option><% }) %>
+      </select></label>
+      <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
+    </form>
+    <form method="post" action="/admin/alerts/test" class="bd-mt"><button class="bd-btn bd-btn--ghost bd-btn--sm" <%= L.settings.phone ? '' : 'disabled' %>>שליחת התראת ניסיון</button></form>
+    <p class="bd-help bd-mt">SMS נשלח כשהחיבורים בו-זמנית מגיעים לסף, כשיש בקשות שממתינות לחיבור, או כש-5 כניסות להדגמה נדחו תוך 10 דקות — לכל היותר הודעה אחת בשעה. ההודעות על חשבון המערכת.</p>
   <% } else { %>
     <div class="bd-minis"><span><b class="bd-num"><%= summary.problems24 %></b> ב-24 שעות</span><span><b class="bd-num"><%= detail.w.errors7 %></b> שגיאות שרת ב-7 ימים</span><span><b class="bd-num"><%= detail.w.fails7 %></b> כשלים/חסימות ב-7 ימים</span></div>
     <% if (!detail.groups.length) { %><p class="bd-help">👍 אין תקלות ב-24 השעות האחרונות.</p><% } else { %>
