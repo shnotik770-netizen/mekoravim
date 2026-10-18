@@ -50,7 +50,9 @@
           <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: '🔔 תזכורת מיוחדת בסמס' }) %>
           <div class="bd-actions">
             <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/split" data-confirm="להעביר את <%= f.first_name %> לכרטיס מקורב נפרד? התאריכים, התזכורת וסימוני &quot;יצרתי קשר&quot; יעברו איתו."><button class="bd-link-btn bd-link-btn--accent">הפרדה לכרטיס נפרד</button></form>
-            <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?"><button class="bd-link-btn">מחיקה</button></form>
+            <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?
+
+⚠️ המחיקה בלתי הפיכה — לא ניתן לשחזר."><button class="bd-link-btn">מחיקה</button></form>
           </div>
         </div>
       </li>
@@ -71,7 +73,7 @@
 
   <section class="bd-card" id="edit">
     <details <%= error ? 'open' : '' %>>
-      <summary class="bd-btn bd-btn--ghost">✏️ עריכת פרטים</summary>
+      <summary class="bd-btn bd-btn--ghost">✏️ עריכת פרטים ומחיקה</summary>
       <form method="post" action="<%= base %>/contacts/<%= c.id %>">
         <div class="bd-row2">
           <div class="bd-field"><label class="bd-label" for="e-fn">שם פרטי</label><input class="bd-input" id="e-fn" name="first_name" value="<%= values.first_name %>" maxlength="60"></div>
@@ -84,16 +86,37 @@
         <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea><span class="bd-help">⚠️ לא לרשום כאן מידע רפואי או רגיש.</span></div>
         <button class="bd-btn bd-btn--primary">שמירה</button>
       </form>
+      <div class="bd-delete-zone">
+        <p class="bd-help">מחיקה לצמיתות של <%= [c.first_name, c.last_name].filter(Boolean).join(' ') %><%= family.length ? ' וכל בני המשפחה (' + family.length + ')' : '' %>, כולל היסטוריית הקשר. לא ניתן לשחזר.</p>
+        <form method="post" action="<%= base %>/contacts/<%= c.id %>/delete" data-confirm="למחוק את <%= c.first_name %> <%= c.last_name %> וכל בני משפחתו?
+
+⚠️ המחיקה בלתי הפיכה — לא ניתן לשחזר את הפרטים, בני המשפחה והיסטוריית הקשר.">
+          <button class="bd-btn bd-btn--danger bd-btn--sm">🗑 מחיקת המקורב</button>
+        </form>
+      </div>
     </details>
-    <form method="post" action="<%= base %>/contacts/<%= c.id %>/delete" data-confirm="למחוק את <%= c.first_name %> <%= c.last_name %> וכל בני משפחתו? לא ניתן לשחזר." class="bd-mt">
-      <button class="bd-link-btn">מחיקת מקורב</button>
-    </form>
   </section>
 </div>
 
 <aside class="bd-card" id="log">
   <h2 class="bd-section-title">יצירת קשר</h2>
-  <form method="post" action="<%= base %>/contacts/<%= c.id %>/log" class="bd-stack">
+  <% if (!log.length) { %><p class="bd-help">עדיין לא נרשמה יצירת קשר.</p><% } %>
+  <% if (log.length) { %>
+  <div class="bd-chat" data-chat>
+  <% log.slice().reverse().forEach(l => { %>
+    <div class="bd-bubble">
+      <% if (l.member_name) { %><div class="bd-bubble__who">🎂 יום הולדת של <%= l.member_name %></div><% } %>
+      <div class="bd-bubble__text"><%= l.note || '✓ נוצר קשר' %></div>
+      <div class="bd-bubble__meta"><span class="bd-num" dir="ltr"><%= fmtTime(l.created_at) %></span>
+        <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?
+
+⚠️ המחיקה בלתי הפיכה."><button class="bd-bubble__del" aria-label="מחיקת הרישום" title="מחיקה">🗑</button></form>
+      </div>
+    </div>
+  <% }) %>
+  </div>
+  <% } %>
+  <form method="post" action="<%= base %>/contacts/<%= c.id %>/log" class="bd-stack bd-mt">
     <% if (family.length) { %>
     <select class="bd-input" name="family_member_id" aria-label="עם מי">
       <option value="">עם <%= c.first_name %></option>
@@ -103,19 +126,6 @@
     <input class="bd-input" name="note" placeholder="הערה (לא חובה)" maxlength="500" aria-label="הערה">
     <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)"><%- include('partials/icons', { name: 'check' }) %>יצרתי קשר</button>
   </form>
-  <% if (!log.length) { %><p class="bd-help bd-mt">עדיין לא נרשמה יצירת קשר.</p><% } %>
-  <ul class="bd-items bd-mt">
-  <% log.forEach(l => { %>
-    <li class="bd-item">
-      <div class="bd-item__main">
-        <div class="bd-item__title bd-num" style="font-weight:500"><%= fmtTime(l.created_at) %></div>
-        <% if (l.member_name) { %><div class="bd-item__sub">יום הולדת של <%= l.member_name %></div><% } %>
-        <% if (l.note) { %><div class="bd-item__sub"><%= l.note %></div><% } %>
-      </div>
-      <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?"><button class="bd-link-btn">מחיקה</button></form>
-    </li>
-  <% }) %>
-  </ul>
 </aside>
 </div>
 <%- include('partials/foot') %>

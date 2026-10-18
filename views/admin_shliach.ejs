@@ -167,7 +167,9 @@
   </details>
   <details class="bd-card bd-danger bd-fold" id="danger" open data-fold><summary class="bd-section-title">סגירת חשבון</summary>
     <p class="bd-help bd-mb">מוחק לצמיתות את השליח ואת כל המקורבים, בני המשפחה, הקישורים והיסטוריית הקשר שלו. כדאי שהשליח ייצא קודם את הרשימה (הגדרות ← ייצוא).</p>
-    <form method="post" action="/admin/shluchim/<%= s.id %>/delete" class="bd-inline" data-confirm="למחוק לצמיתות את החשבון של <%= s.name %> וכל המידע שבו?">
+    <form method="post" action="/admin/shluchim/<%= s.id %>/delete" class="bd-inline" data-confirm="למחוק לצמיתות את החשבון של <%= s.name %> וכל המידע שבו?
+
+⚠️ המחיקה בלתי הפיכה — לא ניתן לשחזר.">
       <input class="bd-input" name="confirm" placeholder='הקלידו "מחיקה"' aria-label="אישור מחיקה" style="flex:0 0 140px">
       <button class="bd-btn bd-btn--sm bd-btn--danger">מחיקת החשבון</button>
     </form>

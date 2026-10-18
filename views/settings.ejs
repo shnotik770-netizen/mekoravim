@@ -19,7 +19,9 @@
               </div>
               <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
             </form>
-            <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.">
+            <form method="post" data-confirm="למחוק את הסיווג &quot;<%= c.name %>&quot;? המקורבים יישארו ללא סיווג.
+
+⚠️ המחיקה בלתי הפיכה.">
               <input type="hidden" name="action" value="cat_delete"><input type="hidden" name="id" value="<%= c.id %>">
               <button class="bd-link-btn bd-cat__del">מחיקת הסיווג</button>
             </form>

@@ -480,3 +480,6 @@ document.querySelectorAll('form[data-once]').forEach((f) => f.addEventListener('
   setTimeout(() => { delete f.dataset.sent; }, 8000);
 }));
 window.addEventListener('pageshow', () => document.querySelectorAll('form[data-once]').forEach((f) => { delete f.dataset.sent; }));
+
+// בועות יצירת קשר — גלילה להודעה האחרונה
+document.querySelectorAll('[data-chat]').forEach((el) => { el.scrollTop = el.scrollHeight; });
