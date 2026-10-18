@@ -10,7 +10,7 @@ body { margin: 0; background: var(--bd-bg); color: var(--bd-fg); }
 .bd a:not([class]):hover { text-decoration: underline; }
 .bd a[class] { text-decoration: none; }
 .bd .bd-seg a { all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; min-height: 36px; padding: 0 var(--bd-sp-4); border-radius: var(--bd-r-pill); font-size: var(--bd-fs-sm); color: var(--bd-fg-muted); display: inline-flex; align-items: center; }
-.bd .bd-seg a[aria-selected="true"] { background: var(--bd-surface); color: var(--bd-fg); font-weight: var(--bd-fw-medium); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
+.bd .bd-seg a[aria-selected="true"], .bd .bd-seg a[aria-current="page"] { background: var(--bd-surface); color: var(--bd-fg); font-weight: var(--bd-fw-medium); box-shadow: 0 1px 3px rgb(0 0 0 / .08); }
 .bd .bd-seg a:focus-visible { outline: 2px solid var(--bd-accent); }
 .bd .bd-row__name a, .bd .bd-mini__name a { color: inherit; }
 .bd .bd-row__name a:hover, .bd .bd-mini__name a:hover { text-decoration: underline; }
@@ -523,3 +523,4 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-fold > summary:focus-visible { outline: 2px solid var(--bd-accent, currentColor); outline-offset: 2px; border-radius: 4px; }
 .bd-grid2 > .bd-fold { align-self: start; }
 .bd-fold--plain { padding: 0; }
+.bd-nav-badge { display: inline-block; min-width: 1.4em; padding: 0 .4em; border-radius: 999px; background: var(--bd-bad); color: #fff; font-size: .75em; line-height: 1.5; text-align: center; vertical-align: middle; }

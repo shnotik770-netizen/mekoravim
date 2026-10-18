@@ -7,7 +7,7 @@
 %>
 <header class="bd-appbar">
   <a class="bd-brand" href="/admin"><%- include('partials/logo') %>ניהול שלוחים</a>
-  <nav class="bd-nav"><a href="/admin">שלוחים</a><a href="/admin/log">יומן פעולות</a><a href="/">🏠 דף הבית</a></nav>
+  <%- include('partials/admin_nav', { cur: '' }) %>
 </header>
 <div class="bd-pagehead">
   <div>
@@ -28,17 +28,27 @@
 <details class="bd-card bd-mb bd-admin-actions bd-fold" id="actions" open data-fold><summary class="bd-section-title">פעולות ופרטי השליח</summary>
   <div class="bd-actions-grid">
     <div class="bd-action-box">
-      <b>📱 נייד (כניסה ותזכורות SMS)</b>
-      <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %></p>
+      <b>👤 פרטי השליח</b>
+      <p class="bd-small"><%= displayName(s) %><%= s.chabad_house ? ' · ' + s.chabad_house : '' %></p>
+      <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %> <span class="bd-help" dir="rtl">(כניסה ותזכורות SMS)</span></p>
         <div class="bd-inline">
           <a class="bd-btn bd-btn--soft bd-btn--sm" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener">💬 וואטסאפ</a>
           <a class="bd-btn bd-btn--ghost bd-btn--sm" href="tel:+<%= phoneIntl(s.phone) %>">📞 חיוג</a>
         </div>
       <% } else { %><p class="bd-err">אין נייד לשליח</p><% } %>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/phone" class="bd-inline bd-mt">
-        <input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" placeholder="נייד השליח" required aria-label="נייד השליח">
-        <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון</button>
-      </form>
+      <details class="bd-mt">
+        <summary class="bd-link-btn bd-link-btn--accent">✏️ עריכת פרטים</summary>
+        <form method="post" action="/admin/shluchim/<%= s.id %>/details" class="bd-stack">
+          <label class="bd-small">שם<input class="bd-input" name="name" value="<%= s.name %>" maxlength="80" required></label>
+          <label class="bd-small">פנייה (תואר)<select class="bd-input" name="address">
+            <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(s) === k ? 'selected' : '' %>><%= label %></option><% }) %>
+          </select></label>
+          <label class="bd-small">בית חב״ד<input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80"></label>
+          <label class="bd-small">נייד (כניסה ותזכורות SMS)<input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" required></label>
+          <p class="bd-help">שינוי הנייד מנתק את השליח מכל המכשירים.</p>
+          <button class="bd-btn bd-btn--primary bd-btn--sm">שמירת הפרטים</button>
+        </form>
+      </details>
     </div>
     <div class="bd-action-box">
       <b>🔗 כניסה לחשבון</b>
@@ -72,12 +82,8 @@
       </form>
     </div>
     <div class="bd-action-box">
-      <b>🏠 בית חב״ד</b>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/house" class="bd-inline">
-        <input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80" placeholder="שם בית חב״ד" aria-label="שם בית חב״ד">
-        <button class="bd-btn bd-btn--ghost bd-btn--sm">עדכון</button>
-      </form>
-      <p class="bd-mt"><a class="bd-link-btn bd-link-btn--accent" href="#records">📇 מכסת רשומות ←</a></p>
+      <b>⚙️ חשבון</b>
+      <p><a class="bd-link-btn bd-link-btn--accent" href="#records">📇 מכסת רשומות ←</a></p>
       <form method="post" action="/admin/shluchim/<%= s.id %>/toggle" class="bd-mt" data-confirm="<%= s.active ? 'להשבית את החשבון? השליח לא יוכל להיכנס והתזכורות ייעצרו.' : 'להפעיל מחדש את החשבון?' %>">
         <button class="bd-btn bd-btn--sm <%= s.active ? 'bd-btn--ghost' : 'bd-btn--primary' %>"><%= s.active ? '⏸ השבתת החשבון' : '▶ הפעלת החשבון' %></button>
       </form>

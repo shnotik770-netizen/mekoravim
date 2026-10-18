@@ -18,7 +18,7 @@ import { seedDemoAccount } from './lib/demo.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
-import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
+import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, storeReveal, takeReveal } from './lib/security.js';
 import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, phoneIntl, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -118,6 +118,38 @@ app.get('/terms', (req, res) => res.render('terms'));
 app.get('/info', (req, res) => res.render('info'));
 app.get('/privacy', (req, res) => res.render('privacy'));
 
+/* ------------------------- טופס יצירת קשר (בקשות פרטיות ושאלות) ------------------------- */
+const CONTACT_KINDS = { view: 'עיון במידע שנשמר עליי', fix: 'תיקון הפרטים שלי', delete: 'מחיקת הפרטים שלי', other: 'שאלה / אחר' };
+// ?r=<טוקן קישור רישום> — מקשר את הפנייה לשליח שאצלו נרשמו
+async function contactLink(token) {
+  if (!token) return null;
+  const { rows } = await q(`SELECT l.token, s.id AS shliach_id, s.name AS shliach_name, s.chabad_house
+    FROM reg_links l JOIN shluchim s ON s.id=l.shliach_id WHERE l.token=$1`, [String(token).slice(0, 64)]);
+  return rows[0] || null;
+}
+app.get('/contact', async (req, res) => {
+  res.locals.noApp = true;
+  res.render('contact_form', { link: await contactLink(req.query.r), CONTACT_KINDS, values: { kind: CONTACT_KINDS[req.query.k] ? req.query.k : '' }, error: null, done: false });
+});
+app.post('/contact', async (req, res) => {
+  res.locals.noApp = true;
+  const link = await contactLink(req.body.r);
+  const show = (status, extra) => res.status(status).render('contact_form', { link, CONTACT_KINDS, values: req.body, error: null, done: false, ...extra });
+  if (req.body.website) return show(200, { done: true }); // מלכודת לבוטים
+  const kind = Object.hasOwn(CONTACT_KINDS, req.body.kind) ? req.body.kind : null;
+  const name = String(req.body.name || '').trim().slice(0, 80);
+  const phone = String(req.body.phone || '').trim().slice(0, 30);
+  const message = String(req.body.message || '').trim().slice(0, 1000);
+  if (!kind) return show(400, { error: 'בחרו את סוג הפנייה' });
+  if (!name) return show(400, { error: 'יש להזין שם' });
+  if (phone.replace(/\D/g, '').length < 7) return show(400, { error: 'יש להזין מספר טלפון תקין' });
+  if (!contactByIp.take(`contact:${req.ip}`)) return show(429, { error: 'נשלחו יותר מדי פניות. נסו שוב מאוחר יותר.' });
+  await q('INSERT INTO contact_requests (shliach_id, kind, name, phone, message) VALUES ($1,$2,$3,$4,$5)',
+    [link?.shliach_id ?? null, kind, name, phone, message]);
+  audit({ shliachId: link?.shliach_id ?? null, actor: 'public', action: 'פנייה בטופס יצירת קשר', outcome: 'ok', detail: CONTACT_KINDS[kind] });
+  show(200, { done: true });
+});
+
 // ימי חודש לועזי בתאריך עברי — ללוח השנה של בחירת הטווח
 app.get('/api/hebmonth', (req, res) => {
   const y = parseInt(req.query.y, 10), m = parseInt(req.query.m, 10);
@@ -198,6 +230,14 @@ app.post('/admin/login', (req, res) => {
 });
 
 app.post('/admin/logout', (req, res) => { req.session.admin = undefined; res.redirect('/'); });
+
+// מונה פניות חדשות לתפריט המנהל
+app.use('/admin', async (req, res, next) => {
+  if (req.method === 'GET' && req.session.admin > Date.now()) {
+    res.locals.inboxNew = (await q(`SELECT count(*)::int AS n FROM contact_requests WHERE status='new'`)).rows[0].n;
+  }
+  next();
+});
 
 function requireAdmin(req, res, next) {
   if (!(req.session.admin > Date.now())) { req.session.admin = undefined; return res.redirect('/admin/login'); }
@@ -355,6 +395,21 @@ async function loadLog({ shliachId = null, problems = false, page = 1, action = 
 
 const fmtTime = (d) => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d);
 
+// פניות מטופס יצירת קשר
+app.get('/admin/inbox', requireAdmin, async (req, res) => {
+  const all = req.query.all === '1';
+  const { rows } = await q(`SELECT r.*, s.name AS shliach_name, s.phone AS shliach_phone, s.gender, s.use_title
+    FROM contact_requests r LEFT JOIN shluchim s ON s.id=r.shliach_id
+    ${all ? '' : "WHERE r.status='new'"} ORDER BY r.created_at DESC LIMIT 300`);
+  res.render('admin_inbox', { rows, all, CONTACT_KINDS, fmtTime });
+});
+app.post('/admin/inbox/:rid/status', requireAdmin, async (req, res) => {
+  const done = req.body.status === 'done';
+  await q(`UPDATE contact_requests SET status=$1, handled_at=$2 WHERE id=$3`, [done ? 'done' : 'new', done ? new Date() : null, int(req.params.rid)]);
+  flash(req, done ? 'הפנייה סומנה כטופלה' : 'הפנייה הוחזרה לפניות פתוחות');
+  res.redirect('/admin/inbox' + (req.body.all === '1' ? '?all=1' : ''));
+});
+
 app.get('/admin/log', requireAdmin, async (req, res) => {
   const page = Math.max(1, int(req.query.page) || 1);
   const shliachId = int(req.query.s), problems = req.query.o === 'problems';
@@ -374,7 +429,7 @@ app.get('/admin/shluchim/go', requireAdmin, (req, res) => res.redirect(int(req.q
 
 app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
   const id = int(req.params.id);
-  const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, phone, sms_weekly, sms_daily,
+  const { rows } = await q(`SELECT id, name, chabad_house, slug, active, created_at, phone, gender, use_title, sms_weekly, sms_daily,
                               sms_quota, sms_used_birthdays, sms_alert_threshold, sms_last_error,
                               access_code_hash IS NOT NULL AS has_code FROM shluchim WHERE id=$1`, [id]);
   if (!rows[0]) return res.status(404).render('error', { message: 'השליח לא נמצא' });
@@ -553,19 +608,20 @@ app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
   res.redirect(`/admin/shluchim/${int(req.params.id)}`);
 });
 
-app.post('/admin/shluchim/:id/house', requireAdmin, async (req, res) => {
-  await q('UPDATE shluchim SET chabad_house=$1 WHERE id=$2', [String(req.body.chabad_house || '').trim().slice(0, 80), int(req.params.id)]);
-  flash(req, 'שם בית חב״ד עודכן');
-  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
-});
-
-app.post('/admin/shluchim/:id/phone', requireAdmin, async (req, res) => {
+// עריכת פרטי השליח: שם, פנייה (תואר), בית חב״ד, נייד
+app.post('/admin/shluchim/:id/details', requireAdmin, async (req, res) => {
+  const id = int(req.params.id), back = `/admin/shluchim/${id}`;
+  const name = String(req.body.name || '').trim().slice(0, 80);
   const phone = normalizePhone(req.body.phone);
-  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
+  if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect(back); }
+  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect(back); }
+  const addr = parseAddress(req.body.address);
   // שינוי נייד = שינוי היעד של קודי הכניסה — מנתקים סשנים קיימים
-  await q(`UPDATE shluchim SET phone=$1, sms_phone=$1, session_version=session_version+1 WHERE id=$2`, [phone, int(req.params.id)]);
-  flash(req, 'הטלפון עודכן');
-  res.redirect(`/admin/shluchim/${int(req.params.id)}`);
+  const { rows: [r] } = await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, sms_phone=$3, gender=$4, use_title=$5,
+      session_version=session_version + (CASE WHEN phone IS DISTINCT FROM $3 THEN 1 ELSE 0 END)
+    WHERE id=$6 RETURNING id`, [name, String(req.body.chabad_house || '').trim().slice(0, 80), phone, addr.gender, addr.use_title, id]);
+  if (r) flash(req, 'פרטי השליח עודכנו');
+  res.redirect(back);
 });
 
 app.post('/admin/shluchim/:id/toggle', requireAdmin, async (req, res) => {

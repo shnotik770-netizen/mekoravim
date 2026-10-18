@@ -1,0 +1,40 @@
+<%- include('partials/head', { title: 'פניות' }) %>
+<header class="bd-appbar">
+  <a class="bd-brand" href="/admin"><%- include('partials/logo') %>ניהול שלוחים</a>
+  <%- include('partials/admin_nav', { cur: 'inbox' }) %>
+</header>
+<div class="bd-pagehead">
+  <div>
+    <h1 class="bd-title">פניות</h1>
+    <p class="bd-sub">פניות מטופס "יצירת קשר" — בקשות עיון, תיקון ומחיקה של מידע, ושאלות. יש לטפל תוך 30 יום.</p>
+  </div>
+  <nav class="bd-seg" aria-label="סינון"><a href="/admin/inbox" <%- all ? '' : 'aria-current="page"' %>>פתוחות</a><a href="/admin/inbox?all=1" <%- all ? 'aria-current="page"' : '' %>>הכול</a></nav>
+</div>
+<% if (!rows.length) { %><section class="bd-card"><p class="bd-help"><%= all ? 'עדיין לא התקבלו פניות.' : 'אין פניות פתוחות ✓' %></p></section><% } %>
+<div class="bd-stack">
+<% rows.forEach(r => {
+  const kind = CONTACT_KINDS[r.kind] || r.kind;
+  const fwd = r.shliach_phone ? 'https://wa.me/' + phoneIntl(r.shliach_phone) + '?text=' + encodeURIComponent(`שלום ${displayName({ name: r.shliach_name, gender: r.gender, use_title: r.use_title })}, התקבלה פנייה דרך "זכרתי התקשרתי":\nנושא: ${kind}\nמאת: ${r.name}, ${r.phone}${r.message ? '\nפרטים: ' + r.message : ''}\nנא לטפל ולעדכן אותי. תודה!`) : null;
+%>
+  <article class="bd-card">
+    <div class="bd-inline" style="justify-content:space-between;align-items:flex-start">
+      <div>
+        <p><span class="bd-status <%= r.kind === 'delete' ? 'bd-status--bad' : 'bd-status--accent' %>"><span><%= kind %></span></span>
+          <% if (r.status === 'done') { %><span class="bd-status"><span>✓ טופל</span></span><% } %></p>
+        <p class="bd-mt"><b><%= r.name %></b> · <a href="https://wa.me/<%= phoneIntl(r.phone) %>" target="_blank" rel="noopener" dir="ltr" class="bd-num"><%= r.phone %></a></p>
+        <p class="bd-small bd-mt">שליח: <%= r.shliach_name ? r.shliach_name : 'לא צוין (פנייה כללית)' %> · <span class="bd-num" dir="ltr"><%= fmtTime(r.created_at) %></span></p>
+      </div>
+    </div>
+    <% if (r.message) { %><p class="bd-mt" style="white-space:pre-wrap"><%= r.message %></p><% } %>
+    <div class="bd-inline bd-mt">
+      <% if (fwd) { %><a class="bd-btn bd-btn--soft bd-btn--sm" href="<%= fwd %>" target="_blank" rel="noopener">💬 העברה לשליח</a><% } %>
+      <a class="bd-btn bd-btn--ghost bd-btn--sm" href="https://wa.me/<%= phoneIntl(r.phone) %>" target="_blank" rel="noopener">💬 מענה לפונה</a>
+      <form method="post" action="/admin/inbox/<%= r.id %>/status">
+        <input type="hidden" name="status" value="<%= r.status === 'done' ? 'new' : 'done' %>"><% if (all) { %><input type="hidden" name="all" value="1"><% } %>
+        <button class="bd-btn bd-btn--sm <%= r.status === 'done' ? 'bd-btn--ghost' : 'bd-btn--primary' %>"><%= r.status === 'done' ? 'החזרה לפתוחות' : '✓ סימון כטופל' %></button>
+      </form>
+    </div>
+  </article>
+<% }) %>
+</div>
+<%- include('partials/foot') %>

@@ -1,7 +1,7 @@
 <%- include('partials/head', { title: 'ניהול שלוחים' }) %>
 <header class="bd-appbar">
   <span class="bd-brand"><%- include('partials/logo') %>ניהול שלוחים</span>
-  <nav class="bd-nav"><a href="/admin" aria-current="page">שלוחים</a><a href="/admin/log">יומן פעולות</a><a href="/">🏠 דף הבית</a><button type="button" class="bd-install" data-install hidden>📲 שמירה כאפליקציה</button><form method="post" action="/admin/logout"><button class="bd-link-btn bd-link-btn--accent" style="padding:0 12px">יציאה</button></form></nav>
+  <%- include('partials/admin_nav', { cur: 'list' }) %>
   <a class="bd-btn bd-btn--primary bd-btn--sm bd-add-shliach" href="#new-shliach" data-focus="#sn">＋ שליח חדש</a>
 </header>
 <% if (shluchim.length) { %>

@@ -1,0 +1,28 @@
+<%- include('partials/head', { title: 'יצירת קשר — זכרתי התקשרתי', narrow: true }) %>
+<section class="bd-card">
+  <div class="bd-center"><%- include('partials/logo', { big: true }) %></div>
+  <% if (done) { %>
+    <h1 class="bd-title bd-center">הפנייה התקבלה ✓</h1>
+    <p class="bd-sub bd-center bd-mt">תודה! נטפל בפנייה ונחזור אליך בהקדם (ולכל המאוחר תוך 30 יום).</p>
+    <p class="bd-center bd-mt"><a class="bd-btn bd-btn--ghost" href="/">לדף הבית</a></p>
+  <% } else { %>
+    <h1 class="bd-title bd-center">יצירת קשר</h1>
+    <p class="bd-sub bd-center bd-mb">בקשה לעיין במידע שנשמר עליך, לתקן אותו או למחוק אותו — או כל שאלה אחרת.<% if (link) { %> הפנייה תטופל מול <b><%= link.shliach_name %></b><%= link.chabad_house ? ' (' + link.chabad_house + ')' : '' %>.<% } %></p>
+    <% if (error) { %><div class="bd-msg bd-msg--err bd-mb" role="alert"><%= error %></div><% } %>
+    <form method="post" action="/contact" data-once>
+      <% if (link) { %><input type="hidden" name="r" value="<%= link.token %>"><% } %>
+      <div class="bd-field"><label class="bd-label" for="ck">סוג הפנייה<span class="req">*</span></label>
+        <select class="bd-input" id="ck" name="kind" required>
+          <option value="">בחירה…</option>
+          <% Object.entries(CONTACT_KINDS).forEach(([k, l]) => { %><option value="<%= k %>" <%= values.kind === k ? 'selected' : '' %>><%= l %></option><% }) %>
+        </select></div>
+      <div class="bd-field"><label class="bd-label" for="cn">שם מלא<span class="req">*</span></label><input class="bd-input" id="cn" name="name" required maxlength="80" autocomplete="name" value="<%= values.name || '' %>"></div>
+      <div class="bd-field"><label class="bd-label" for="cp">טלפון<span class="req">*</span></label><input class="bd-input" id="cp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" required maxlength="30" autocomplete="tel" value="<%= values.phone || '' %>"><span class="bd-help">המספר שאיתו נרשמת — כדי שנוכל לאתר את הפרטים ולחזור אליך.</span></div>
+      <div class="bd-field"><label class="bd-label" for="cm">פרטים <span class="opt">(לא חובה)</span></label><textarea class="bd-input" id="cm" name="message" rows="4" maxlength="1000" placeholder="למשל: מה לתקן, או את מי מבני המשפחה למחוק"><%= values.message || '' %></textarea></div>
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="bd-btn bd-btn--primary bd-btn--block">שליחת הפנייה</button>
+    </form>
+    <p class="bd-help bd-center bd-mt">הפרטים בטופס משמשים רק לטיפול בפנייה. <a href="/privacy">מדיניות הפרטיות</a></p>
+  <% } %>
+</section>
+<%- include('partials/foot') %>
