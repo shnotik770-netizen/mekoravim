@@ -11,7 +11,7 @@ import {
   hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
 } from './lib/dates.js';
 
-import { loadPeople, collectEvents } from './lib/events.js';
+import { loadPeople, collectEvents, collectEvents as collectAll } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
 import { noteDemo, noteDemoReject, report as loadReport, alertSettings, saveAlertSettings, sendTestAlert, POOL_MAX } from './lib/monitor.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
@@ -926,6 +926,11 @@ router.get('/', async (req, res) => {
   const cat = int(req.query.cat);
   const view = req.query.view === '30' ? 'range' : VIEWS.includes(req.query.view) ? req.query.view : 'week';
   const people = await loadPeople(s.id);
+  // סינון לפי סוג: הכל / ימי הולדת / יארצייט (חל על כל הדשבורד — הריבועים, הרשימות וההתראות)
+  const hasYz = people.family.some((f) => f.kind === 'yahrzeit');
+  const type = hasYz && ['bday', 'yz'].includes(req.query.type) ? req.query.type : '';
+  const keep = type === 'yz' ? (e) => e.yahrzeit : type === 'bday' ? (e) => !e.yahrzeit : () => true;
+  const collectEvents = (p, a, b) => collectAll(p, a, b).filter(keep);
   const today = todayIL();
   const w = weekRange(today), m = hebMonthRange(today), r = pickRange(view === 'range' ? req.query : {}, today);
   const from = new Date(Math.min(w.start, m.start, addDays(today, -14)));
@@ -956,10 +961,10 @@ router.get('/', async (req, res) => {
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
     lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, range: r, missed: mr, MISSED_DAYS, maxRange: MAX_RANGE_DAYS,
-    total: people.contacts.length, familyTotal: people.family.length,
+    total: people.contacts.length, familyTotal: people.family.length, hasYz, type,
     qs: (o) => {
       const keep = !o.view || o.view === view ? viewQ : {};
-      const p = new URLSearchParams({ view, ...keep, ...(cat ? { cat } : {}), ...o });
+      const p = new URLSearchParams({ view, ...keep, ...(cat ? { cat } : {}), ...(type ? { type } : {}), ...o });
       if ('days' in o) { p.delete('from'); p.delete('to'); }
       for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k);
       return `?${p}`;

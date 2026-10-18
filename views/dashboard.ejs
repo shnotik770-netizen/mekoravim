@@ -70,6 +70,13 @@
     <%- include('partials/icons', { name: 'search' }) %>
     <input class="bd-input" type="search" name="q" placeholder="חיפוש מקורב לפי שם או טלפון…" autocomplete="off" aria-label="חיפוש מקורב">
   </form>
+  <% if (hasYz) { %>
+  <div class="bd-chips bd-chips--type" role="group" aria-label="סינון לפי סוג">
+    <a class="bd-chip" href="<%= qs({ type: '' }) %>" aria-pressed="<%= !type %>">הכל</a>
+    <a class="bd-chip" href="<%= qs({ type: type === 'bday' ? '' : 'bday' }) %>" aria-pressed="<%= type === 'bday' %>">🎂 ימי הולדת</a>
+    <a class="bd-chip" href="<%= qs({ type: type === 'yz' ? '' : 'yz' }) %>" aria-pressed="<%= type === 'yz' %>">🕯️ יארצייט</a>
+  </div>
+  <% } %>
   <% if (categories.length) { %>
   <div class="bd-chips" role="group" aria-label="סינון לפי סיווג">
     <a class="bd-chip" href="<%= qs({ cat: '' }) %>" aria-pressed="<%= !cat %>">הכל</a>
@@ -102,7 +109,7 @@
     </div>
     <ul class="bd-list">
       <% if (!list.length) { %>
-        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
+        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : type === 'yz' ? 'אין יארצייט בטווח הזה' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
       <% } %>
       <% list.forEach(e => { %><%- include('partials/event_row', { e, back }) %><% }) %>
     </ul>
@@ -152,6 +159,7 @@
   <form method="get" class="bd-range__form" data-range-form data-today="<%= toISO(today) %>" data-max="<%= maxRange %>">
     <input type="hidden" name="view" value="<%= view === 'missed' ? 'missed' : 'range' %>">
     <% if (cat) { %><input type="hidden" name="cat" value="<%= cat %>"><% } %>
+    <% if (type) { %><input type="hidden" name="type" value="<%= type %>"><% } %>
     <div class="bd-range__head">
       <h2 class="bd-range__title" id="bd-range-title">בחירת טווח תאריכים</h2>
       <button type="button" class="bd-range__x" data-range-close aria-label="סגירה">✕</button>
