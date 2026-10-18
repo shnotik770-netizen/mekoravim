@@ -55,6 +55,16 @@
         <label class="bd-check"><input type="checkbox" name="sms_weekly" <%= shliach.sms_weekly ? 'checked' : '' %>> <span><b>שבועי</b> — ביום ראשון: כל ימי ההולדת של השבוע</span></label>
         <label class="bd-check bd-mt"><input type="checkbox" name="sms_daily" <%= shliach.sms_daily ? 'checked' : '' %>> <span><b>יומי</b> — כל בוקר: ימי ההולדת של היום (רק בימים שיש)</span></label>
       </fieldset>
+      <div class="bd-field bd-mt"><label class="bd-label" for="yz-days">🕯️ תזכורת ליארצייט <span class="opt">(ברירת מחדל ליארצייט חדש)</span></label>
+        <select class="bd-input" id="yz-days" name="yahrzeit_remind_days" style="max-width:260px">
+          <% const yd = shliach.yahrzeit_remind_days; %>
+          <option value="" <%= yd === null || yd === undefined ? 'selected' : '' %>>בלי תזכורת</option>
+          <option value="0" <%= yd === 0 ? 'selected' : '' %>>ביום עצמו</option>
+          <option value="1" <%= yd === 1 ? 'selected' : '' %>>יום לפני</option>
+          <% [2, 3, 4, 5, 6, 7, 10, 14, 21, 30].forEach(d => { %><option value="<%= d %>" <%= yd === d ? 'selected' : '' %>><%= { 7: 'שבוע', 14: 'שבועיים', 21: '3 שבועות', 30: 'חודש' }[d] || d + ' ימים' %> לפני</option><% }) %>
+        </select>
+        <label class="bd-check bd-small bd-mt"><input type="checkbox" name="yz_apply_all"> להחיל גם על כל היארצייטים שכבר רשומים</label>
+        <span class="bd-help">SMS לנייד שלכם לפני כל יארצייט (בנוסף לתזכורת השבועית/היומית). אפשר לשנות לכל יארצייט בכרטיס המקורב. יורד ממכסת ה-SMS לתזכורות.</span></div>
       <button class="bd-btn bd-btn--primary bd-mt">שמירה</button>
     </form>
     <% const dmy = (d) => d.split('-').reverse().join('.'); %>

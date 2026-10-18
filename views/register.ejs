@@ -1,12 +1,20 @@
 <%- include('partials/head', internal
   ? { title: 'מקורב חדש', nav: true, active: 'new' }
   : { title: 'רישום — ' + link.shliach_name, narrow: true }) %>
+<%
+  // מה נשאל בטופס: ימי הולדת / יארצייט / גם וגם (הגדרת קישור הרישום; בהוספה ידנית — הכול)
+  const mode = internal ? 'both' : (link.date_kinds || 'birthday');
+  const yzList = typeof yahrzeits !== 'undefined' && yahrzeits.length ? yahrzeits : (mode === 'yahrzeit' ? [{ date_type: 'h' }] : []);
+  const defaultIntro = { birthday: 'נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!',
+    yahrzeit: 'נשמח לדעת את תאריכי היארצייט של יקיריך — כדי להזכיר לך ולעזור בקדיש, עלייה לתורה ולימוד לעילוי נשמתם.',
+    both: 'נשמח לדעת מתי יום ההולדת שלך ושל בני המשפחה, ואת תאריכי היארצייט של יקיריך.' }[mode];
+%>
 <% if (!internal) { %>
 <div class="bd-center bd-mb" style="margin-bottom:24px">
   <%- include('partials/logo', { big: true }) %>
   <h1 class="bd-title"><%= link.form_title || link.shliach_name %></h1>
   <% if (link.chabad_house) { %><p class="bd-reg-house"><%= link.form_title ? link.shliach_name + ' · ' : '' %><%= link.chabad_house %></p><% } else if (link.form_title) { %><p class="bd-reg-house"><%= link.shliach_name %></p><% } %>
-  <p class="bd-sub" style="font-size:var(--bd-fs-md)"><%= link.form_intro || 'נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!' %></p>
+  <p class="bd-sub" style="font-size:var(--bd-fs-md)"><%= link.form_intro || defaultIntro %></p>
 </div>
 <% } else { %>
 <div class="bd-pagehead"><h1 class="bd-title">הוספת מקורב</h1></div>
@@ -28,10 +36,12 @@
   </div>
   <div class="bd-field"><label class="bd-label" for="ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="ph" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" autocomplete="tel" placeholder="050-0000000" value="<%= values.phone || '' %>" maxlength="30"><span class="bd-help">מחו״ל? עם קידומת מדינה, למשל +1 718 555 1234</span></div>
 
+  <% if (mode !== 'yahrzeit') { %>
   <fieldset class="bd-field">
-    <legend class="bd-label">תאריך לידה<span class="req">*</span></legend>
+    <legend class="bd-label">תאריך לידה<% if (mode === 'birthday') { %><span class="req">*</span><% } else { %> <span class="opt">(אפשר לדלג אם רושמים רק יארצייט)</span><% } %></legend>
     <%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'main' }) %>
   </fieldset>
+  <% } %>
 
   <% if (!internal) { (Array.isArray(link.extra_fields) ? link.extra_fields.slice(0, 3) : []).forEach((f, i) => { %>
     <div class="bd-field"><label class="bd-label" for="ex<%= i %>"><%= f.label %><% if (f.required) { %><span class="req">*</span><% } else { %> <span class="opt">(לא חובה)</span><% } %></label>
@@ -43,6 +53,7 @@
     <div class="bd-field"><label class="bd-label" for="notes">הערות <span class="opt">(רשות)</span></label><textarea class="bd-input" id="notes" name="notes" maxlength="1000"><%= values.notes || '' %></textarea><span class="bd-help">⚠️ לא לרשום כאן מידע רפואי או רגיש.</span></div>
   <% } %>
 
+  <% if (mode !== 'yahrzeit') { %>
   <div class="bd-field">
     <span class="bd-label">בני משפחה <span class="opt">(לא חובה)</span></span>
     <div id="fam-list">
@@ -51,11 +62,24 @@
     <button type="button" class="bd-add" id="add-fam">+ הוספת בן/בת משפחה</button>
     <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'h' } }) %></template>
   </div>
+  <% } %>
+
+  <% if (mode !== 'birthday') { %>
+  <div class="bd-field">
+    <span class="bd-label">🕯️ יארצייט<% if (mode === 'yahrzeit') { %><span class="req">*</span><% } else { %> <span class="opt">(לא חובה)</span><% } %></span>
+    <p class="bd-help bd-mb">שם הנפטר/ת, הקרבה אליך ותאריך הפטירה — נזכור את היארצייט בכל שנה.</p>
+    <div id="yz-list">
+      <% yzList.forEach((f, i) => { %><%- include('partials/yahrzeit_row', { i, f }) %><% }) %>
+    </div>
+    <button type="button" class="bd-add" id="add-yz">+ הוספת יארצייט</button>
+    <template id="yz-tpl"><%- include('partials/yahrzeit_row', { i: '__I__', f: { date_type: 'h' } }) %></template>
+  </div>
+  <% } %>
 
   <% if (!internal) { %>
   <div class="bd-privacy-note">
     <p><b>🔒 על הפרטים שלך</b></p>
-    <p>הפרטים יישמרו אצל <b><%= link.shliach_name %><%= link.chabad_house ? ' (' + link.chabad_house + ')' : '' %></b>, האחראי על המידע, לצורך שמירת קשר וברכה ביום ההולדת. מסירת הפרטים אינה חובה ונעשית מרצונך; בלי תאריך לידה לא נוכל לזכור את יום ההולדת.</p>
+    <p>הפרטים יישמרו אצל <b><%= link.shliach_name %><%= link.chabad_house ? ' (' + link.chabad_house + ')' : '' %></b>, האחראי על המידע, לצורך שמירת קשר<%= mode === 'yahrzeit' ? ' ותזכורת לקראת היארצייט' : mode === 'both' ? ', ברכה ביום ההולדת ותזכורת לקראת היארצייט' : ' וברכה ביום ההולדת' %>. מסירת הפרטים אינה חובה ונעשית מרצונך.</p>
     <p>המידע מנוהל במערכת "זכרתי התקשרתי" עבור השליח, ונשמר בשרתי ענן מאובטחים של חברת Railway <b>בארצות הברית</b>. הוא לא יימכר ולא יועבר לאף גורם אחר. אפשר לבקש לעיין במידע, לתקן או למחוק אותו בכל עת — דרך <a href="/contact?r=<%= link.token %>" target="_blank" rel="noopener">טופס יצירת קשר</a>. כשרושמים בני משפחה — ודאו שהם מסכימים.</p>
     <p><a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a> · <a href="/terms" target="_blank" rel="noopener">תנאי שימוש</a></p>
     <label class="bd-check"><input type="checkbox" name="privacy_ok" required <%= values.privacy_ok ? 'checked' : '' %>> קראתי ואני מסכים/ה לשמירת הפרטים כמתואר, כולל אחסון בשרתים מחוץ לישראל</label>

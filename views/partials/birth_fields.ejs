@@ -4,8 +4,9 @@
   const v = vals || {};
   const t = v.date_type === 'g' ? 'g' : 'h';
   const id = (k) => `${uid}-${k}`;
+  const death = typeof locals.death !== 'undefined' && locals.death; // תאריך פטירה (יארצייט)
 %>
-<div class="bd-group datebox">
+<div class="bd-group datebox"<% if (death) { %> data-kind="yahrzeit"<% } %>>
   <div class="bd-toggle" role="radiogroup" aria-label="סוג תאריך">
     <input type="radio" name="<%= n('date_type') %>" id="<%= id('th') %>" value="h" <%= t === 'h' ? 'checked' : '' %>><label for="<%= id('th') %>">תאריך עברי</label>
     <input type="radio" name="<%= n('date_type') %>" id="<%= id('tg') %>" value="g" <%= t === 'g' ? 'checked' : '' %>><label for="<%= id('tg') %>">תאריך לועזי</label>
@@ -25,12 +26,12 @@
       <div class="bd-field"><label class="bd-help" for="<%= id('hy') %>">שנה <span class="opt">(רשות)</span></label>
         <input class="bd-input" id="<%= id('hy') %>" name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder="תש״נ"></div>
     </div>
-    <p class="bd-help">בלי שנת לידה לא נוכל לחשב גיל — וזה בסדר גמור.</p>
+    <p class="bd-help"><%= death ? 'עם שנת הפטירה נחשב את היארצייט לפי ההלכה במדויק (למשל ל׳ חשוון וכסלו, ואדר בשנה מעוברת).' : 'בלי שנת לידה לא נוכל לחשב גיל — וזה בסדר גמור.' %></p>
   </div>
   <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
-    <input class="bd-input" type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= typeof todayISO !== 'undefined' ? todayISO : new Date().toISOString().slice(0,10) %>" aria-label="תאריך לידה לועזי">
-    <label class="bd-check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> נולד/ה אחרי השקיעה</label>
-    <p class="bd-help">התאריך העברי מתחלף בשקיעה, ולכן זה משנה את יום ההולדת העברי. נמיר אוטומטית.</p>
+    <input class="bd-input" type="date" name="<%= n('g_date') %>" value="<%= v.g_date || '' %>" max="<%= typeof todayISO !== 'undefined' ? todayISO : new Date().toISOString().slice(0,10) %>" aria-label="<%= death ? 'תאריך פטירה לועזי' : 'תאריך לידה לועזי' %>">
+    <label class="bd-check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> <%= death ? 'נפטר/ה אחרי השקיעה' : 'נולד/ה אחרי השקיעה' %></label>
+    <p class="bd-help">התאריך העברי מתחלף בשקיעה, ולכן זה משנה את <%= death ? 'תאריך היארצייט' : 'יום ההולדת העברי' %>. נמיר אוטומטית.</p>
   </div>
   <div class="bd-heb-preview" data-heb-preview aria-live="polite" hidden></div>
 </div>

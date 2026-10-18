@@ -536,3 +536,9 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-bubble__meta { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 2px; font-size: .72rem; color: var(--bd-fg-muted); }
 .bd .bd-bubble__del { all: unset; cursor: pointer; font-size: .85rem; opacity: .55; padding: 2px 4px; border-radius: 6px; }
 .bd .bd-bubble__del:hover, .bd .bd-bubble__del:focus-visible { opacity: 1; outline: 2px solid var(--bd-accent); }
+
+/* יארצייט */
+.bd-family--yz { background: color-mix(in srgb, var(--bd-surface-2) 60%, var(--bd-surface)); }
+.bd-row--yz .bd-row__name a { color: var(--bd-fg); }
+.bd-row--yz .bd-row__heb { color: var(--bd-fg-muted); }
+.bd-item--yz .bd-item__title { color: var(--bd-fg); }

@@ -21,7 +21,9 @@ function bindHebPreview(box) {
   const update = async () => {
     const my = ++seq; // כל שינוי (גם ריקון שדה) מבטל תשובות קודמות שעוד בדרך
     const g = box.querySelector('input[type=radio][value=g]').checked;
+    const yz = box.dataset.kind === 'yahrzeit';
     const p = new URLSearchParams({ date_type: g ? 'g' : 'h' });
+    if (yz) p.set('kind', 'yahrzeit');
     if (g) {
       const d = field('g_date').value;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return show('');
@@ -37,7 +39,8 @@ function bindHebPreview(box) {
       if (my !== seq) return;
       if (r.error) return show(`<span>⚠️ ${esc(r.error)}</span>`, 'bd-heb-preview--bad');
       let html = g ? `<span class="bd-heb-preview__date">📅 בתאריך עברי: <b>${esc(r.label)}</b></span>` : '';
-      if (r.next) html += `<span class="bd-heb-preview__next">${r.next.today ? '🎂 יום ההולדת היום!' : `יום ההולדת הבא: יום ${esc(r.next.day)}, ${esc(r.next.label)} · <bdi class="bd-num">${esc(r.next.greg)}</bdi>`}${r.next.age ? ` · גיל ${r.next.age}` : ''}</span>`;
+      if (r.next && yz) html += `<span class="bd-heb-preview__next">${r.next.today ? '🕯️ היארצייט היום' : `🕯️ היארצייט הבא: יום ${esc(r.next.day)}, ${esc(r.next.label)} · <bdi class="bd-num">${esc(r.next.greg)}</bdi>`}</span>`;
+      else if (r.next) html += `<span class="bd-heb-preview__next">${r.next.today ? '🎂 יום ההולדת היום!' : `יום ההולדת הבא: יום ${esc(r.next.day)}, ${esc(r.next.label)} · <bdi class="bd-num">${esc(r.next.greg)}</bdi>`}${r.next.age ? ` · גיל ${r.next.age}` : ''}</span>`;
       if (r.note) html += `<span class="bd-heb-preview__note">💡 ${esc(r.note)}</span>`;
       show(html, r.note ? 'bd-heb-preview--note' : '');
     } catch { show(''); }
@@ -49,10 +52,11 @@ function bindHebPreview(box) {
 }
 document.querySelectorAll('.datebox').forEach(bindDatebox);
 
-// הוספת/הסרת בני משפחה בטופס
-const list = document.getElementById('fam-list');
-const tpl = document.getElementById('fam-tpl');
-const addBtn = document.getElementById('add-fam');
+// הוספת/הסרת בני משפחה (ונפטרים — יארצייט) בטופס
+for (const [listId, tplId, btnId] of [['fam-list', 'fam-tpl', 'add-fam'], ['yz-list', 'yz-tpl', 'add-yz']]) {
+const list = document.getElementById(listId);
+const tpl = document.getElementById(tplId);
+const addBtn = document.getElementById(btnId);
 if (list && tpl && addBtn) {
   let idx = list.children.length + 100;
   addBtn.addEventListener('click', () => {
@@ -65,6 +69,7 @@ if (list && tpl && addBtn) {
   list.addEventListener('click', (e) => {
     if (e.target.closest('[data-remove]')) e.target.closest('.fam-row').remove();
   });
+}
 }
 
 // אישור לפני פעולות

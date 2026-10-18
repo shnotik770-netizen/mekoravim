@@ -1,0 +1,11 @@
+<div class="bd-family bd-family--yz fam-row">
+  <div class="bd-family__head"><span>🕯️ נפטר/ת — יארצייט</span><button type="button" class="bd-link-btn" data-remove>הסרה</button></div>
+  <div class="bd-family__grid bd-mb">
+    <select class="bd-input" name="yz[<%= i %>][relation]" aria-label="קרבה">
+      <% RELATIONS.forEach(r => { %><option <%= (f.relation === r) ? 'selected' : '' %>><%= r %></option><% }) %>
+    </select>
+    <input class="bd-input" name="yz[<%= i %>][first_name]" value="<%= f.first_name || '' %>" maxlength="80" placeholder="שם הנפטר/ת (למשל: יצחק בן אברהם)" aria-label="שם הנפטר/ת">
+  </div>
+  <p class="bd-help bd-mb">תאריך הפטירה:</p>
+  <%- include('birth_fields', { prefix: `yz[${i}]`, vals: f, uid: `yz${i}`, death: true }) %>
+</div>

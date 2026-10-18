@@ -2,7 +2,7 @@
 <div class="bd-card bd-center">
   <%- include('partials/logo', { big: true }) %>
   <h1 class="bd-title">תודה רבה! 🎉</h1>
-  <p class="bd-sub" style="font-size:var(--bd-fs-md)">הפרטים נשמרו. נאחל לך מזל טוב ביום ההולדת 🎂</p>
+  <p class="bd-sub" style="font-size:var(--bd-fs-md)">הפרטים נשמרו. <%= link.date_kinds === 'yahrzeit' ? 'נזכור את היארצייט ונהיה איתך בקשר לקראתו 🕯️' : 'נאחל לך מזל טוב ביום ההולדת 🎂' %></p>
   <p class="bd-mt"><a class="bd-btn bd-btn--ghost" href="/r/<%= link.token %>">רישום נוסף</a></p>
 </div>
 <%- include('partials/foot') %>

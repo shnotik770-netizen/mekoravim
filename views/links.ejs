@@ -14,7 +14,7 @@
   <% links.forEach(l => { const url = site + '/r/' + l.token; %>
     <li class="bd-item <%= l.active ? '' : 'bd-item--off' %>">
       <div class="bd-item__main">
-        <div class="bd-item__title"><%= l.name %> <%- include('partials/cat_chip', { cat: catById.get(l.category_id) }) %>
+        <div class="bd-item__title"><%= l.name %> <%- include('partials/cat_chip', { cat: catById.get(l.category_id) }) %><% if (l.date_kinds === 'yahrzeit') { %> <span class="bd-status">🕯️ יארצייט</span><% } else if (l.date_kinds === 'both') { %> <span class="bd-status">🎂🕯️ גם יארצייט</span><% } %>
           <span class="bd-status bd-status--accent"><%= l.n %> נרשמו</span><% if (!l.active) { %><span class="bd-status bd-status--bad">כבוי</span><% } %></div>
         <div class="bd-item__sub"><code class="bd-code copy"><%= url %></code></div>
         <details class="bd-mt">
@@ -29,6 +29,12 @@
             </div>
             <p class="bd-help">שינוי הסיווג חל על נרשמים חדשים בלבד.</p>
             <p class="bd-label bd-mt">📝 התאמת הטופס שהמקורבים רואים</p>
+            <label class="bd-small">מה שואלים בטופס
+              <select class="bd-input" name="date_kinds">
+                <option value="birthday" <%= (l.date_kinds) === 'birthday' ? 'selected' : '' %>>🎂 ימי הולדת</option>
+                <option value="yahrzeit" <%= (l.date_kinds) === 'yahrzeit' ? 'selected' : '' %>>🕯️ יארצייט</option>
+                <option value="both" <%= (l.date_kinds) === 'both' ? 'selected' : '' %>>🎂🕯️ גם וגם</option>
+              </select></label>
             <label class="bd-small">כותרת הטופס <span class="opt">(ריק = <%= shliach.name %>)</span>
               <input class="bd-input" name="form_title" value="<%= l.form_title %>" maxlength="80" placeholder="למשל: רישום לשיעור התניא"></label>
             <label class="bd-small">טקסט פתיחה <span class="opt">(ריק = ברירת המחדל)</span>
@@ -52,7 +58,7 @@
       <div class="bd-actions">
         <% if (l.active) { %>
           <button type="button" class="bd-btn bd-btn--soft bd-btn--sm bd-copy-btn" data-copy="<%= url %>"><%- include('partials/icons', { name: 'copy' }) %><span>העתקת קישור</span></button>
-          <a class="bd-icon-btn bd-icon-btn--wa" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('נשמח לדעת מתי יום ההולדת שלך 🎂 ' + url) %>" aria-label="שליחה בוואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a>
+          <a class="bd-icon-btn bd-icon-btn--wa" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent((l.date_kinds === 'yahrzeit' ? 'נשמח לדעת את תאריכי היארצייט של יקיריך 🕯️ ' : 'נשמח לדעת מתי יום ההולדת שלך 🎂 ') + url) %>" aria-label="שליחה בוואטסאפ"><%- include('partials/icons', { name: 'chat' }) %></a>
           <a class="bd-btn bd-btn--ghost bd-btn--sm" target="_blank" rel="noopener" href="<%= url %>">תצוגה</a>
         <% } %>
         <form method="post" action="<%= base %>/links/<%= l.id %>/toggle"><button class="bd-btn bd-btn--ghost bd-btn--sm"><%= l.active ? 'כיבוי' : 'הפעלה' %></button></form>
@@ -70,6 +76,12 @@
         <% categories.forEach((c, i) => { %><option value="<%= c.id %>" <%= i === 0 ? 'selected' : '' %>><%= c.name %></option><% }) %>
         <option value="">ללא סיווג</option>
       </select></div>
+    <div class="bd-field"><label class="bd-label" for="ln-kinds">מה שואלים בטופס</label>
+      <select class="bd-input" id="ln-kinds" name="date_kinds">
+        <option value="birthday" <%= ('birthday') === 'birthday' ? 'selected' : '' %>>🎂 ימי הולדת</option>
+                <option value="yahrzeit" <%= ('birthday') === 'yahrzeit' ? 'selected' : '' %>>🕯️ יארצייט</option>
+                <option value="both" <%= ('birthday') === 'both' ? 'selected' : '' %>>🎂🕯️ גם וגם</option>
+      </select><span class="bd-help">יארצייט — שם הנפטר/ת ותאריך הפטירה, עם תזכורת לפני.</span></div>
     <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת קישור</button>
     <p class="bd-help bd-mt"><a href="<%= base %>/settings">ניהול סיווגים</a></p>
   </form>

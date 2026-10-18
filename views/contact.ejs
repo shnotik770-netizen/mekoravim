@@ -18,8 +18,8 @@
       </div>
     </div>
     <div class="bd-facts">
-      <div class="bd-fact"><b>תאריך לידה</b><span><%= birthText(c) %></span></div>
-      <div class="bd-fact"><b>יום ההולדת הבא</b><span><%= nextStr(c.next) %></span></div>
+      <div class="bd-fact"><b>תאריך לידה</b><span><%= birthText(c) || 'לא הוזן' %></span></div>
+      <% if (c.h_day) { %><div class="bd-fact"><b>יום ההולדת הבא</b><span><%= nextStr(c.next) %></span></div><% } %>
       <% if (c.notes) { %><div class="bd-fact"><b>הערות</b><span><%= c.notes %></span></div><% } %>
     </div>
     <form method="post" action="<%= base %>/contacts/<%= c.id %>/category" class="bd-inline">
@@ -36,20 +36,20 @@
   </section>
 
   <section class="bd-card" id="family">
-    <h2 class="bd-section-title">בני משפחה</h2>
-    <% if (!family.length) { %><p class="bd-help bd-mb">לא נרשמו בני משפחה.</p><% } %>
+    <h2 class="bd-section-title">בני משפחה ויארצייט</h2>
+    <% if (!family.length) { %><p class="bd-help bd-mb">לא נרשמו בני משפחה או יארצייט.</p><% } %>
     <ul class="bd-items bd-mb">
-    <% family.forEach(f => { %>
-      <li class="bd-item">
+    <% family.forEach(f => { const yz = f.kind === 'yahrzeit'; %>
+      <li class="bd-item<%= yz ? ' bd-item--yz' : '' %>">
         <div class="bd-item__main">
-          <div class="bd-item__title"><%= f.first_name %> <span class="bd-status"><%= f.relation %></span><% if (f.remind_days !== null && f.remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></div>
-          <div class="bd-item__sub"><%= birthText(f) %></div>
-          <div class="bd-item__sub">הבא: <%= nextStr(f.next) %></div>
+          <div class="bd-item__title"><%= yz ? '🕯️ ' : '' %><%= f.first_name %><%= yz ? ' ז״ל' : '' %> <span class="bd-status"><%= f.relation %></span><% if (f.remind_days !== null && f.remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></div>
+          <div class="bd-item__sub"><%= yz ? 'תאריך הפטירה: ' : '' %><%= birthText(f) %></div>
+          <div class="bd-item__sub"><%= yz ? 'היארצייט הבא' : 'הבא' %>: <%= yz && f.next ? `${f.next.actualLabel} — יום ${DAY_NAMES[f.next.date.getDay()]}, ${fmtGreg(f.next.date)}${f.next.note ? ' (' + f.next.note + ')' : ''}` : nextStr(f.next) %></div>
         </div>
         <div class="bd-family__ops">
-          <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: '🔔 תזכורת מיוחדת בסמס' }) %>
+          <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: yz ? '🔔 תזכורת לפני היארצייט' : '🔔 תזכורת מיוחדת בסמס' }) %>
           <div class="bd-actions">
-            <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/split" data-confirm="להעביר את <%= f.first_name %> לכרטיס מקורב נפרד? התאריכים, התזכורת וסימוני &quot;יצרתי קשר&quot; יעברו איתו."><button class="bd-link-btn bd-link-btn--accent">הפרדה לכרטיס נפרד</button></form>
+            <% if (!yz) { %><form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/split" data-confirm="להעביר את <%= f.first_name %> לכרטיס מקורב נפרד? התאריכים, התזכורת וסימוני &quot;יצרתי קשר&quot; יעברו איתו."><button class="bd-link-btn bd-link-btn--accent">הפרדה לכרטיס נפרד</button></form><% } %>
             <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>/delete" data-confirm="למחוק את <%= f.first_name %>?
 
 ⚠️ המחיקה בלתי הפיכה — לא ניתן לשחזר."><button class="bd-link-btn">מחיקה</button></form>
@@ -67,6 +67,20 @@
         </div>
         <%- include('partials/birth_fields', { prefix: '', vals: { date_type: 'h' }, uid: 'addfam' }) %>
         <button class="bd-btn bd-btn--primary bd-mt">הוספה</button>
+      </form>
+    </details>
+    <details class="bd-mt">
+      <summary class="bd-add">+ הוספת יארצייט 🕯️</summary>
+      <form method="post" action="<%= base %>/contacts/<%= c.id %>/family">
+        <input type="hidden" name="kind" value="yahrzeit">
+        <div class="bd-family__grid bd-mb">
+          <select class="bd-input" name="relation" aria-label="קרבה"><% RELATIONS.forEach(r => { %><option><%= r %></option><% }) %></select>
+          <input class="bd-input" name="first_name" required maxlength="80" placeholder="שם הנפטר/ת (למשל: יצחק בן אברהם)" aria-label="שם הנפטר/ת">
+        </div>
+        <p class="bd-help bd-mb">תאריך הפטירה:</p>
+        <%- include('partials/birth_fields', { prefix: '', vals: { date_type: 'h' }, uid: 'addyz', death: true }) %>
+        <p class="bd-help bd-mt">תזכורת SMS לפני היארצייט תיקבע לפי ברירת המחדל בהגדרות, ואפשר לשנות אותה כאן אחרי ההוספה.</p>
+        <button class="bd-btn bd-btn--primary bd-mt">הוספת יארצייט</button>
       </form>
     </details>
   </section>
@@ -105,7 +119,7 @@
   <div class="bd-chat" data-chat>
   <% log.slice().reverse().forEach(l => { %>
     <div class="bd-bubble">
-      <% if (l.member_name) { %><div class="bd-bubble__who">🎂 יום הולדת של <%= l.member_name %></div><% } %>
+      <% if (l.member_name) { %><div class="bd-bubble__who"><%= l.member_kind === 'yahrzeit' ? '🕯️ יארצייט של ' + l.member_name + ' ז״ל' : '🎂 יום הולדת של ' + l.member_name %></div><% } %>
       <div class="bd-bubble__text"><%= l.note || '✓ נוצר קשר' %></div>
       <div class="bd-bubble__meta"><span><%= hebStamp(l.created_at) %> · <span class="bd-num" dir="ltr"><%= fmtTime(l.created_at) %></span></span>
         <form method="post" action="<%= base %>/contacts/<%= c.id %>/log/<%= l.id %>/delete" data-confirm="למחוק את הרישום?
@@ -120,7 +134,7 @@
     <% if (family.length) { %>
     <select class="bd-input" name="family_member_id" aria-label="עם מי">
       <option value="">עם <%= c.first_name %></option>
-      <% family.forEach(f => { %><option value="<%= f.id %>">יום הולדת של <%= f.first_name %> (<%= f.relation %>)</option><% }) %>
+      <% family.forEach(f => { %><option value="<%= f.id %>"><%= f.kind === 'yahrzeit' ? 'יארצייט של ' + f.first_name + ' ז״ל' : 'יום הולדת של ' + f.first_name %> (<%= f.relation %>)</option><% }) %>
     </select>
     <% } %>
     <input class="bd-input" name="note" placeholder="הערה (לא חובה)" maxlength="500" aria-label="הערה">

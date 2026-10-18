@@ -173,14 +173,15 @@ app.get('/api/hebrange', (req, res) => {
 
 // תצוגה מקדימה של התאריך העברי בטופסי התאריך (חישוב בלבד — בלי מסד נתונים)
 app.get('/api/hebdate', (req, res) => {
-  const b = parseBirth(Object.fromEntries(Object.entries(req.query).map(([k, v]) => [k, String(v).slice(0, 20)])));
+  const yz = req.query.kind === 'yahrzeit';
+  const b = parseBirth(Object.fromEntries(Object.entries(req.query).map(([k, v]) => [k, String(v).slice(0, 20)])), { death: yz });
   if (b.error) return res.json({ error: b.error });
   const { h_day: day, h_month: month, h_year: year } = b.value;
   const today = todayIL();
-  const next = nextBirthday({ h_day: day, h_month: month, h_year: year }, today);
+  const next = nextBirthday({ h_day: day, h_month: month, h_year: year, kind: yz ? 'yahrzeit' : 'birthday' }, today);
   res.set('Cache-Control', 'no-store').json({
     label: hebDateStr(day, month, year),
-    note: birthNote(day, month, year),
+    note: yz ? next?.note || null : birthNote(day, month, year),
     next: next && {
       label: next.actualLabel, greg: fmtGreg(next.date), day: DAY_NAMES[next.date.getDay()], age: next.age,
       today: +next.date === +today,
@@ -664,10 +665,12 @@ async function saveContact(shliachId, c, family, regLinkId) {
   return rows[0].id;
 }
 
+// יארצייט חדש מקבל את תזכורת ברירת המחדל של השליח (הגדרות ← תזכורות)
 const addFamily = (contactId, f) => q(
-  `INSERT INTO family_members (contact_id, relation, first_name, g_date, g_after_sunset, h_day, h_month, h_year)
-   VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-  [contactId, f.relation, f.first_name, f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year]);
+  `INSERT INTO family_members (contact_id, relation, first_name, g_date, g_after_sunset, h_day, h_month, h_year, kind, remind_days)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text, CASE WHEN $9::text='yahrzeit' THEN
+     (SELECT s.yahrzeit_remind_days FROM contacts c JOIN shluchim s ON s.id=c.shliach_id WHERE c.id=$1) END)`,
+  [contactId, f.relation, f.first_name, f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year, f.kind || 'birthday']);
 
 // שדות טקסט נוספים שהשליח הגדיר לטופס הרישום (עד 3): בדיקת חובה, והרכבת הערה "תווית: תשובה"
 function parseExtras(link, body) {
@@ -681,11 +684,23 @@ function parseExtras(link, body) {
   return { notes: lines.join('\n') };
 }
 
-function parseForm(body, opts) {
-  const c = parseContact(body, opts);
-  const fam = c.error ? {} : parseFamily(body.fam);
-  return { c: c.value, fam: fam.value, error: c.error || fam.error };
+// mode — מה נשאל בטופס: birthday (ימי הולדת) / yahrzeit (רק יארצייט) / both.
+// fam מוחזר עם בני המשפחה והנפטרים יחד (kind מבדיל ביניהם)
+function parseForm(body, opts = {}, mode = 'both') {
+  const yzOnly = mode === 'yahrzeit';
+  const yz = mode === 'birthday' ? { value: [] } : parseFamily(body.yz, 'yahrzeit');
+  // בטופס יארצייט לא שואלים על תאריך הלידה; כשנרשם יארצייט — תאריך הלידה רשות
+  const c = parseContact(yzOnly ? { ...body, date_type: 'h', h_day: '', h_month: '', h_year: '' } : body,
+    { ...opts, birthOptional: yzOnly || (yz.value || []).length > 0 });
+  if (c.error) return { error: c.error };
+  if (yz.error) return { error: yz.error };
+  const fam = yzOnly ? { value: [] } : parseFamily(body.fam);
+  if (fam.error) return { error: fam.error };
+  if (yzOnly && !yz.value.length) return { error: 'יש למלא לפחות נפטר/ת אחד/ת — שם ותאריך הפטירה' };
+  return { c: c.value, fam: [...fam.value, ...yz.value] };
 }
+// שורות הטופס להצגה מחדש אחרי שגיאה
+const formRows = (body) => ({ family: Object.values(body.fam || {}), yahrzeits: Object.values(body.yz || {}) });
 
 /* ------------------------- קישור רישום ציבורי למקורבים ------------------------- */
 
@@ -699,26 +714,26 @@ app.use('/r/:token', async (req, res, next) => {
   next();
 });
 
-app.get('/r/:token', (req, res) => res.render('register', { values: { date_type: 'h' }, family: [], error: null, internal: false }));
+app.get('/r/:token', (req, res) => res.render('register', { values: { date_type: 'h' }, family: [], yahrzeits: [], error: null, internal: false }));
 
 app.post('/r/:token', async (req, res) => {
   if (req.body.website) return res.render('register_done'); // מלכודת לבוטים
   if (!registerByIp.take(`reg:${req.ip}`) || !registerByLink.take(`link:${req.link.id}`)) {
     return res.status(429).render('register', {
-      values: req.body, family: Object.values(req.body.fam || {}), internal: false,
+      values: req.body, ...formRows(req.body), internal: false,
       error: 'נשלחו יותר מדי רישומים. נסו שוב בעוד כמה דקות.',
     });
   }
-  const { c, fam, error } = parseForm(req.body, { bothNames: req.link.require_both_names });
+  const { c, fam, error } = parseForm(req.body, { bothNames: req.link.require_both_names }, req.link.date_kinds);
   const extras = parseExtras(req.link, req.body);
   // הסכמה מפורשת (חובת יידוע + אחסון בחו"ל)
   const err = error || extras.error || (req.body.privacy_ok !== 'on' ? 'יש לאשר את תנאי שמירת הפרטים (סמנו את התיבה)' : null);
-  if (err) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error: err, internal: false });
+  if (err) return res.status(400).render('register', { values: req.body, ...formRows(req.body), error: err, internal: false });
   c.category_id = req.link.category_id;
   c.notes = extras.notes; // תשובות לשדות הנוספים נשמרות בהערות המקורב
   if (roomError(await recordsStatus(req.link.shliach_id), 1 + fam.length)) {
     req.auditDetail = 'מכסת הרשומות מלאה';
-    return res.status(409).render('register', { values: req.body, family: Object.values(req.body.fam || {}), internal: false,
+    return res.status(409).render('register', { values: req.body, ...formRows(req.body), internal: false,
       error: 'לא ניתן להירשם כרגע (הרשימה מלאה). אפשר לפנות ישירות לשליח.' });
   }
   await saveContact(req.link.shliach_id, c, fam, req.link.id);
@@ -1059,7 +1074,7 @@ router.get('/contacts/export.csv', async (req, res) => {
   for (const c of contacts) lines.push(['מקורב', c.first_name, c.last_name, '', '', c.phone, heb(c), c.g_date || '', cats.get(c.category_id) || '', c.notes].map(cell).join(','));
   for (const f of family) {
     const c = byId.get(f.contact_id);
-    lines.push(['בן משפחה', f.first_name, '', f.relation, c ? `${c.first_name} ${c.last_name}`.trim() : '', '', heb(f), f.g_date || '', '', ''].map(cell).join(','));
+    lines.push([f.kind === 'yahrzeit' ? 'יארצייט (תאריך פטירה)' : 'בן משפחה', f.first_name, '', f.relation, c ? `${c.first_name} ${c.last_name}`.trim() : '', '', heb(f), f.g_date || '', '', ''].map(cell).join(','));
   }
   if (!req.demo) audit({ shliachId: s.id, actor: 'shliach', action: 'ייצוא רשימה לקובץ', detail: `${contacts.length + family.length} רשומות` });
   res.set('Content-Type', 'text/csv; charset=utf-8');
@@ -1140,20 +1155,20 @@ router.post('/contacts/import', async (req, res) => {
 });
 
 router.get('/contacts/new', async (req, res) => {
-  res.render('register', { values: { date_type: 'h' }, family: [], error: null, internal: true, categories: await loadCategories(req.shliach.id) });
+  res.render('register', { values: { date_type: 'h' }, family: [], yahrzeits: [], error: null, internal: true, categories: await loadCategories(req.shliach.id) });
 });
 
 router.post('/contacts/new', async (req, res) => {
   const { c, fam, error } = parseForm(req.body);
   if (error) {
     return res.status(400).render('register', {
-      values: req.body, family: Object.values(req.body.fam || {}), error, internal: true, categories: await loadCategories(req.shliach.id),
+      values: req.body, ...formRows(req.body), error, internal: true, categories: await loadCategories(req.shliach.id),
     });
   }
   const full = roomError(await recordsStatus(req.shliach.id), 1 + fam.length);
   if (full) {
     return res.status(409).render('register', {
-      values: req.body, family: Object.values(req.body.fam || {}), error: full, internal: true, categories: await loadCategories(req.shliach.id),
+      values: req.body, ...formRows(req.body), error: full, internal: true, categories: await loadCategories(req.shliach.id),
     });
   }
   const id = await saveContact(req.shliach.id, c, fam, null);
@@ -1173,7 +1188,7 @@ router.get('/contacts/:id', loadContact, async (req, res) => {
   const c = req.contact;
   const family = (await q('SELECT * FROM family_members WHERE contact_id=$1 ORDER BY id', [c.id])).rows;
   const log = (await q(
-    `SELECT l.*, f.first_name AS member_name FROM contact_log l LEFT JOIN family_members f ON f.id=l.family_member_id
+    `SELECT l.*, f.first_name AS member_name, f.kind AS member_kind FROM contact_log l LEFT JOIN family_members f ON f.id=l.family_member_id
      WHERE l.contact_id=$1 ORDER BY l.created_at DESC`, [c.id])).rows;
   const link = c.reg_link_id ? (await q('SELECT name FROM reg_links WHERE id=$1', [c.reg_link_id])).rows[0] : null;
   const today = todayIL();
@@ -1204,12 +1219,12 @@ router.post('/contacts/:id/category', loadContact, async (req, res) => {
   res.redirect(`${res.locals.base}/contacts/${req.contact.id}`);
 });
 
-// תזכורת SMS אישית על המקורב / בן משפחה (0–7 ימים לפני; ריק = בלי). נשלחת גם אם התזכורות הכלליות כבויות
+// תזכורת SMS אישית על המקורב / בן משפחה / יארצייט (0–30 ימים לפני; ריק = בלי). נשלחת גם אם התזכורות הכלליות כבויות
 function remindDays(v) {
-  const d = v === '' || v === undefined ? null : parseInt(v, 10);
-  return Number.isInteger(d) && d >= 0 && d <= 7 ? d : null;
+  const d = v === '' || v === undefined || v === null ? null : parseInt(v, 10);
+  return Number.isInteger(d) && d >= 0 && d <= 30 ? d : null;
 }
-const remindText = (d) => (d === 0 ? 'ביום ההולדת' : d === 1 ? 'יום לפני יום ההולדת' : `${d} ימים לפני יום ההולדת`);
+const remindText = (d) => (d === 0 ? 'ביום עצמו' : d === 1 ? 'יום לפני' : `${d} ימים לפני`);
 
 router.post('/contacts/:id/family/:fid/remind', loadContact, async (req, res) => {
   const days = remindDays(req.body.remind_days);
@@ -1222,7 +1237,7 @@ router.post('/contacts/:id/family/:fid/remind', loadContact, async (req, res) =>
 router.post('/contacts/:id/family/:fid/split', loadContact, async (req, res) => {
   const c = req.contact;
   const newId = await transaction(async (client) => {
-    const { rows } = await client.query('SELECT * FROM family_members WHERE id=$1 AND contact_id=$2 FOR UPDATE', [int(req.params.fid), c.id]);
+    const { rows } = await client.query(`SELECT * FROM family_members WHERE id=$1 AND contact_id=$2 AND kind='birthday' FOR UPDATE`, [int(req.params.fid), c.id]);
     const f = rows[0];
     if (!f) return null;
     const ins = await client.query(
@@ -1257,13 +1272,14 @@ router.post('/contacts/:id/delete', loadContact, async (req, res) => {
 
 router.post('/contacts/:id/family', loadContact, async (req, res) => {
   const url = `${res.locals.base}/contacts/${req.contact.id}`;
-  const fam = parseFamily([req.body]);
+  const yz = req.body.kind === 'yahrzeit';
+  const fam = parseFamily([req.body], yz ? 'yahrzeit' : 'birthday');
   if (fam.error || !fam.value.length) return res.redirect(`${url}?err=${encodeURIComponent(fam.error || 'יש להזין שם')}#family`);
   const full = roomError(await recordsStatus(req.shliach.id), 1);
   if (full) return res.redirect(`${url}?err=${encodeURIComponent(full)}#family`);
   await addFamily(req.contact.id, fam.value[0]);
   await recordsCheck(req.shliach.id);
-  flash(req, 'בן המשפחה נוסף');
+  flash(req, yz ? 'היארצייט נוסף' : 'בן המשפחה נוסף');
   res.redirect(url + '#family');
 });
 
@@ -1328,10 +1344,13 @@ router.get('/links', async (req, res) => {
   res.render('links', { links: rows, categories, catById: new Map(categories.map((c) => [c.id, c])), site: baseUrl(req) });
 });
 
+const DATE_KINDS = ['birthday', 'yahrzeit', 'both'];
+const dateKinds = (v) => (DATE_KINDS.includes(v) ? v : 'birthday');
+
 router.post('/links', async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 80) || 'קישור רישום';
-  await q('INSERT INTO reg_links (shliach_id, token, name, category_id) VALUES ($1,$2,$3,$4)',
-    [req.shliach.id, randomToken(9), name, await validCategory(req.shliach.id, int(req.body.category_id))]);
+  await q('INSERT INTO reg_links (shliach_id, token, name, category_id, date_kinds) VALUES ($1,$2,$3,$4,$5)',
+    [req.shliach.id, randomToken(9), name, await validCategory(req.shliach.id, int(req.body.category_id)), dateKinds(req.body.date_kinds)]);
   flash(req, 'נוצר קישור רישום חדש');
   res.redirect(`${res.locals.base}/links`);
 });
@@ -1343,11 +1362,11 @@ router.post('/links/:id', async (req, res) => {
       label: String(req.body[`extra_label_${i}`] || '').trim().slice(0, 60),
       required: req.body[`extra_req_${i}`] === 'on',
     })).filter((f) => f.label);
-    await q(`UPDATE reg_links SET name=$1, category_id=$2, form_title=$3, form_intro=$4, extra_fields=$5, require_both_names=$8
+    await q(`UPDATE reg_links SET name=$1, category_id=$2, form_title=$3, form_intro=$4, extra_fields=$5, require_both_names=$8, date_kinds=$9
              WHERE id=$6 AND shliach_id=$7`,
       [name, await validCategory(req.shliach.id, int(req.body.category_id)),
         String(req.body.form_title || '').trim().slice(0, 80), String(req.body.form_intro || '').trim().slice(0, 300),
-        JSON.stringify(extra), int(req.params.id), req.shliach.id, req.body.names === 'both']);
+        JSON.stringify(extra), int(req.params.id), req.shliach.id, req.body.names === 'both', dateKinds(req.body.date_kinds)]);
     flash(req, 'הקישור והטופס עודכנו');
   }
   res.redirect(`${res.locals.base}/links`);
@@ -1390,8 +1409,12 @@ router.post('/sms', async (req, res) => {
   }
   const weekly = req.body.sms_weekly === 'on', daily = req.body.sms_daily === 'on';
   if ((weekly || daily) && !normalizePhone(s.phone)) return renderSettings(req, res, 'כדי להפעיל תזכורות יש להזין מספר נייד בפרטים האישיים', 400);
-  await q('UPDATE shluchim SET sms_weekly=$1, sms_daily=$2, sms_enabled=$3 WHERE id=$4',
-    [weekly, daily, weekly || daily, s.id]);
+  const yzDays = remindDays(req.body.yahrzeit_remind_days);
+  await q('UPDATE shluchim SET sms_weekly=$1, sms_daily=$2, sms_enabled=$3, yahrzeit_remind_days=$5 WHERE id=$4',
+    [weekly, daily, weekly || daily, s.id, yzDays]);
+  if (req.body.yz_apply_all === 'on') {
+    await q(`UPDATE family_members SET remind_days=$1 WHERE kind='yahrzeit' AND contact_id IN (SELECT id FROM contacts WHERE shliach_id=$2)`, [yzDays, s.id]);
+  }
   const what = [weekly && 'בכל יום ראשון — ימי ההולדת של השבוע', daily && 'בכל יום חול שיש בו ימי הולדת — ימי ההולדת של היום'].filter(Boolean);
   flash(req, what.length ? `נשמר — תקבלו SMS ${what.join(', וגם ')}` : 'נשמר — התזכורות כבויות');
   res.redirect(back);

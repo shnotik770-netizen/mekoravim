@@ -4,10 +4,16 @@
   const done = e.contacted;
   const intl = phoneIntl(e.contact.phone); // ישראלי או מחו"ל
   const first = e.member ? e.member.first_name : (e.contact.first_name || e.contact.last_name);
-  const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : '';
+  const yz = !!e.yahrzeit;
+  // יארצייט: ההודעה נשלחת לקרוב (המקורב), לא "מזל טוב"
+  const fem = yz && ['אמא', 'סבתא', 'אחות', 'בת'].includes(e.member.relation);
+  const msg = yz
+    ? `שלום ${e.contact.first_name || e.contact.last_name}, רציתי להזכיר שב${e.actualLabel} (יום ${DAY_NAMES[e.date.getDay()]}) חל היארצייט של ${first} ז״ל. ${fem ? 'יהי זכרה ברוך' : 'יהי זכרו ברוך'} 🕯️`
+    : 'מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.';
+  const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent(msg) : '';
   const isDemo = typeof demo !== 'undefined' && demo; // בהדגמה: וואטסאפ בלי מספר (רק נוסח הברכה), בלי חיוג
-  const waHref = isDemo && wa ? 'https://wa.me/?text=' + encodeURIComponent('מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.') : wa;
-  const cls = ['bd-row', isToday && 'bd-row--today', past && !done && 'bd-row--overdue', done && 'bd-row--done'].filter(Boolean).join(' ');
+  const waHref = isDemo && wa ? 'https://wa.me/?text=' + encodeURIComponent(msg) : wa;
+  const cls = ['bd-row', yz && 'bd-row--yz', isToday && 'bd-row--today', past && !done && 'bd-row--overdue', done && 'bd-row--done'].filter(Boolean).join(' ');
   const iso = e.date.getFullYear() + '-' + String(e.date.getMonth() + 1).padStart(2, '0') + '-' + String(e.date.getDate()).padStart(2, '0');
   const cat = catById.get(e.contact.category_id);
 %>
@@ -19,12 +25,12 @@
   </div>
   <div class="bd-row__who">
     <div class="bd-row__line">
-      <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.name %></a><% if ((e.member || e.contact).remind_days !== null && (e.member || e.contact).remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></span>
+      <span class="bd-row__name"><a href="<%= base %>/contacts/<%= e.contact.id %>"><%= yz ? '🕯️ ' + e.name + ' ז״ל' : e.name %></a><% if ((e.member || e.contact).remind_days !== null && (e.member || e.contact).remind_days !== undefined) { %> <span title="יש תזכורת SMS">🔔</span><% } %></span>
       <%- include('cat_chip', { cat }) %>
     </div>
-    <% if (e.member) { %><div class="bd-kin"><span>👪 <%= e.member.relation %> של <a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.contact.first_name %> <%= e.contact.last_name %></a></span></div><% } %>
+    <% if (e.member) { %><div class="bd-kin"><span><%= yz ? 'יארצייט · ' : '👪 ' %><%= e.member.relation %> של <a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.contact.first_name %> <%= e.contact.last_name %></a></span></div><% } %>
     <div class="bd-row__meta">
-      <% if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
+      <% if (e.age && yz) { %><span><%= e.age === 1 ? 'שנה ראשונה' : e.age + ' שנים' %> לפטירה</span><% } else if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
       <% if (past && !done) { %><span style="color:var(--bd-bad);font-weight:500">טרם נוצר קשר</span><% } %>
       <% if (e.note) { %><span class="bd-note">ⓘ <%= e.note %></span><% } %>
     </div>
@@ -32,7 +38,7 @@
   <div class="bd-row__actions">
     <% if (done) { %><button type="button" class="bd-row__toggle" data-row-toggle aria-expanded="false" aria-label="פרטים ופעולות ל<%= e.name %>">▾</button><% } %>
     <% if (wa) { %>
-      <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="שליחת ברכה בוואטסאפ ל<%= e.name %>"><%- include('icons', { name: 'chat' }) %></a>
+      <a class="bd-icon-btn bd-icon-btn--wa" href="<%= waHref %>" target="_blank" rel="noopener" aria-label="<%= yz ? 'הודעה בוואטסאפ ל' + e.contact.first_name : 'שליחת ברכה בוואטסאפ ל' + e.name %>"><%- include('icons', { name: 'chat' }) %></a>
       <% if (!isDemo) { %><a class="bd-icon-btn" href="tel:+<%= intl %>" aria-label="חיוג ל<%= e.name %>"><%- include('icons', { name: 'phone' }) %></a><% } %>
     <% } %>
     <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/<%= done ? 'unlog' : 'log' %>"<% if (!done) { %> data-quicklog data-name="<%= e.name %>"<% } %>>
