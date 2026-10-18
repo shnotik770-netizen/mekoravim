@@ -79,6 +79,12 @@
     <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
   </form>
 </section>
+<section class="bd-card">
+  <h2 class="bd-section-title">📇 רשומות בחשבון</h2>
+  <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
+  <p class="bd-small bd-mt">בשימוש <b class="bd-num"><%= records.used %></b> מתוך <b class="bd-num"><%= records.quota %></b> (מקורבים ובני משפחה) · נותרו <b class="bd-num"><%= records.left %></b></p>
+  <p class="bd-help">להרחבה — 500 רשומות נוספות ב-40 ₪ חד-פעמי, דרך <a href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, אשמח להרחיב את מכסת הרשומות בזכרתי התקשרתי') %>" target="_blank" rel="noopener">המנהל בוואטסאפ</a>.</p>
+</section>
 <section class="bd-card bd-profile">
   <details class="bd-profile__box" <%= typeof openProfile !== 'undefined' && openProfile ? 'open' : '' %>>
     <summary class="bd-btn bd-btn--soft bd-btn--block bd-profile__btn">⚙️ שינוי פרטים</summary>

@@ -1,0 +1,83 @@
+<%
+  const wa = 'https://wa.me/972533404770?text=' + encodeURIComponent('שלום, קראתי את דף ההסבר ואשמח להצטרף לזכרתי התקשרתי');
+%><!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>מה כולל השימוש — זכרתי התקשרתי</title>
+<meta name="description" content="זכרתי התקשרתי — מה יש במערכת, מה כולל המחיר, ואיך מצטרפים.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/home.css?v=<%= v %>">
+<meta name="theme-color" content="#0F1B33">
+<link rel="icon" type="image/svg+xml" href="/img/logo.svg?v=<%= v %>">
+</head>
+<body class="hm">
+<div class="hm-bh" aria-label="בעזרת השם">ב״ה</div>
+<header class="hm-bar hm-bar--solid">
+  <a class="hm-brand" href="/"><img src="/img/logo.svg?v=<%= v %>" alt="" width="40" height="40">זכרתי <span>התקשרתי</span></a>
+  <a class="hm-btn hm-btn--gold hm-btn--sm" href="/">לדף הבית</a>
+</header>
+
+<main class="hm-terms hm-info">
+  <h1>מה כולל השימוש</h1>
+  <p class="hm-terms__meta">כל מה שצריך לדעת לפני שמצטרפים</p>
+  <p><b>זכרתי התקשרתי</b> היא מערכת לשלוחים ולבתי חב״ד: כל ימי ההולדת העבריים של המקורבים ובני המשפחה שלהם במקום אחד — עם תזכורת ב-SMS, ברכה בוואטסאפ בלחיצה, ומעקב אחרי מי כבר קיבל ברכה.</p>
+
+  <h2>מה יש במערכת</h2>
+  <ul>
+    <li>📅 <b>תאריך עברי אוטומטי</b> — ממלאים תאריך לועזי (כולל "נולד אחרי השקיעה") ומקבלים עברי. ל׳ חשוון/כסלו ואדר א׳/ב׳ מטופלים נכון כל שנה.</li>
+    <li>🎂 <b>דשבורד</b> — ימי הולדת היום, השבוע, החודש, או בכל טווח תאריכים; גיל; בני משפחה; ומי עבר בלי ברכה.</li>
+    <li>💬 <b>ברכה בלחיצה</b> — וואטסאפ עם נוסח ברכה מוכן (גם למספרים מחו״ל), חיוג, וסימון "יצרתי קשר" עם הערה.</li>
+    <li>📱 <b>תזכורות SMS לנייד שלכם</b> — שבועית ביום ראשון ו/או יומית, ותזכורת מיוחדת על מקורב מסוים עד שבוע לפני. לא בשבת ובחג, ולא נשלחת הודעה כשאין ימי הולדת.</li>
+    <li>🔗 <b>קישורי רישום</b> — שולחים קישור, והמקורבים ממלאים בעצמם (כולל בני משפחה), עם כותרת ושדות משלכם.</li>
+    <li>📋 <b>ייבוא מאקסל</b> — מדביקים רשימה שלמה בבת אחת, עם תיקון שורות לפני השמירה.</li>
+    <li>🏷️ <b>סיווגים</b> (למשל: מקורבים, משתתפים בשיעורים, תורמים) וחיפוש מהיר.</li>
+    <li>📲 <b>נשמר כאפליקציה</b> בטלפון, וכניסה בקוד קבוע או בקוד חד-פעמי ב-SMS.</li>
+    <li>🔒 <b>פרטיות</b> — רק אתם רואים את המקורבים שלכם. המנהל רואה מספרים בלבד, בלי שמות וטלפונים.</li>
+  </ul>
+
+  <h2>מה כולל המחיר</h2>
+  <div class="hm-price-card">
+    <div class="hm-price-card__main"><span class="hm-price-card__num">40 ₪</span><span>תשלום חד-פעמי · בלי דמי מנוי</span></div>
+    <ul>
+      <li>✓ חשבון אישי עם כל אפשרויות המערכת</li>
+      <li>✓ עד <b>770 רשומות</b> (מקורבים ובני משפחה — כל שם הוא רשומה)</li>
+      <li>✓ <b>200 יחידות SMS</b> לתזכורות</li>
+      <li>✓ שימוש בחשבון כל עוד השירות פועל</li>
+    </ul>
+  </div>
+
+  <h2>הרחבות (רק אם צריך)</h2>
+  <ul>
+    <li>➕ <b>כל 500 רשומות נוספות — 40 ₪</b> חד-פעמי.</li>
+    <li>➕ <b>כל 1,000 יחידות SMS נוספות — 10 ₪</b> (אחרי 200 היחידות הראשונות).</li>
+  </ul>
+  <p class="hm-muted">כשמתקרבים למכסת הרשומות (90%) — מקבלים הודעה במערכת וב-SMS, וכשיתרת ה-SMS עומדת להיגמר — הודעה במערכת. כשהמכסה מלאה אי אפשר להוסיף רשומות חדשות עד שהמנהל מרחיב אותה. שום דבר לא נמחק.</p>
+
+  <h2>מה זה "יחידת SMS"?</h2>
+  <p>הודעה בעברית של עד 70 תווים היא יחידה אחת; הודעה ארוכה יותר נספרת כמה יחידות (67 תווים לכל יחידה). רק תזכורות ימי הולדת יורדות מהמכסה — קודי כניסה והודעות מערכת לא. דוגמה: תזכורת שבועית עם 3 ימי הולדת היא בדרך כלל 2–3 יחידות.</p>
+
+  <h2>איך מצטרפים</h2>
+  <ol class="hm-info-steps">
+    <li><b>פונים אלינו בוואטסאפ</b> — שם, בית חב״ד ומספר נייד.</li>
+    <li><b>מקבלים ב-SMS</b> קישור אישי לחשבון וקוד כניסה.</li>
+    <li><b>מוסיפים מקורבים</b> — בעצמכם, מאקסל או בקישור רישום — ומתחילים לקבל תזכורות.</li>
+  </ol>
+  <p class="hm-info-cta">
+    <a class="hm-btn hm-btn--gold" href="<%= wa %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>להצטרפות בוואטסאפ</a>
+    <a class="hm-btn hm-btn--line hm-btn--dark" href="/demo">▶ לחשבון ההדגמה</a>
+  </p>
+  <p class="hm-muted">המחירים ט.ל.ח. השימוש בכפוף ל<a href="/terms">תנאי השימוש</a>.</p>
+</main>
+
+<p class="hm-yechi">יחי אדוננו מורנו ורבינו מלך המשיח לעולם ועד</p>
+<footer class="hm-foot">
+  <span>זכרתי התקשרתי · לא מפספסים אף יום הולדת</span>
+  <a class="hm-link" href="/terms">תנאי שימוש</a>
+  <a class="hm-link" href="/">לדף הבית</a>
+</footer>
+</body>
+</html>

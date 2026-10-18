@@ -15,6 +15,9 @@
   const back = qs({});
   const segs = [['today', 'היום'], ['week', 'השבוע'], ['month', 'חודש ' + monthWord]];
 %>
+<% if (records.near) { %>
+<div class="bd-msg <%= records.full ? 'bd-msg--err' : 'bd-msg--warn' %> bd-records-alert" role="alert"><span>📇 <b><%= records.full ? 'מכסת הרשומות מלאה' : 'מתקרבים למכסת הרשומות' %>:</b> <bdi class="bd-num"><%= records.used %></bdi> מתוך <bdi class="bd-num"><%= records.quota %></bdi> (מקורבים ובני משפחה)<%= records.full ? ' — לא ניתן להוסיף עוד.' : ' — נותרו ' + records.left + '.' %> להרחבה (500 רשומות נוספות ב-40 ₪) <a href="https://wa.me/972533404770?text=<%= encodeURIComponent('שלום, אשמח להרחיב את מכסת הרשומות בזכרתי התקשרתי') %>" target="_blank" rel="noopener">פנו למנהל בוואטסאפ</a>.</span></div>
+<% } %>
 <% if (sms.on && sms.low) { %>
 <div class="bd-msg bd-msg--warn bd-sms-alert" role="alert"><span>⚠️ <b>שימו לב:</b> <% if (sms.empty) { %>יתרת ה-SMS לתזכורות ימי הולדת נגמרה — התזכורות האוטומטיות הופסקו.<% } else { %>יתרת ה-SMS לתזכורות ימי הולדת עומדת להסתיים (נותרו עוד <bdi class="bd-num"><%= sms.left %></bdi> יחידות).<% } %> לחידוש המכסה פנו למנהל.</span></div>
 <% } %>

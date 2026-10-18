@@ -15,6 +15,7 @@ import { loadPeople, collectEvents } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
+import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, storeReveal, takeReveal } from './lib/security.js';
@@ -114,6 +115,7 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 // דוגמאות חיות לדף הבית
 app.get('/', (req, res) => res.render('home'));
 app.get('/terms', (req, res) => res.render('terms'));
+app.get('/info', (req, res) => res.render('info'));
 
 // ימי חודש לועזי בתאריך עברי — ללוח השנה של בחירת הטווח
 app.get('/api/hebmonth', (req, res) => {
@@ -300,6 +302,20 @@ app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
   res.redirect('/admin');
 });
 
+// מכסת רשומות (מקורבים + בני משפחה): רק המנהל מרחיב — "+500" או מספר מדויק
+app.post('/admin/shluchim/:id/records', requireAdmin, async (req, res) => {
+  const id = int(req.params.id);
+  const set = parseQuota(req.body.quota);
+  if (set.error) { flashErr(req, set.error); return res.redirect(`/admin/shluchim/${id}`); }
+  if (req.body.add === 'step') await q('UPDATE shluchim SET records_quota = least(records_quota + $1, 1000000) WHERE id=$2', [RECORDS_STEP, id]);
+  else if (set.value !== null) await q('UPDATE shluchim SET records_quota=$1 WHERE id=$2', [set.value, id]);
+  const st = await recordsStatus(id);
+  await q('UPDATE shluchim SET records_alert=$1 WHERE id=$2', [st.level, id]); // התראה חדשה תישלח כשיתקרבו שוב
+  req.auditDetail = `${st.quota}`;
+  flash(req, `מכסת הרשומות עודכנה: ${st.quota} (בשימוש ${st.used}, נותרו ${st.left})`);
+  res.redirect(`/admin/shluchim/${id}`);
+});
+
 /* ------------------------- יומן פעולות וסטטיסטיקות ------------------------- */
 // הכול כאן אגרגטיבי או מתוך activity_log — שמות, טלפונים ופרטי מקורבים לא נשלפים בכלל
 
@@ -422,7 +438,7 @@ app.get('/admin/shluchim/:id', requireAdmin, async (req, res) => {
   const { rows: all } = await q('SELECT id, name FROM shluchim ORDER BY name');
   const page = Math.max(1, int(req.query.page) || 1);
   const log = await loadLog({ shliachId: id, problems: req.query.o === 'problems', page });
-  res.render('admin_shliach', {
+  res.render('admin_shliach', { records: await recordsStatus(id),
     s: sh, counts, activity, sms, months, weeks, smsMonths, bdays, alerts, all, quota, ...log, page, problems: req.query.o === 'problems',
     OUTCOMES, ACTORS, fmtTime, base: baseUrl(req),
   });
@@ -548,6 +564,23 @@ async function validCategory(shliachId, id) {
   return rowCount ? id : null;
 }
 
+// אחרי הוספת רשומות: התראה לשליח כשמתקרבים (90%) או מגיעים למכסה — SMS פעם אחת לכל שלב (לא יורד מהמכסה)
+async function recordsCheck(shliachId) {
+  const st = await recordsStatus(shliachId);
+  if (st.level === st.alert) return st;
+  await q('UPDATE shluchim SET records_alert=$1 WHERE id=$2', [st.level, shliachId]);
+  if (st.level > st.alert) {
+    const { rows: [s] } = await q('SELECT * FROM shluchim WHERE id=$1', [shliachId]);
+    const phone = normalizePhone(s?.sms_phone) || normalizePhone(s?.phone);
+    const msg = st.full
+      ? `זכרתי התקשרתי: הגעתם למכסת ${st.quota} הרשומות (מקורבים ובני משפחה) — לא ניתן להוסיף עוד. להרחבה פנו למנהל: 053-340-4770`
+      : `זכרתי התקשרתי: נוצלו ${st.used} מתוך ${st.quota} רשומות (נותרו ${st.left}). להרחבה פנו למנהל: 053-340-4770`;
+    if (phone) sendToShliach(s, phone, msg, 'limit').catch(() => {});
+    audit({ shliachId, actor: 'system', action: 'התראת מכסת רשומות', detail: `${st.used}/${st.quota}` });
+  }
+  return st;
+}
+
 async function saveContact(shliachId, c, family, regLinkId) {
   const { rows } = await q(
     `INSERT INTO contacts (shliach_id, first_name, last_name, phone, notes, g_date, g_after_sunset, h_day, h_month, h_year, category_id, reg_link_id)
@@ -609,7 +642,13 @@ app.post('/r/:token', async (req, res) => {
   if (err) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error: err, internal: false });
   c.category_id = req.link.category_id;
   c.notes = extras.notes; // תשובות לשדות הנוספים נשמרות בהערות המקורב
+  if (roomError(await recordsStatus(req.link.shliach_id), 1 + fam.length)) {
+    req.auditDetail = 'מכסת הרשומות מלאה';
+    return res.status(409).render('register', { values: req.body, family: Object.values(req.body.fam || {}), internal: false,
+      error: 'לא ניתן להירשם כרגע (הרשימה מלאה). אפשר לפנות ישירות לשליח.' });
+  }
   await saveContact(req.link.shliach_id, c, fam, req.link.id);
+  await recordsCheck(req.link.shliach_id);
   res.render('register_done');
 });
 
@@ -792,6 +831,7 @@ router.get('/', async (req, res) => {
   const viewQ = view === 'range' ? (r.preset ? {} : { from: toISO(r.start), to: toISO(r.end) })
     : view === 'missed' ? (mr.days ? (mr.days === 14 ? {} : { days: mr.days }) : { from: toISO(mr.start), to: toISO(mr.end) }) : {};
   res.render('dashboard', {
+    records: await recordsStatus(s.id),
     weekInfo: weekInfo(today), hebRangeStr, toISO,
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
@@ -974,11 +1014,14 @@ router.post('/contacts/import', async (req, res) => {
   });
   const ok = rows.filter((r) => r.value && !r.dup);
 
-  if (req.body.action !== 'save') {
-    req.skipAudit = true; // תצוגה מקדימה לא נרשמת ביומן
-    return render({ rows, mapping, header, hasHeader, width, okCount: ok.length, newCats, createCats });
+  const rec = await recordsStatus(s.id);
+  const room = roomError(rec, ok.length);
+  if (req.body.action !== 'save' || room) {
+    req.skipAudit = req.body.action !== 'save'; // תצוגה מקדימה לא נרשמת ביומן
+    return render({ rows, mapping, header, hasHeader, width, okCount: ok.length, newCats, createCats, error: room });
   }
   for (const r of ok) await saveContact(s.id, r.value, [], null);
+  await recordsCheck(s.id);
   const skipped = rows.length - ok.length;
   const made = createCats ? newCats.length : 0;
   req.auditDetail = `נוספו ${ok.length}${skipped ? `, דולגו ${skipped}` : ''}${made ? `, סיווגים חדשים ${made}` : ''}`; // מספרים בלבד
@@ -997,7 +1040,14 @@ router.post('/contacts/new', async (req, res) => {
       values: req.body, family: Object.values(req.body.fam || {}), error, internal: true, categories: await loadCategories(req.shliach.id),
     });
   }
+  const full = roomError(await recordsStatus(req.shliach.id), 1 + fam.length);
+  if (full) {
+    return res.status(409).render('register', {
+      values: req.body, family: Object.values(req.body.fam || {}), error: full, internal: true, categories: await loadCategories(req.shliach.id),
+    });
+  }
   const id = await saveContact(req.shliach.id, c, fam, null);
+  await recordsCheck(req.shliach.id);
   flash(req, 'המקורב נוסף');
   res.redirect(`${res.locals.base}/contacts/${id}`);
 });
@@ -1099,7 +1149,10 @@ router.post('/contacts/:id/family', loadContact, async (req, res) => {
   const url = `${res.locals.base}/contacts/${req.contact.id}`;
   const fam = parseFamily([req.body]);
   if (fam.error || !fam.value.length) return res.redirect(`${url}?err=${encodeURIComponent(fam.error || 'יש להזין שם')}#family`);
+  const full = roomError(await recordsStatus(req.shliach.id), 1);
+  if (full) return res.redirect(`${url}?err=${encodeURIComponent(full)}#family`);
   await addFamily(req.contact.id, fam.value[0]);
+  await recordsCheck(req.shliach.id);
   flash(req, 'בן המשפחה נוסף');
   res.redirect(url + '#family');
 });
@@ -1201,7 +1254,7 @@ const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.se
 
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
-    error, openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
+    error, records: await recordsStatus(req.shliach.id), openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
     catCounts: Object.fromEntries((await q('SELECT category_id, count(*)::int AS n FROM contacts WHERE shliach_id=$1 AND category_id IS NOT NULL GROUP BY 1', [req.shliach.id])).rows.map((r) => [r.category_id, r.n])),
     smsOn: smsConfigured(), fmtDate, quota: quotaStatus(req.shliach),
     previews: req.shliach.sms_weekly && req.shliach.sms_daily

@@ -230,3 +230,10 @@ test('טלפון: ישראלי ומחו"ל לוואטסאפ', async () => {
   assert.equal(phoneError('+1 718 555 1234'), null);
   assert.ok(phoneError('123'));
 });
+
+test('מכסת רשומות: הודעת מקום', async () => {
+  const { roomError } = await import('../lib/records.js');
+  assert.equal(roomError({ left: 5, quota: 770 }, 5), null);
+  assert.match(roomError({ left: 1, quota: 770 }, 2), /רשומה אחת/);
+  assert.match(roomError({ left: 0, quota: 770 }, 1), /הגעתם למכסת 770/);
+});

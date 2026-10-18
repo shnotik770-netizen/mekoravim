@@ -1,7 +1,7 @@
 <%- include('partials/head', { title: s.name + ' — דשבורד' }) %>
 <%
   const ago = (d) => d ? fmtTime(d) : '—';
-  const kindName = { weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', contact: 'תזכורת על מקורב', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
+  const kindName = { limit: 'התראת מכסת רשומות', weekly: 'תזכורת שבועית', daily: 'תזכורת יומית', contact: 'תזכורת על מקורב', otp: 'קודי כניסה', admin: 'פרטי כניסה (מנהל)', test: 'הודעות ניסיון' };
   const pct = bdays.past30 ? Math.round(bdays.covered30 / bdays.past30 * 100) : null;
   const alertCls = { bad: 'bd-msg--err', warn: 'bd-msg--warn', info: 'bd-msg--info' };
 %>
@@ -43,6 +43,8 @@
   <div class="bd-stat"><span class="bd-stat__label">בני משפחה</span><span class="bd-stat__value bd-num"><%= counts.family %></span></div>
   <div class="bd-stat"><span class="bd-stat__label">"יצרתי קשר" (סה״כ)</span><span class="bd-stat__value bd-num"><%= counts.contacted %></span>
     <span class="bd-stat__hint"><span class="bd-num"><%= counts.contacted30 %></span> ב-30 יום</span></div>
+  <div class="bd-stat"><span class="bd-stat__label">רשומות (מכסה)</span><span class="bd-stat__value bd-num" <%- records.near ? 'style="color:var(--bd-bad)"' : '' %>><%= records.used %></span>
+    <span class="bd-stat__hint">מתוך <span class="bd-num"><%= records.quota %></span> · נותרו <span class="bd-num"><%= records.left %></span></span></div>
   <div class="bd-stat"><span class="bd-stat__label">יתרת SMS לתזכורות</span><span class="bd-stat__value bd-num" <%- quota.low ? 'style="color:var(--bd-bad)"' : '' %>><%= quota.left %></span>
     <span class="bd-stat__hint">מתוך <span class="bd-num"><%= quota.quota %></span></span></div>
 </div>
@@ -87,6 +89,19 @@
       <div class="bd-fact"><b>תקלות מערכת (30 יום)</b><span class="bd-num <%= activity.sys_problems30 ? 'bd-err' : '' %>"><%= activity.sys_problems30 %></span></div>
       <div class="bd-fact"><b>קישורי רישום</b><span><span class="bd-num"><%= counts.links_active %></span> פעילים מתוך <span class="bd-num"><%= counts.links %></span></span></div>
       <div class="bd-fact"><b>סיווגים</b><span class="bd-num"><%= counts.categories %></span></div>
+    </div>
+  </section>
+  <section class="bd-card" id="records">
+    <h2 class="bd-section-title">מכסת רשומות</h2>
+    <p class="bd-help bd-mb">מקורבים ובני משפחה. כשהמכסה מלאה השליח לא יכול להוסיף רשומות (גם לא בקישורי הרישום) עד שתורחב.</p>
+    <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
+    <p class="bd-small bd-mt">בשימוש <b class="bd-num"><%= records.used %></b> מתוך <b class="bd-num"><%= records.quota %></b> · נותרו <b class="bd-num"><%= records.left %></b></p>
+    <div class="bd-inline bd-mt">
+      <form method="post" action="/admin/shluchim/<%= s.id %>/records"><input type="hidden" name="add" value="step"><button class="bd-btn bd-btn--primary bd-btn--sm">+500 רשומות</button></form>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/records" class="bd-inline">
+        <input class="bd-input bd-num" name="quota" type="number" min="0" max="1000000" value="<%= records.quota %>" aria-label="מכסת רשומות" style="flex:0 0 100px">
+        <button class="bd-btn bd-btn--ghost bd-btn--sm">קביעה</button>
+      </form>
     </div>
   </section>
   <section class="bd-card">
