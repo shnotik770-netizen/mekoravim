@@ -9,13 +9,13 @@
   <% } else { %>
     <p class="bd-sub bd-mb bd-mt">הזינו את קוד הכניסה</p>
   <% } %>
-  <form method="post" action="<%= base %>/login">
+  <form method="post" action="<%= base %>/login" data-once>
     <div class="bd-field"><input class="bd-input bd-code-input" name="code" required autofocus aria-label="קוד כניסה" maxlength="32"
       <% if (otpSent) { %>type="text" inputmode="numeric" autocomplete="one-time-code"<% } else { %>type="password" autocomplete="current-password"<% } %>></div>
     <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
   </form>
   <% if (canOtp) { %>
-  <form method="post" action="<%= base %>/otp/send" class="bd-mt">
+  <form method="post" action="<%= base %>/otp/send" class="bd-mt" data-once>
     <button class="bd-btn bd-btn--soft bd-btn--block">📱 <%= otpSent ? 'לא קיבלתי — שליחת קוד חדש' : 'קבלת קוד חד-פעמי ב-SMS' %></button>
     <% if (!otpSent) { %><p class="bd-help bd-mt">הקוד יישלח לנייד <bdi class="bd-num" dir="ltr"><%= maskedPhone %></bdi></p><% } %>
   </form>

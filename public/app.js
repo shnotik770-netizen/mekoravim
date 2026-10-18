@@ -472,3 +472,11 @@ document.querySelectorAll('details[data-fold]').forEach((d) => {
   try { if (localStorage.getItem(key) === '0') d.open = false; } catch {}
   d.addEventListener('toggle', () => { try { d.open ? localStorage.removeItem(key) : localStorage.setItem(key, '0'); } catch {} });
 });
+
+// טפסי כניסה — שליחה אחת בלבד (מילוי אוטומטי של קוד מה-SMS + לחיצה שולחים פעמיים, והשנייה נכשלת)
+document.querySelectorAll('form[data-once]').forEach((f) => f.addEventListener('submit', (e) => {
+  if (f.dataset.sent) { e.preventDefault(); return; }
+  f.dataset.sent = '1';
+  setTimeout(() => { delete f.dataset.sent; }, 8000);
+}));
+window.addEventListener('pageshow', () => document.querySelectorAll('form[data-once]').forEach((f) => { delete f.dataset.sent; }));

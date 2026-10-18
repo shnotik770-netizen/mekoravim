@@ -900,15 +900,20 @@ router.post('/otp/send', async (req, res) => {
   res.redirect(res.locals.base);
 });
 
-async function checkOtp(shliachId, code) {
+async function checkOtp(shliachId, code, ip) {
   const { rows } = await q(
     `UPDATE login_codes SET attempts=attempts+1
      WHERE id=(SELECT id FROM login_codes WHERE shliach_id=$1 AND NOT used AND expires_at > now() ORDER BY created_at DESC LIMIT 1)
        AND attempts < $2
      RETURNING id, code_hash`, [shliachId, OTP_MAX_ATTEMPTS]);
-  if (!rows[0]) return 'expired';
+  if (!rows[0]) {
+    // שליחה כפולה של הטופס (מילוי אוטומטי מה-SMS + לחיצה): הקוד כבר נוצל לפני רגע מאותה כתובת — זו אותה כניסה
+    const { rows: [r] } = await q(`SELECT code_hash FROM login_codes WHERE shliach_id=$1 AND consumed_ip=$2
+      AND consumed_at > now() - interval '2 minutes' ORDER BY consumed_at DESC LIMIT 1`, [shliachId, ip]);
+    return r && /^\d{6}$/.test(code) && (await bcrypt.compare(code, r.code_hash)) ? 'ok' : 'expired';
+  }
   if (!/^\d{6}$/.test(code) || !(await bcrypt.compare(code, rows[0].code_hash))) return 'wrong';
-  await q('UPDATE login_codes SET used=TRUE WHERE id=$1', [rows[0].id]);
+  await q('UPDATE login_codes SET used=TRUE, consumed_at=now(), consumed_ip=$2 WHERE id=$1', [rows[0].id, ip]);
   return 'ok';
 }
 
@@ -924,7 +929,7 @@ router.post('/login', async (req, res) => {
   // קודם הקוד הקבוע; אם לא תאם — קוד חד-פעמי פעיל (אם נשלח)
   let ok = acctOpen && !!s.access_code_hash && (await bcrypt.compare(code, s.access_code_hash));
   let otp = null;
-  if (!ok) { otp = await checkOtp(s.id, code); ok = otp === 'ok'; }
+  if (!ok) { otp = await checkOtp(s.id, code, req.ip); ok = otp === 'ok'; }
   if (!ok) {
     if (!acctOpen) return renderLogin(req, res, 'יותר מדי ניסיונות לחשבון הזה. אפשר להיכנס עם קוד חד-פעמי ב-SMS, או לנסות שוב מאוחר יותר.', 429);
     req.auditDetail = 'קוד שגוי';
