@@ -81,7 +81,7 @@
         <div class="bd-field"><label class="bd-label" for="e-ph">טלפון <span class="opt">(לא חובה)</span></label><input class="bd-input" id="e-ph" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= values.phone %>"><span class="bd-help">מחו״ל? עם קידומת מדינה, למשל +1 718 555 1234</span></div>
         <fieldset class="bd-field"><legend class="bd-label">תאריך לידה</legend><%- include('partials/birth_fields', { prefix: '', vals: values, uid: 'edit' }) %></fieldset>
         <%- include('partials/cat_select', { selected: values.category_id }) %>
-        <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea></div>
+        <div class="bd-field"><label class="bd-label" for="e-notes">הערות</label><textarea class="bd-input" id="e-notes" name="notes" maxlength="1000"><%= values.notes %></textarea><span class="bd-help">⚠️ לא לרשום כאן מידע רפואי או רגיש.</span></div>
         <button class="bd-btn bd-btn--primary">שמירה</button>
       </form>
     </details>

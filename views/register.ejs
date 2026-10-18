@@ -40,7 +40,7 @@
 
   <% if (internal) { %>
     <%- include('partials/cat_select', { selected: values.category_id }) %>
-    <div class="bd-field"><label class="bd-label" for="notes">הערות <span class="opt">(רשות)</span></label><textarea class="bd-input" id="notes" name="notes" maxlength="1000"><%= values.notes || '' %></textarea></div>
+    <div class="bd-field"><label class="bd-label" for="notes">הערות <span class="opt">(רשות)</span></label><textarea class="bd-input" id="notes" name="notes" maxlength="1000"><%= values.notes || '' %></textarea><span class="bd-help">⚠️ לא לרשום כאן מידע רפואי או רגיש.</span></div>
   <% } %>
 
   <div class="bd-field">
@@ -52,9 +52,15 @@
     <template id="fam-tpl"><%- include('partials/family_row', { i: '__I__', f: { date_type: 'h' } }) %></template>
   </div>
 
-  <button class="bd-btn bd-btn--primary bd-btn--block"><%= internal ? 'שמירה' : 'שליחה' %></button>
   <% if (!internal) { %>
-  <p class="bd-help bd-center" style="margin-top:12px">🔒 הפרטים נשמרים רק אצל <%= link.shliach_name %>, לצורך ברכה ביום ההולדת, ולא מועברים לאף אחד. כשרושמים בני משפחה — ודאו שהם מסכימים. אפשר לבקש מחיקה בכל עת. <a href="/terms" target="_blank" rel="noopener">תנאי שימוש</a></p>
+  <div class="bd-privacy-note">
+    <p><b>🔒 על הפרטים שלך</b></p>
+    <p>הפרטים יישמרו אצל <b><%= link.shliach_name %><%= link.chabad_house ? ' (' + link.chabad_house + ')' : '' %></b>, האחראי על המידע, לצורך שמירת קשר וברכה ביום ההולדת. מסירת הפרטים אינה חובה ונעשית מרצונך; בלי תאריך לידה לא נוכל לזכור את יום ההולדת.</p>
+    <p>המידע מנוהל במערכת "זכרתי התקשרתי" עבור השליח, ונשמר בשרתי ענן מאובטחים של חברת Railway <b>בארצות הברית</b>. הוא לא יימכר ולא יועבר לאף גורם אחר. אפשר לבקש לעיין במידע, לתקן או למחוק אותו בכל עת — דרך <%= link.shliach_name %> או בוואטסאפ <bdi dir="ltr">053-340-4770</bdi>. כשרושמים בני משפחה — ודאו שהם מסכימים.</p>
+    <p><a href="/privacy" target="_blank" rel="noopener">מדיניות הפרטיות</a> · <a href="/terms" target="_blank" rel="noopener">תנאי שימוש</a></p>
+    <label class="bd-check"><input type="checkbox" name="privacy_ok" required <%= values.privacy_ok ? 'checked' : '' %>> קראתי ואני מסכים/ה לשמירת הפרטים כמתואר, כולל אחסון בשרתים מחוץ לישראל</label>
+  </div>
   <% } %>
+  <button class="bd-btn bd-btn--primary bd-btn--block"><%= internal ? 'שמירה' : 'שליחה' %></button>
 </form>
 <%- include('partials/foot') %>

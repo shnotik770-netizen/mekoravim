@@ -116,6 +116,7 @@ const fmtDate = (t) => new Date(t).toLocaleDateString('he-IL', { timeZone: 'Asia
 app.get('/', (req, res) => res.render('home'));
 app.get('/terms', (req, res) => res.render('terms'));
 app.get('/info', (req, res) => res.render('info'));
+app.get('/privacy', (req, res) => res.render('privacy'));
 
 // ימי חודש לועזי בתאריך עברי — ללוח השנה של בחירת הטווח
 app.get('/api/hebmonth', (req, res) => {
@@ -299,6 +300,18 @@ app.post('/admin/shluchim/:id/quota', requireAdmin, async (req, res) => {
   await q(`UPDATE shluchim SET sms_last_error=NULL WHERE id=$1 AND sms_used_birthdays < sms_quota AND sms_last_error LIKE 'יתרת ה-SMS%'`, [id]);
   const { rows } = await q('SELECT sms_quota, sms_used_birthdays, sms_alert_threshold FROM shluchim WHERE id=$1', [id]);
   if (rows[0]) { const st = quotaStatus(rows[0]); flash(req, `המכסה עודכנה: ${st.quota} יחידות, נוצלו ${st.used}, יתרה ${st.left} (התראה מתחת ל-${st.threshold})`); }
+  res.redirect('/admin');
+});
+
+// סגירת חשבון שליח: מוחק את השליח וכל המידע שלו (מקורבים, בני משפחה, קישורים, יומני SMS) — בלתי הפיך
+app.post('/admin/shluchim/:id/delete', requireAdmin, async (req, res) => {
+  const id = int(req.params.id);
+  const { rows } = await q('SELECT name FROM shluchim WHERE id=$1', [id]);
+  if (!rows[0]) return res.redirect('/admin');
+  if (String(req.body.confirm || '').trim() !== 'מחיקה') { flashErr(req, 'כדי למחוק יש להקליד "מחיקה" בתיבת האישור'); return res.redirect(`/admin/shluchim/${id}#danger`); }
+  await q('DELETE FROM shluchim WHERE id=$1', [id]);
+  req.auditDetail = `#${id}`;
+  flash(req, `החשבון של ${rows[0].name} נמחק עם כל המידע שבו`);
   res.redirect('/admin');
 });
 
@@ -638,7 +651,8 @@ app.post('/r/:token', async (req, res) => {
   }
   const { c, fam, error } = parseForm(req.body, { bothNames: req.link.require_both_names });
   const extras = parseExtras(req.link, req.body);
-  const err = error || extras.error;
+  // הסכמה מפורשת (חובת יידוע + אחסון בחו"ל)
+  const err = error || extras.error || (req.body.privacy_ok !== 'on' ? 'יש לאשר את תנאי שמירת הפרטים (סמנו את התיבה)' : null);
   if (err) return res.status(400).render('register', { values: req.body, family: Object.values(req.body.fam || {}), error: err, internal: false });
   c.category_id = req.link.category_id;
   c.notes = extras.notes; // תשובות לשדות הנוספים נשמרות בהערות המקורב
@@ -956,6 +970,27 @@ router.get('/contacts', async (req, res) => {
 });
 
 /* ------------------------- ייבוא מקורבים מאקסל (הדבקה) ------------------------- */
+
+// ייצוא כל הרשימה לקובץ (אקסל/CSV) — לגיבוי אישי, לבקשות עיון, או לפני סגירת חשבון
+router.get('/contacts/export.csv', async (req, res) => {
+  const s = req.shliach;
+  const { contacts, family } = await loadPeople(s.id);
+  const cats = new Map((await loadCategories(s.id)).map((c) => [c.id, c.name]));
+  // תא בטוח לאקסל: מרכאות, ומניעת "הזרקת נוסחה" (= או @ בהתחלה, או +/- שלא לפני מספר טלפון)
+  const cell = (v) => { let t = String(v ?? ''); if (/^[=@\t\r]|^[+\-](?![\d\s(])/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
+  const heb = (p) => (p.h_day ? hebDateStr(p.h_day, p.h_month, p.h_year) : '');
+  const lines = [['סוג', 'שם פרטי', 'שם משפחה', 'קשר', 'שייך ל', 'טלפון', 'תאריך עברי', 'תאריך לועזי', 'סיווג', 'הערות'].map(cell).join(',')];
+  const byId = new Map(contacts.map((c) => [c.id, c]));
+  for (const c of contacts) lines.push(['מקורב', c.first_name, c.last_name, '', '', c.phone, heb(c), c.g_date || '', cats.get(c.category_id) || '', c.notes].map(cell).join(','));
+  for (const f of family) {
+    const c = byId.get(f.contact_id);
+    lines.push(['בן משפחה', f.first_name, '', f.relation, c ? `${c.first_name} ${c.last_name}`.trim() : '', '', heb(f), f.g_date || '', '', ''].map(cell).join(','));
+  }
+  if (!req.demo) audit({ shliachId: s.id, actor: 'shliach', action: 'ייצוא רשימה לקובץ', detail: `${contacts.length + family.length} רשומות` });
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="mekoravim-${toISO(todayIL())}.csv"`);
+  res.send('\uFEFF' + lines.join('\r\n'));
+});
 
 router.get('/contacts/import', async (req, res) => {
   res.render('import', { text: '', rows: null, mapping: [], categories: await loadCategories(req.shliach.id), defaultCategory: null, error: null, IMPORT_FIELDS });

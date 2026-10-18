@@ -491,3 +491,10 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-meter span { display: block; height: 100%; border-radius: inherit; background: var(--bd-accent); }
 .bd-meter--low span { background: var(--bd-bad); }
 .bd-records-alert a { color: inherit; font-weight: 700; text-decoration: underline; }
+
+/* הודעת פרטיות בטופס הרישום */
+.bd-privacy-note { margin: var(--bd-sp-4) 0; padding: 12px 14px; border-radius: 14px; background: var(--bd-surface-2); font-size: var(--bd-fs-sm); line-height: 1.55; display: grid; gap: 6px; }
+.bd-privacy-note p { margin: 0; }
+.bd-privacy-note .bd-check { margin-top: 4px; font-weight: var(--bd-fw-medium); }
+.bd .bd-btn--danger { background: var(--bd-bad); color: #fff; }
+.bd-danger { border-color: color-mix(in srgb, var(--bd-bad) 30%, var(--bd-line)); }
