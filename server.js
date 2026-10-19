@@ -1302,7 +1302,7 @@ router.get('/contacts/:id', loadContact, async (req, res) => {
   c.next = nextBirthday(c, today);
   for (const f of family) f.next = nextBirthday(f, today);
   res.render('contact', {
-    c, family, log, link, values: formValues(c), wa: whatsappLink(c.phone), categories: await loadCategories(req.shliach.id), fmtDate,
+    c, family, log, link, values: formValues(c), formValues, wa: whatsappLink(c.phone), categories: await loadCategories(req.shliach.id), fmtDate,
     fmtTime: (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' }),
     error: req.query.err || null,
   });
@@ -1387,6 +1387,21 @@ router.post('/contacts/:id/family', loadContact, async (req, res) => {
   await addFamily(req.contact.id, fam.value[0]);
   await recordsCheck(req.shliach.id);
   flash(req, yz ? 'היארצייט נוסף' : 'בן המשפחה נוסף');
+  res.redirect(url + '#family');
+});
+
+// עריכת בן משפחה / יארצייט: קרבה, שם ותאריך (לידה / פטירה)
+router.post('/contacts/:id/family/:fid', loadContact, async (req, res) => {
+  const url = `${res.locals.base}/contacts/${req.contact.id}`;
+  const { rows: [f] } = await q('SELECT id, kind FROM family_members WHERE id=$1 AND contact_id=$2', [int(req.params.fid), req.contact.id]);
+  if (!f) return res.redirect(url + '#family');
+  const fam = parseFamily([req.body], f.kind);
+  if (fam.error || !fam.value.length) return res.redirect(`${url}?err=${encodeURIComponent(fam.error || 'יש להזין שם')}#family`);
+  const v = fam.value[0];
+  await q(`UPDATE family_members SET relation=$1, first_name=$2, g_date=$3, g_after_sunset=$4, h_day=$5, h_month=$6, h_year=$7
+           WHERE id=$8 AND contact_id=$9`,
+    [v.relation, v.first_name, v.g_date, v.g_after_sunset, v.h_day, v.h_month, v.h_year, f.id, req.contact.id]);
+  flash(req, f.kind === 'yahrzeit' ? 'פרטי היארצייט עודכנו' : 'פרטי בן המשפחה עודכנו');
   res.redirect(url + '#family');
 });
 

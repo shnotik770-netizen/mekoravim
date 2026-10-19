@@ -552,3 +552,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-load-bars i.warn { background: var(--bd-gold, #C9A227); }
 .bd-load-bars i.bad { background: var(--bd-bad); }
 .bd-load-bars small { font-size: .6rem; color: var(--bd-fg-muted); }
+
+/* עריכת בן משפחה בתוך השורה */
+.bd-item:has(> .bd-fam-edit) { flex-wrap: wrap; }
+.bd-item > .bd-fam-edit { flex-basis: 100%; }

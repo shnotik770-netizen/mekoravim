@@ -55,6 +55,18 @@
 ⚠️ המחיקה בלתי הפיכה — לא ניתן לשחזר."><button class="bd-link-btn">מחיקה</button></form>
           </div>
         </div>
+        <details class="bd-fam-edit">
+          <summary class="bd-link-btn bd-link-btn--accent">✏️ עריכת פרטים</summary>
+          <form method="post" action="<%= base %>/contacts/<%= c.id %>/family/<%= f.id %>" class="bd-mt">
+            <div class="bd-family__grid bd-mb">
+              <select class="bd-input" name="relation" aria-label="קרבה"><% RELATIONS.forEach(r => { %><option <%= f.relation === r ? 'selected' : '' %>><%= r %></option><% }) %></select>
+              <input class="bd-input" name="first_name" required maxlength="<%= yz ? 80 : 60 %>" value="<%= f.first_name %>" aria-label="<%= yz ? 'שם הנפטר/ת' : 'שם פרטי' %>">
+            </div>
+            <% if (yz) { %><p class="bd-help bd-mb">תאריך הפטירה:</p><% } %>
+            <%- include('partials/birth_fields', { prefix: '', vals: formValues(f), uid: 'ef' + f.id, death: yz }) %>
+            <button class="bd-btn bd-btn--primary bd-btn--sm bd-mt">שמירה</button>
+          </form>
+        </details>
       </li>
     <% }) %>
     </ul>
