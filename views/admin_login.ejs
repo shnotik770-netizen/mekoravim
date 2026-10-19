@@ -1,9 +1,18 @@
 <%- include('partials/head', { title: 'כניסת מנהל', narrow: true }) %>
-<form method="post" action="/admin/login" class="bd-card">
+<form method="post" action="/admin/login" class="bd-card" data-once>
   <h1 class="bd-title bd-mb">כניסת מנהל</h1>
   <% if (error) { %><div class="bd-msg bd-msg--err" role="alert"><%= error %></div><% } %>
-  <div class="bd-field"><label class="bd-label" for="pw">סיסמה</label><input class="bd-input" id="pw" type="password" name="password" required autofocus autocomplete="current-password"></div>
+  <% if (locked) { %>
+    <div class="bd-msg bd-msg--warn bd-mb">🔒 הכניסה ננעלה זמנית בגלל ניסיונות שגויים. כדי להיכנס מהמכשיר הזה — קוד חד-פעמי ב-SMS לנייד המנהל, יחד עם הסיסמה.<% if (otpSent) { %> <b>קוד נשלח.</b><% } %></div>
+    <div class="bd-field"><label class="bd-label" for="otp">קוד מה-SMS</label><input class="bd-input" id="otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" <%= otpSent ? 'autofocus' : '' %>></div>
+  <% } %>
+  <div class="bd-field"><label class="bd-label" for="pw">סיסמה</label><input class="bd-input" id="pw" type="password" name="password" required <%= locked && otpSent ? '' : 'autofocus' %> autocomplete="current-password"></div>
   <button class="bd-btn bd-btn--primary bd-btn--block">כניסה</button>
 </form>
+<% if (locked) { %>
+<form method="post" action="/admin/login/otp" class="bd-mt" data-once>
+  <button class="bd-btn bd-btn--soft bd-btn--block">📱 <%= otpSent ? 'שליחת קוד חדש' : 'שליחת קוד לנייד המנהל' %></button>
+</form>
+<% } %>
 <%- include('partials/login_links') %>
 <%- include('partials/foot') %>

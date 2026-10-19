@@ -82,9 +82,27 @@
       </form>
     </div>
     <div class="bd-action-box">
+      <b id="records">📇 מכסת רשומות</b>
+      <p class="bd-small">מכסה <b class="bd-num"><%= records.quota %></b> · בשימוש <b class="bd-num"><%= records.used %></b> · נותרו <b class="bd-num <%= records.near ? 'bd-err' : '' %>"><%= records.left %></b></p>
+      <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
+      <form method="post" action="/admin/shluchim/<%= s.id %>/records" class="bd-stack bd-mt">
+        <div class="bd-inline">
+          <input class="bd-input" name="add" type="number" min="1" max="100000" placeholder="הוספת רשומות (למשל 500)" aria-label="הוספת רשומות">
+          <button class="bd-btn bd-btn--primary bd-btn--sm">הוספה</button>
+        </div>
+      </form>
+      <details>
+        <summary class="bd-link-btn bd-link-btn--accent">הגדרות מתקדמות</summary>
+        <form method="post" action="/admin/shluchim/<%= s.id %>/records" class="bd-stack">
+          <label class="bd-small">מכסה כוללת<input class="bd-input bd-num" name="quota" type="number" min="0" max="1000000" value="<%= records.quota %>"></label>
+          <button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button>
+        </form>
+      </details>
+      <p class="bd-help">מקורבים, בני משפחה ויארצייט. כשהמכסה מלאה אי אפשר להוסיף רשומות (גם לא בקישורי הרישום).</p>
+    </div>
+    <div class="bd-action-box">
       <b>⚙️ חשבון</b>
-      <p><a class="bd-link-btn bd-link-btn--accent" href="#records">📇 מכסת רשומות ←</a></p>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/toggle" class="bd-mt" data-confirm="<%= s.active ? 'להשבית את החשבון? השליח לא יוכל להיכנס והתזכורות ייעצרו.' : 'להפעיל מחדש את החשבון?' %>">
+      <form method="post" action="/admin/shluchim/<%= s.id %>/toggle" data-confirm="<%= s.active ? 'להשבית את החשבון? השליח לא יוכל להיכנס והתזכורות ייעצרו.' : 'להפעיל מחדש את החשבון?' %>">
         <button class="bd-btn bd-btn--sm <%= s.active ? 'bd-btn--ghost' : 'bd-btn--primary' %>"><%= s.active ? '⏸ השבתת החשבון' : '▶ הפעלת החשבון' %></button>
       </form>
     </div>
@@ -139,18 +157,6 @@
       <div class="bd-fact"><b>תקלות מערכת (30 יום)</b><span class="bd-num <%= activity.sys_problems30 ? 'bd-err' : '' %>"><%= activity.sys_problems30 %></span></div>
       <div class="bd-fact"><b>קישורי רישום</b><span><span class="bd-num"><%= counts.links_active %></span> פעילים מתוך <span class="bd-num"><%= counts.links %></span></span></div>
       <div class="bd-fact"><b>סיווגים</b><span class="bd-num"><%= counts.categories %></span></div>
-    </div>
-  </details>
-  <details class="bd-card bd-fold" id="records" open data-fold><summary class="bd-section-title">מכסת רשומות</summary>
-    <p class="bd-help bd-mb">מקורבים ובני משפחה. כשהמכסה מלאה השליח לא יכול להוסיף רשומות (גם לא בקישורי הרישום) עד שתורחב.</p>
-    <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
-    <p class="bd-small bd-mt">בשימוש <b class="bd-num"><%= records.used %></b> מתוך <b class="bd-num"><%= records.quota %></b> · נותרו <b class="bd-num"><%= records.left %></b></p>
-    <div class="bd-inline bd-mt">
-      <form method="post" action="/admin/shluchim/<%= s.id %>/records"><input type="hidden" name="add" value="step"><button class="bd-btn bd-btn--primary bd-btn--sm">+500 רשומות</button></form>
-      <form method="post" action="/admin/shluchim/<%= s.id %>/records" class="bd-inline">
-        <input class="bd-input bd-num" name="quota" type="number" min="0" max="1000000" value="<%= records.quota %>" aria-label="מכסת רשומות" style="flex:0 0 100px">
-        <button class="bd-btn bd-btn--ghost bd-btn--sm">קביעה</button>
-      </form>
     </div>
   </details>
   <details class="bd-card bd-fold" open data-fold><summary class="bd-section-title">SMS</summary>

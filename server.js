@@ -18,8 +18,8 @@ import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } fr
 import { seedDemoAccount } from './lib/demo.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
-import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
-import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, recordsByIp, recordsByLink, PUBLIC_MAX_ROWS, otpSendDaily, storeReveal, takeReveal } from './lib/security.js';
+import { smsConfigured, normalizePhone, sendSms, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
+import { RateLimiter, strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, recordsByIp, recordsByLink, PUBLIC_MAX_ROWS, otpSendDaily, storeReveal, takeReveal } from './lib/security.js';
 import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, phoneIntl, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -210,25 +210,69 @@ app.get('/manifest.webmanifest', (req, res) => {
 
 // דפי המנהל: "יחי אדוננו" בתחתית
 app.use('/admin', (req, res, next) => { res.locals.yechi = true; next(); });
+// הגנה מפני נעילת המנהל על ידי אחרים:
+// 1. מכשיר מוכר — אחרי כניסה מוצלחת נשמר בעוגייה החתומה סימון שקשור לסיסמה הנוכחית (החלפת סיסמה מבטלת אותו).
+//    ממכשיר מוכר הנעילה הכללית (ניסיונות שגויים מכל העולם) לא חלה, וטעויות שלך לא נועלות אחרים.
+// 2. ממכשיר חדש כשהחשבון נעול — קוד חד-פעמי ב-SMS לנייד המנהל (מוגדר בדף המנהל ← עומס) + הסיסמה.
+const ADMIN_DEVICE = crypto.createHmac('sha256', SESSION_SECRET).update('admin-device:' + ADMIN_PASSWORD).digest('base64url').slice(0, 24);
+const adminOtp = { hash: null, exp: 0, tries: 0 };
+const adminOtpSend = new RateLimiter({ max: 3, windowMs: 60 * 60 * 1000 });
+const adminState = (req) => {
+  const trusted = req.session.admDev === ADMIN_DEVICE;
+  return { trusted, locked: !trusted && loginByAccount.blocked('admin'), otpSent: adminOtp.exp > Date.now() };
+};
+const renderAdminLogin = (req, res, error = null, status = 200) => res.status(status).render('admin_login', { error, ...adminState(req) });
+
 app.get('/admin/login', (req, res) => {
   if (req.session.admin > Date.now()) return res.redirect('/admin');
-  res.render('admin_login', { error: null });
+  renderAdminLogin(req, res);
 });
 
-app.post('/admin/login', (req, res) => {
+app.post('/admin/login', async (req, res) => {
   const ipKey = 'admin:' + req.ip;
-  if (loginByIp.blocked(ipKey) || loginByAccount.blocked('admin')) {
-    return res.status(429).render('admin_login', { error: 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.' });
+  const { trusted, locked } = adminState(req);
+  if (loginByIp.blocked(ipKey)) return renderAdminLogin(req, res, 'יותר מדי ניסיונות מהמכשיר הזה. נסו שוב בעוד רבע שעה.', 429);
+  let otpUsed = false;
+  if (locked) {
+    // החשבון נעול (מכשיר לא מוכר): נדרש גם קוד מה-SMS
+    const code = String(req.body.otp || '').trim();
+    const ok = adminOtp.hash && adminOtp.exp > Date.now() && adminOtp.tries < 5 && /^\d{6}$/.test(code)
+      && (adminOtp.tries++, await bcrypt.compare(code, adminOtp.hash));
+    if (!ok) {
+      loginByIp.hit(ipKey);
+      req.auditDetail = code ? 'קוד SMS שגוי (חשבון נעול)' : 'חשבון נעול';
+      return renderAdminLogin(req, res, code ? 'קוד ה-SMS שגוי או שפג תוקפו' : null, 429); // בלי קוד — ההסבר כבר מוצג בתיבת הנעילה
+    }
+    otpUsed = true;
   }
   if (!crypto.timingSafeEqual(sha(req.body.password || ''), sha(ADMIN_PASSWORD))) {
     loginByIp.hit(ipKey);
-    loginByAccount.hit('admin');
+    if (!trusted) loginByAccount.hit('admin');
     req.auditDetail = 'סיסמה שגויה';
-    return res.status(401).render('admin_login', { error: 'סיסמה שגויה' });
+    return renderAdminLogin(req, res, 'סיסמה שגויה', 401);
   }
   loginByIp.reset(ipKey);
+  if (otpUsed) Object.assign(adminOtp, { hash: null, exp: 0, tries: 0 });
+  req.session.admDev = ADMIN_DEVICE; // מעכשיו — מכשיר מוכר
   req.session.admin = Date.now() + ADMIN_SESSION_MS; // תוקף, לא רק true
   res.redirect('/admin');
+});
+
+// קוד כניסה ב-SMS לנייד המנהל — רק כשהחשבון נעול; עד 3 הודעות בשעה
+app.post('/admin/login/otp', async (req, res) => {
+  if (!adminState(req).locked) return res.redirect('/admin/login');
+  const { phone } = await alertSettings();
+  const to = normalizePhone(phone);
+  if (!to || !smsConfigured()) return renderAdminLogin(req, res, 'לא הוגדר נייד מנהל להתראות (דף המנהל ← עומס) — אפשר להיכנס ממכשיר שכבר נכנסתם ממנו, או לחכות שעה', 503);
+  if (!adminOtpSend.take('admin')) return renderAdminLogin(req, res, 'נשלחו כבר 3 קודים בשעה האחרונה — השתמשו בקוד האחרון', 429);
+  const code = String(crypto.randomInt(100000, 1000000));
+  Object.assign(adminOtp, { hash: await bcrypt.hash(code, 10), exp: Date.now() + 10 * 60 * 1000, tries: 0 });
+  try {
+    await sendSms(to, `קוד כניסה לניהול "זכרתי התקשרתי": ${code}\nבתוקף 10 דקות. אם לא ביקשת — מישהו מנסה לנחש את סיסמת המנהל.`);
+  } catch (e) {
+    return renderAdminLogin(req, res, `ה-SMS לא נשלח: ${e.message}`, 502);
+  }
+  renderAdminLogin(req, res, null);
 });
 
 app.post('/admin/logout', (req, res) => { req.session.admin = undefined; res.redirect('/'); });
@@ -381,7 +425,9 @@ app.post('/admin/shluchim/:id/records', requireAdmin, async (req, res) => {
   const id = int(req.params.id);
   const set = parseQuota(req.body.quota);
   if (set.error) { flashErr(req, set.error); return res.redirect(`/admin/shluchim/${id}`); }
-  if (req.body.add === 'step') await q('UPDATE shluchim SET records_quota = least(records_quota + $1, 1000000) WHERE id=$2', [RECORDS_STEP, id]);
+  const addN = req.body.add === 'step' ? RECORDS_STEP : parseInt(req.body.add, 10);
+  if (req.body.add && !(addN >= 1 && addN <= 100000)) { flashErr(req, 'מספר הרשומות להוספה אינו תקין'); return res.redirect(`/admin/shluchim/${id}`); }
+  if (addN) await q('UPDATE shluchim SET records_quota = least(records_quota + $1, 1000000) WHERE id=$2', [addN, id]);
   else if (set.value !== null) await q('UPDATE shluchim SET records_quota=$1 WHERE id=$2', [set.value, id]);
   const st = await recordsStatus(id);
   await q('UPDATE shluchim SET records_alert=$1 WHERE id=$2', [st.level, id]); // התראה חדשה תישלח כשיתקרבו שוב
