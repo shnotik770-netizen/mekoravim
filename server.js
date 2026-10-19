@@ -19,7 +19,7 @@ import { seedDemoAccount } from './lib/demo.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
-import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, storeReveal, takeReveal } from './lib/security.js';
+import { strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, recordsByIp, recordsByLink, PUBLIC_MAX_ROWS, otpSendDaily, storeReveal, takeReveal } from './lib/security.js';
 import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, phoneIntl, RELATIONS } from './lib/person.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -756,6 +756,11 @@ app.post('/r/:token', async (req, res) => {
       error: 'נשלחו יותר מדי רישומים. נסו שוב בעוד כמה דקות.',
     });
   }
+  const rows = (k) => Object.values(req.body[k] || {}).filter((r) => r && String(r.first_name || '').trim()).length;
+  if (rows('fam') > PUBLIC_MAX_ROWS || rows('yz') > PUBLIC_MAX_ROWS) {
+    return res.status(400).render('register', { values: req.body, ...formRows(req.body), internal: false,
+      error: `אפשר לרשום עד ${PUBLIC_MAX_ROWS} בני משפחה ו-${PUBLIC_MAX_ROWS} יארצייטים בטופס אחד` });
+  }
   const { c, fam, error } = parseForm(req.body, { bothNames: req.link.require_both_names }, req.link.date_kinds);
   const extras = parseExtras(req.link, req.body);
   // הסכמה מפורשת (חובת יידוע + אחסון בחו"ל)
@@ -763,7 +768,14 @@ app.post('/r/:token', async (req, res) => {
   if (err) return res.status(400).render('register', { values: req.body, ...formRows(req.body), error: err, internal: false });
   c.category_id = req.link.category_id;
   c.notes = extras.notes; // תשובות לשדות הנוספים נשמרות בהערות המקורב
-  if (roomError(await recordsStatus(req.link.shliach_id), 1 + fam.length)) {
+  // הגבלה לפי מספר הרשומות (לא רק מספר השליחות)
+  const n = 1 + fam.length;
+  if (!recordsByIp.takeN(`rec:${req.ip}`, n) || !recordsByLink.takeN(`link:${req.link.id}`, n)) {
+    req.auditDetail = 'יותר מדי רשומות דרך הקישור — נחסם זמנית';
+    return res.status(429).render('register', { values: req.body, ...formRows(req.body), internal: false,
+      error: 'נרשמו יותר מדי פרטים דרך הקישור הזה בזמן קצר. נסו שוב מאוחר יותר, או פנו ישירות לשליח.' });
+  }
+  if (roomError(await recordsStatus(req.link.shliach_id), n)) {
     req.auditDetail = 'מכסת הרשומות מלאה';
     return res.status(409).render('register', { values: req.body, ...formRows(req.body), internal: false,
       error: 'לא ניתן להירשם כרגע (הרשימה מלאה). אפשר לפנות ישירות לשליח.' });
@@ -1001,7 +1013,7 @@ function renderLogin(req, res, error = null, status = 200) {
 router.post('/otp/send', async (req, res) => {
   const s = req.shliach;
   if (!s.phone || !smsConfigured()) { req.auditDetail = !s.phone ? 'לשליח אין נייד' : 'SMS לא מוגדר'; return renderLogin(req, res, 'לא ניתן לשלוח קוד כרגע. פנו למנהל המערכת.', 503); }
-  if (!otpSendByIp.take(`otp:${req.ip}`) || !otpSendByAccount.take(`otp:s${s.id}`)) {
+  if (!otpSendByIp.take(`otp:${req.ip}`) || !otpSendByAccount.take(`otp:s${s.id}`) || !otpSendDaily.take(`otp:s${s.id}`)) {
     return renderLogin(req, res, 'נשלחו יותר מדי קודים. נסו שוב בעוד כמה דקות.', 429);
   }
   const code = String(crypto.randomInt(100000, 1000000));
