@@ -88,11 +88,12 @@
     <input class="bd-input" type="search" name="q" placeholder="חיפוש מקורב לפי שם או טלפון…" autocomplete="off" aria-label="חיפוש מקורב">
   </form>
   <% if (hasYz) { %>
-  <div class="bd-chips bd-chips--type" role="group" aria-label="סינון לפי סוג">
-    <a class="bd-chip" href="<%= qs({ type: '' }) %>" aria-pressed="<%= !type %>">הכל</a>
-    <a class="bd-chip" href="<%= qs({ type: type === 'bday' ? '' : 'bday' }) %>" aria-pressed="<%= type === 'bday' %>">🎂 ימי הולדת</a>
-    <a class="bd-chip" href="<%= qs({ type: type === 'yz' ? '' : 'yz' }) %>" aria-pressed="<%= type === 'yz' %>">🕯️ יארצייט</a>
-  </div>
+  <nav class="bd-seg bd-seg--type" aria-label="הצגה לפי סוג">
+    <a href="<%= qs({ type: '' }) %>" aria-selected="<%= !type %>">🎂🕯️ הכל</a>
+    <a href="<%= qs({ type: 'bday' }) %>" aria-selected="<%= type === 'bday' %>">🎂 ימי הולדת</a>
+    <a href="<%= qs({ type: 'yz' }) %>" aria-selected="<%= type === 'yz' %>">🕯️ יארצייט</a>
+  </nav>
+  <% if (categories.length) { %><p class="bd-filter-label">סינון לפי סיווג</p><% } %>
   <% } %>
   <% if (categories.length) { %>
   <div class="bd-chips" role="group" aria-label="סינון לפי סיווג">

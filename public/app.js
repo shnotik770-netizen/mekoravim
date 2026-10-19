@@ -371,13 +371,13 @@ initRange(document.getElementById('bd-range'));
 // דשבורד: מעבר בין היום / השבוע / החודש / טווח / סיווג בלי טעינת דף — נשארים באותו מקום בדף
 (() => {
   if (!document.getElementById('bd-list-title')) return;
-  const PARTS = ['.bd-stats', '.bd-chips', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn', '.bd-layout--split > aside', '.bd-takeaway--below'];
+  const PARTS = ['.bd-stats', '.bd-chips', '.bd-seg--type', '.bd-bm', 'section[aria-labelledby="bd-list-title"]', '#bd-range', '.bd-missed-btn', '.bd-layout--split > aside', '.bd-takeaway--below'];
   let loadSeq = 0, ctrl = null;
   const load = async (url, push) => {
     const my = ++loadSeq; // רק הבקשה האחרונה קובעת — לחיצות מהירות לא "חוזרות אחורה"
     ctrl?.abort(); ctrl = new AbortController();
     const focusHref = document.activeElement?.getAttribute?.('href');
-    const list = document.querySelector(PARTS[2]);
+    const list = document.querySelector(PARTS[4]);
     list?.classList.add('bd-swapping');
     try {
       const r = await fetch(url, { headers: { Accept: 'text/html' }, signal: ctrl.signal });
@@ -395,7 +395,7 @@ initRange(document.getElementById('bd-range'));
       const target = (focusHref && [...document.querySelectorAll('a[href]')].find((a) => a.getAttribute('href') === focusHref)) || document.getElementById('bd-list-title');
       if (target) { if (target.id === 'bd-list-title') target.tabIndex = -1; target.focus({ preventScroll: true }); }
     } catch (e) { if (e.name !== 'AbortError' && my === loadSeq) location.href = url; }
-    finally { if (my === loadSeq) document.querySelector(PARTS[2])?.classList.remove('bd-swapping'); }
+    finally { if (my === loadSeq) document.querySelector(PARTS[4])?.classList.remove('bd-swapping'); }
   };
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;

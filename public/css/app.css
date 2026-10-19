@@ -606,7 +606,7 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-person-row__remind .bd-input { max-width: 170px; min-height: 36px; padding-block: 4px; font-size: .9rem; }
 
 /* רשימת המקורבים: פס עדין בין כרטיס לכרטיס */
-.bd-items--lined > li + li { border-top: 1px solid var(--bd-line); }
+.bd-items--lined > li + li { border-top: 1px solid color-mix(in srgb, var(--bd-fg) 14%, transparent); }
 
 /* בר מצווה מתקרבת (דשבורד) */
 .bd-bm { margin: var(--bd-sp-3) 0; padding: 12px 14px; border-radius: var(--bd-r-md); background: var(--bd-accent-soft); border: 1px solid color-mix(in srgb, var(--bd-accent) 25%, transparent); }
@@ -617,3 +617,9 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-bm__who a { color: inherit; text-decoration: none; }
 .bd-bm__when { color: var(--bd-accent); }
 .bd-person-row__bm { font-size: .85rem; }
+
+/* דשבורד: בורר סוג (ימי הולדת / יארצייט) — מתג מלא, שונה מתגיות הסיווג */
+.bd .bd-seg--type { display: flex; width: 100%; margin-bottom: var(--bd-sp-3); background: var(--bd-accent-soft); }
+.bd .bd-seg--type a { flex: 1; justify-content: center; font-weight: var(--bd-fw-medium); text-decoration: none; }
+.bd .bd-seg--type a[aria-selected="true"] { background: var(--bd-accent); color: var(--bd-accent-fg, #fff); box-shadow: none; }
+.bd-filter-label { font-size: .78rem; color: var(--bd-fg-muted); margin: 0 2px 6px; }
