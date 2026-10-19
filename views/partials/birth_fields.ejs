@@ -7,6 +7,7 @@
   const death = typeof locals.death !== 'undefined' && locals.death; // תאריך פטירה (יארצייט)
   // ערכים קיימים לתצוגה: יום עברי באותיות, תאריך לועזי כ-יום.חודש.שנה (אפשר להקליד גם מספר / תאריך בכל פורמט נפוץ)
   const dayShown = /^\d+$/.test(String(v.h_day ?? '')) ? (HEB_DAYS.find((d) => d.v === +v.h_day)?.n || v.h_day) : (v.h_day || '');
+  const mShown = /^\d+$/.test(String(v.h_month ?? '')) ? monthInputName(+v.h_month, /^\d+$/.test(String(v.h_year ?? '')) ? +v.h_year : null) : (v.h_month || '');
   const gShown = /^\d{4}-\d{2}-\d{2}$/.test(String(v.g_date || '')) ? v.g_date.split('-').reverse().map((x, i) => i < 2 ? String(+x) : x).join('.') : (v.g_date || '');
 %>
 <div class="bd-group datebox"<% if (death) { %> data-kind="yahrzeit"<% } %>>
@@ -20,10 +21,8 @@
         <input class="bd-input" id="<%= id('hd') %>" name="<%= n('h_day') %>" value="<%= dayShown %>" list="<%= id('hdl') %>" placeholder="15 / ט״ו" autocomplete="off" maxlength="4">
         <datalist id="<%= id('hdl') %>"><% HEB_DAYS.forEach(d => { %><option value="<%= d.n %>"><%= d.v %></option><% }) %></datalist></div>
       <div class="bd-field"><label class="bd-help" for="<%= id('hm') %>">חודש</label>
-        <select class="bd-input" id="<%= id('hm') %>" name="<%= n('h_month') %>">
-          <option value="">חודש</option>
-          <% HEB_MONTHS.forEach(m => { %><option value="<%= m.v %>" <%= String(v.h_month) === String(m.v) ? 'selected' : '' %>><%= m.n %></option><% }) %>
-        </select></div>
+        <input class="bd-input" id="<%= id('hm') %>" name="<%= n('h_month') %>" value="<%= mShown %>" list="<%= id('hml') %>" placeholder="ניסן" autocomplete="off" maxlength="12">
+        <datalist id="<%= id('hml') %>"><% MONTH_INPUT.forEach(m => { %><option value="<%= m %>"></option><% }) %></datalist></div>
       <div class="bd-field"><label class="bd-help" for="<%= id('hy') %>">שנה <span class="opt">(רשות)</span></label>
         <input class="bd-input" id="<%= id('hy') %>" name="<%= n('h_year') %>" value="<%= v.h_year || '' %>" placeholder="תש״נ"></div>
     </div>
@@ -31,11 +30,11 @@
   </div>
   <div class="g-fields" <%= t === 'h' ? 'hidden' : '' %>>
     <div class="bd-date-type">
-      <input class="bd-input" name="<%= n('g_date') %>" value="<%= gShown %>" inputmode="decimal" dir="ltr" placeholder="15.3.1990" autocomplete="off" maxlength="12" aria-label="<%= death ? 'תאריך פטירה לועזי' : 'תאריך לידה לועזי' %> (יום.חודש.שנה)">
+      <input class="bd-input" name="<%= n('g_date') %>" value="<%= gShown %>" inputmode="decimal" dir="ltr" placeholder="15.3.1990" autocomplete="off" maxlength="12" data-greg-input aria-label="<%= death ? 'תאריך פטירה לועזי' : 'תאריך לידה לועזי' %> (יום.חודש.שנה)">
       <button type="button" class="bd-date-type__pick" aria-label="בחירה מלוח שנה" title="בחירה מלוח שנה">📅</button>
       <input type="date" class="bd-date-type__native" tabindex="-1" aria-hidden="true" max="<%= typeof todayISO !== 'undefined' ? todayISO : new Date().toISOString().slice(0,10) %>">
     </div>
-    <p class="bd-help">אפשר להקליד: יום.חודש.שנה (למשל 15.3.1990), או לבחור מלוח השנה.</p>
+    <p class="bd-help">מקלידים יום, חודש ושנה — עם נקודות או בלי (15.3.1990 או 15031990), או בוחרים מלוח השנה.</p>
     <label class="bd-check"><input type="checkbox" name="<%= n('after_sunset') %>" <%= v.after_sunset ? 'checked' : '' %>> <%= death ? 'נפטר/ה אחרי השקיעה' : 'נולד/ה אחרי השקיעה' %></label>
     <p class="bd-help">התאריך העברי מתחלף בשקיעה, ולכן זה משנה את <%= death ? 'תאריך היארצייט' : 'יום ההולדת העברי' %>. נמיר אוטומטית.</p>
   </div>

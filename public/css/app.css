@@ -563,3 +563,44 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-date-type__pick { all: unset; cursor: pointer; font-size: 1.3rem; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bd-line); background: var(--bd-surface); }
 .bd-date-type__pick:focus-visible { outline: 2px solid var(--bd-accent); }
 .bd-date-type__native { position: absolute; inset-inline-start: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* כרטיס מקורב */
+.bd-person__head { display: flex; align-items: center; gap: var(--bd-sp-3); }
+.bd-person__id { flex: 1; min-width: 0; }
+.bd-person__id .bd-title { margin: 0; overflow-wrap: anywhere; }
+.bd-person__id .bd-sub { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 2px; }
+.bd-avatar { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--bd-accent-soft); color: var(--bd-accent); font-weight: 700; font-size: 1.2rem; }
+.bd-avatar--sm { width: 38px; height: 38px; font-size: 1rem; }
+.bd-person-row--yz .bd-avatar { background: var(--bd-surface-2); }
+.bd-next { display: grid; gap: 2px; margin: var(--bd-sp-4) 0; padding: 14px 16px; border-radius: var(--bd-r-md); background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); }
+.bd-next__label { font-size: .8rem; color: var(--bd-fg-muted); font-weight: 600; }
+.bd-next__date { font-size: 1.6rem; font-weight: 800; line-height: 1.2; color: var(--bd-fg); }
+.bd-next__meta { color: var(--bd-fg-muted); }
+.bd-next__when { justify-self: start; margin-top: 6px; padding: 2px 10px; border-radius: 999px; background: var(--bd-gold); color: #fff; font-size: .8rem; font-weight: 700; }
+.bd-next__note { font-size: .8rem; color: var(--bd-fg-muted); margin-top: 4px; }
+.bd-kv { display: grid; gap: 8px; margin: 0 0 var(--bd-sp-4); }
+.bd-kv > div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: baseline; }
+.bd-kv dt { color: var(--bd-fg-muted); font-size: .85rem; }
+.bd-kv dd { margin: 0; overflow-wrap: anywhere; }
+.bd-person__settings { display: grid; gap: 10px; padding-top: var(--bd-sp-3); border-top: 1px solid var(--bd-line); }
+.bd-person__settings .bd-inline { flex-wrap: nowrap; }
+.bd-person__settings .bd-input, .bd-person-row__remind .bd-input { max-width: 220px; }
+.bd-people { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.bd-person-row { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--bd-line); }
+.bd-person-row:first-child { border-top: 0; padding-top: 4px; }
+.bd-person-row__main { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.bd-person-row__name { font-weight: 700; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bd-person-row__sub, .bd-person-row__note { font-size: .85rem; color: var(--bd-fg-muted); }
+.bd-next-pill { justify-self: start; padding: 4px 10px; border-radius: 10px; background: var(--bd-today-bg); border: 1px solid var(--bd-today-line); font-size: .85rem; }
+.bd-next-pill--yz { background: var(--bd-surface-2); border-color: var(--bd-line); }
+.bd-next-pill__when { color: var(--bd-gold); font-weight: 700; }
+.bd-person-row__remind .bd-remind { margin-top: 2px; }
+.bd-person-row__remind .bd-label { font-size: .8rem; font-weight: 500; color: var(--bd-fg-muted); }
+.bd-edit-summary { list-style: none; cursor: pointer; font-weight: 700; font-size: var(--bd-fs-lg); }
+.bd-edit-summary::-webkit-details-marker { display: none; }
+.bd-edit-h { font-size: 1rem; font-weight: 700; margin: var(--bd-sp-5) 0 var(--bd-sp-3); padding-top: var(--bd-sp-3); border-top: 1px solid var(--bd-line); }
+#edit-form > .bd-edit-h:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.bd-del-check { color: var(--bd-bad); }
+.bd-edit-actions { position: sticky; bottom: 0; padding: 12px 0 4px; background: linear-gradient(transparent, var(--bd-surface) 30%); margin-top: var(--bd-sp-4); }
+.bd-person-row__remind .bd-remind { flex-wrap: nowrap; gap: 8px; }
+.bd-person-row__remind .bd-input { max-width: 170px; min-height: 36px; padding-block: 4px; font-size: .9rem; }

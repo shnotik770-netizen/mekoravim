@@ -11,6 +11,19 @@ function bindDatebox(box) {
   const wrap = box.querySelector('.bd-date-type');
   if (wrap) {
     const text = wrap.querySelector('input:not([type=date])'), nat = wrap.querySelector('input[type=date]');
+    // הקלדה חכמה: ספרות בלבד (15031990 / 150390) הופכות מיד ל-15.3.1990
+    const smart = () => {
+      const d = text.value.replace(/\s/g, '');
+      const m = /^(\d{2})(\d{2})(\d{4}|\d{2})$/.exec(d);
+      if (!m || (m[3].length === 2 && d.length !== 6)) return;
+      const day = +m[1], mon = +m[2];
+      if (day < 1 || day > 31 || mon < 1 || mon > 12) return;
+      let y = m[3];
+      if (y.length === 2) { const cur = new Date().getFullYear() % 100; y = String((+y > cur ? 1900 : 2000) + +y); }
+      text.value = `${day}.${mon}.${y}`;
+    };
+    text.addEventListener('input', () => { if (/^\d{8}$/.test(text.value.trim())) smart(); });
+    text.addEventListener('blur', () => { if (/^\d{6}$|^\d{8}$/.test(text.value.trim())) { smart(); text.dispatchEvent(new Event('input', { bubbles: true })); } });
     wrap.querySelector('.bd-date-type__pick').addEventListener('click', () => {
       try { nat.showPicker(); } catch { nat.focus(); nat.click(); }
     });
@@ -500,3 +513,17 @@ window.addEventListener('pageshow', () => document.querySelectorAll('form[data-o
 
 // בועות יצירת קשר — גלילה להודעה האחרונה
 document.querySelectorAll('[data-chat]').forEach((el) => { el.scrollTop = el.scrollHeight; });
+
+// כרטיס מקורב: קישורי "עריכה" פותחים את אזור העריכה; אישור לפני שמירה שמוחקת בני משפחה
+(() => {
+  const ed = document.querySelector('details[data-edit]');
+  if (!ed) return;
+  const open = () => { ed.open = true; ed.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  document.querySelectorAll('[data-open-edit]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); open(); }));
+  if (location.hash === '#edit') ed.open = true;
+  const form = document.getElementById('edit-form');
+  form?.addEventListener('submit', (e) => {
+    const n = form.querySelectorAll('.bd-del-check input:checked').length;
+    if (n && !confirm(`${n === 1 ? 'רשומה אחת מסומנת' : n + ' רשומות מסומנות'} למחיקה.\n\n⚠️ המחיקה בלתי הפיכה. להמשיך?`)) e.preventDefault();
+  });
+})();

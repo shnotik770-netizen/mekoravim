@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
+  MONTH_INPUT, monthInputName, hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents, collectEvents as collectAll } from './lib/events.js';
@@ -86,7 +86,7 @@ app.use((req, res, next) => {
   res.locals.v = ASSET_V;
   res.locals.todayISO = toISO(todayIL()); // "היום" לפי שעון ישראל (למשל max בשדה תאריך לידה)
   Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl, hebStamp, smsCapable });
-  Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
+  Object.assign(res.locals, { MONTH_INPUT, monthInputName, HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
 });
@@ -1291,7 +1291,10 @@ async function loadContact(req, res, next) {
   next();
 }
 
-router.get('/contacts/:id', loadContact, async (req, res) => {
+router.get('/contacts/:id', loadContact, (req, res) => renderContact(req, res, { error: req.query.err || null }));
+
+// כרטיס מקורב. posted: ערכי טופס העריכה (הצגה מחדש אחרי שגיאה, בלי לאבד את מה שהוקלד)
+async function renderContact(req, res, { error = null, posted = null, status = 200 } = {}) {
   const c = req.contact;
   const family = (await q('SELECT * FROM family_members WHERE contact_id=$1 ORDER BY id', [c.id])).rows;
   const log = (await q(
@@ -1301,23 +1304,57 @@ router.get('/contacts/:id', loadContact, async (req, res) => {
   const today = todayIL();
   c.next = nextBirthday(c, today);
   for (const f of family) f.next = nextBirthday(f, today);
-  res.render('contact', {
-    c, family, log, link, values: formValues(c), formValues, wa: whatsappLink(c.phone), categories: await loadCategories(req.shliach.id), fmtDate,
+  res.status(status).render('contact', {
+    c, family, log, link, values: posted || formValues(c), posted, openEdit: !!posted, today, formValues, wa: whatsappLink(c.phone),
+    categories: await loadCategories(req.shliach.id), fmtDate,
     fmtTime: (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' }),
-    error: req.query.err || null,
+    error,
   });
-});
+}
 
+// עריכה במקום אחד: פרטי המקורב + בני המשפחה והיארצייט הקיימים (עדכון / מחיקה) + הוספת חדשים — שמירה אחת
 router.post('/contacts/:id', loadContact, async (req, res) => {
-  const c = parseContact(req.body);
-  const url = `${res.locals.base}/contacts/${req.contact.id}`;
-  if (c.error) return res.redirect(`${url}?err=${encodeURIComponent(c.error)}#edit`);
+  const cid = req.contact.id;
+  const fail = (error) => renderContact(req, res, { error, posted: req.body, status: 400 });
+  const existing = (await q('SELECT id, kind, first_name FROM family_members WHERE contact_id=$1', [cid])).rows;
+  const m = req.body.m && typeof req.body.m === 'object' ? req.body.m : {};
+  const upd = [], del = [];
+  for (const f of existing) {
+    const r = m[f.id];
+    if (!r || typeof r !== 'object') continue; // לא בטופס — נשאר כמו שהוא
+    if (r.del === 'on') { del.push(f.id); continue; }
+    const p = parseFamily([r], f.kind);
+    if (p.error) return fail(p.error);
+    if (!p.value.length) return fail(`חסר שם (${f.first_name}) — אפשר לסמן "מחיקה" במקום`);
+    upd.push([f.id, p.value[0]]);
+  }
+  const nf = parseFamily(req.body.fam);
+  if (nf.error) return fail(nf.error);
+  const ny = parseFamily(req.body.yz, 'yahrzeit');
+  if (ny.error) return fail(ny.error);
+  // כשיש יארצייט — תאריך הלידה של המקורב רשות
+  const hasYz = existing.some((f) => f.kind === 'yahrzeit' && !del.includes(f.id)) || ny.value.length > 0;
+  const c = parseContact(req.body, { birthOptional: hasYz });
+  if (c.error) return fail(c.error);
+  const added = nf.value.length + ny.value.length;
+  if (added) {
+    const full = roomError(await recordsStatus(req.shliach.id), added - del.length);
+    if (full) return fail(full);
+  }
   const v = c.value;
   await q(`UPDATE contacts SET first_name=$1, last_name=$2, phone=$3, notes=$4, g_date=$5, g_after_sunset=$6, h_day=$7, h_month=$8, h_year=$9, category_id=$10
            WHERE id=$11`, [v.first_name, v.last_name, v.phone, v.notes, v.g_date, v.g_after_sunset, v.h_day, v.h_month, v.h_year,
-    await validCategory(req.shliach.id, v.category_id), req.contact.id]);
-  flash(req, 'הפרטים עודכנו');
-  res.redirect(url);
+    await validCategory(req.shliach.id, v.category_id), cid]);
+  for (const [id, f] of upd) {
+    await q(`UPDATE family_members SET relation=$1, first_name=$2, g_date=$3, g_after_sunset=$4, h_day=$5, h_month=$6, h_year=$7
+             WHERE id=$8 AND contact_id=$9`, [f.relation, f.first_name, f.g_date, f.g_after_sunset, f.h_day, f.h_month, f.h_year, id, cid]);
+  }
+  if (del.length) await q('DELETE FROM family_members WHERE contact_id=$1 AND id = ANY($2::int[])', [cid, del]);
+  for (const f of [...nf.value, ...ny.value]) await addFamily(cid, f);
+  if (added) await recordsCheck(req.shliach.id);
+  req.auditDetail = [upd.length && `${upd.length} עודכנו`, added && `${added} נוספו`, del.length && `${del.length} נמחקו`].filter(Boolean).join(', ') || undefined;
+  flash(req, 'הפרטים נשמרו');
+  res.redirect(`${res.locals.base}/contacts/${cid}`);
 });
 
 router.post('/contacts/:id/category', loadContact, async (req, res) => {
@@ -1387,21 +1424,6 @@ router.post('/contacts/:id/family', loadContact, async (req, res) => {
   await addFamily(req.contact.id, fam.value[0]);
   await recordsCheck(req.shliach.id);
   flash(req, yz ? 'היארצייט נוסף' : 'בן המשפחה נוסף');
-  res.redirect(url + '#family');
-});
-
-// עריכת בן משפחה / יארצייט: קרבה, שם ותאריך (לידה / פטירה)
-router.post('/contacts/:id/family/:fid', loadContact, async (req, res) => {
-  const url = `${res.locals.base}/contacts/${req.contact.id}`;
-  const { rows: [f] } = await q('SELECT id, kind FROM family_members WHERE id=$1 AND contact_id=$2', [int(req.params.fid), req.contact.id]);
-  if (!f) return res.redirect(url + '#family');
-  const fam = parseFamily([req.body], f.kind);
-  if (fam.error || !fam.value.length) return res.redirect(`${url}?err=${encodeURIComponent(fam.error || 'יש להזין שם')}#family`);
-  const v = fam.value[0];
-  await q(`UPDATE family_members SET relation=$1, first_name=$2, g_date=$3, g_after_sunset=$4, h_day=$5, h_month=$6, h_year=$7
-           WHERE id=$8 AND contact_id=$9`,
-    [v.relation, v.first_name, v.g_date, v.g_after_sunset, v.h_day, v.h_month, v.h_year, f.id, req.contact.id]);
-  flash(req, f.kind === 'yahrzeit' ? 'פרטי היארצייט עודכנו' : 'פרטי בן המשפחה עודכנו');
   res.redirect(url + '#family');
 });
 
