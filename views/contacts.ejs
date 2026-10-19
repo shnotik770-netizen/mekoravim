@@ -21,7 +21,7 @@
 </form>
 <section class="bd-card">
   <% if (!contacts.length) { %><div class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= term || cat ? 'לא נמצאו מקורבים בחיפוש הזה' : 'עדיין אין מקורבים' %></div><% } %>
-  <ul class="bd-items">
+  <ul class="bd-items bd-items--lined">
   <% contacts.forEach(c => { %>
     <li><a class="bd-item bd-item--link" href="<%= base %>/contacts/<%= c.id %>">
       <div class="bd-item__main">

@@ -66,6 +66,14 @@
         </select>
         <label class="bd-check bd-small bd-mt"><input type="checkbox" name="yz_apply_all"> להחיל גם על כל היארצייטים שכבר רשומים</label>
         <span class="bd-help">SMS לנייד שלכם לפני כל יארצייט (בנוסף לתזכורת השבועית/היומית). אפשר לשנות לכל יארצייט בכרטיס המקורב. יורד ממכסת ה-SMS לתזכורות.</span></div>
+      <div class="bd-field bd-mt"><label class="bd-label" for="bm-months">🎉 התראת בר מצווה</label>
+        <select class="bd-input" id="bm-months" name="barmitzvah_months" style="max-width:260px">
+          <% const bm = shliach.barmitzvah_months; %>
+          <option value="" <%= bm === null || bm === undefined ? 'selected' : '' %>>כבוי</option>
+          <% [1, 2, 3, 4, 6, 9, 12].forEach(m => { %><option value="<%= m %>" <%= bm === m ? 'selected' : '' %>><%= m === 1 ? 'חודש' : m === 12 ? 'שנה' : m + ' חודשים' %> לפני גיל 13</option><% }) %>
+        </select>
+        <label class="bd-check bd-small bd-mt"><input type="checkbox" name="barmitzvah_sms" <%= shliach.barmitzvah_sms ? 'checked' : '' %>> גם הודעת SMS (פעם אחת לכל ילד, כשמתחילה ההתראה)</label>
+        <span class="bd-help">ההתראה מופיעה בדשבורד מעל רשימת ימי ההולדת — לבנים ולמקורבים שידועה שנת הלידה העברית שלהם. לחיצה על "✓ ידוע" מורידה אותה.</span></div>
       <button class="bd-btn bd-btn--primary bd-mt">שמירה</button>
     </form>
     <% const dmy = (d) => d.split('-').reverse().join('.'); %>

@@ -604,3 +604,16 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd-edit-actions { position: sticky; bottom: 0; padding: 12px 0 4px; background: linear-gradient(transparent, var(--bd-surface) 30%); margin-top: var(--bd-sp-4); }
 .bd-person-row__remind .bd-remind { flex-wrap: nowrap; gap: 8px; }
 .bd-person-row__remind .bd-input { max-width: 170px; min-height: 36px; padding-block: 4px; font-size: .9rem; }
+
+/* רשימת המקורבים: פס עדין בין כרטיס לכרטיס */
+.bd-items--lined > li + li { border-top: 1px solid var(--bd-line); }
+
+/* בר מצווה מתקרבת (דשבורד) */
+.bd-bm { margin: var(--bd-sp-3) 0; padding: 12px 14px; border-radius: var(--bd-r-md); background: var(--bd-accent-soft); border: 1px solid color-mix(in srgb, var(--bd-accent) 25%, transparent); }
+.bd-bm__title { font-weight: 700; margin-bottom: 6px; }
+.bd-bm__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bd-bm__list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bd-bm__list li + li { border-top: 1px solid color-mix(in srgb, var(--bd-accent) 18%, transparent); padding-top: 8px; }
+.bd-bm__who a { color: inherit; text-decoration: none; }
+.bd-bm__when { color: var(--bd-accent); }
+.bd-person-row__bm { font-size: .85rem; }

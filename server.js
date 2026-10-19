@@ -13,6 +13,7 @@ import {
 
 import { loadPeople, collectEvents, collectEvents as collectAll } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
+import { upcomingBarMitzvahs, untilText, barMitzvahDate, BM_MONTHS } from './lib/barmitzvah.js';
 import { noteDemo, noteDemoReject, report as loadReport, alertSettings, saveAlertSettings, sendTestAlert, POOL_MAX } from './lib/monitor.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
@@ -1038,6 +1039,7 @@ router.get('/', async (req, res) => {
     : view === 'missed' ? (mr.days ? (mr.days === 14 ? {} : { days: mr.days }) : { from: toISO(mr.start), to: toISO(mr.end) }) : {};
   res.render('dashboard', {
     records: await recordsStatus(s.id),
+    barMitzvahs: type === 'yz' ? [] : upcomingBarMitzvahs(people, today, s.barmitzvah_months), untilText,
     weekInfo: weekInfo(today), hebRangeStr, toISO,
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
     today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
@@ -1305,6 +1307,7 @@ async function renderContact(req, res, { error = null, posted = null, status = 2
   c.next = nextBirthday(c, today);
   for (const f of family) f.next = nextBirthday(f, today);
   res.status(status).render('contact', {
+    barMitzvahDate, untilText, hebDateStr,
     c, family, log, link, values: posted || formValues(c), posted, openEdit: !!posted, today, formValues, wa: whatsappLink(c.phone),
     categories: await loadCategories(req.shliach.id), fmtDate,
     fmtTime: (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' }),
@@ -1425,6 +1428,17 @@ router.post('/contacts/:id/family', loadContact, async (req, res) => {
   await recordsCheck(req.shliach.id);
   flash(req, yz ? 'היארצייט נוסף' : 'בן המשפחה נוסף');
   res.redirect(url + '#family');
+});
+
+// בר מצווה "ידוע" — מוריד את ההתראה (מהדשבורד / מכרטיס המקורב)
+router.post('/contacts/:id/bm-known', loadContact, async (req, res) => {
+  const fid = int(req.body.family_member_id);
+  const known = req.body.known !== '0';
+  if (fid) await q('UPDATE family_members SET bm_known=$1 WHERE id=$2 AND contact_id=$3', [known, fid, req.contact.id]);
+  else await q('UPDATE contacts SET bm_known=$1 WHERE id=$2', [known, req.contact.id]);
+  flash(req, known ? 'סומן כידוע — ההתראה על הבר מצווה הוסרה' : 'ההתראה על הבר מצווה הוחזרה');
+  const back = String(req.body.back || '');
+  res.redirect(res.locals.base + (back.startsWith('?') ? back.slice(0, 200) : back === 'contact' ? `/contacts/${req.contact.id}` : ''));
 });
 
 router.post('/contacts/:id/family/:fid/delete', loadContact, async (req, res) => {
@@ -1555,6 +1569,8 @@ router.post('/sms', async (req, res) => {
   if ((weekly || daily) && !s.phone) return renderSettings(req, res, 'כדי להפעיל תזכורות יש להזין מספר נייד בפרטים האישיים', 400);
   if ((weekly || daily) && !smsCapable(s.phone)) return renderSettings(req, res, 'תזכורות SMS זמינות רק לנייד ישראלי — המספר שלך מחו״ל', 400);
   const yzDays = remindDays(req.body.yahrzeit_remind_days);
+  const bmMonths = BM_MONTHS.includes(parseInt(req.body.barmitzvah_months, 10)) ? parseInt(req.body.barmitzvah_months, 10) : null;
+  await q('UPDATE shluchim SET barmitzvah_months=$1, barmitzvah_sms=$2 WHERE id=$3', [bmMonths, req.body.barmitzvah_sms === 'on', s.id]);
   await q('UPDATE shluchim SET sms_weekly=$1, sms_daily=$2, sms_enabled=$3, yahrzeit_remind_days=$5 WHERE id=$4',
     [weekly, daily, weekly || daily, s.id, yzDays]);
   if (req.body.yz_apply_all === 'on') {

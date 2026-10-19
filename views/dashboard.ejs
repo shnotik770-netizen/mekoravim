@@ -52,6 +52,23 @@
     <% if (overdue.length) { %> · <span style="color:var(--bd-bad)"><%= overdue.length %> ממתינים לברכה</span><% } %>
   </p><% } %>
 <% if (total) { %><a class="bd-missed-btn" href="<%= qs({ view: 'missed' }) %>" aria-pressed="<%= view === 'missed' %>">⏳ ימי הולדת שעברו בלי ברכה<% if (overdue.length) { %> <span class="bd-missed-btn__n bd-num"><%= overdue.length %></span><% } %><span class="bd-missed-btn__hint">שבועיים אחרונים · אפשר לבחור טווח</span></a><% } %>
+<% if (barMitzvahs.length) { %>
+<section class="bd-bm" aria-label="בר מצוות מתקרבות">
+  <div class="bd-bm__title">🎉 בר מצווה מתקרבת<% if (barMitzvahs.length > 1) { %> <span class="bd-num">(<%= barMitzvahs.length %>)</span><% } %></div>
+  <ul class="bd-bm__list">
+  <% barMitzvahs.forEach(e => { %>
+    <li>
+      <div class="bd-bm__who"><a href="<%= base %>/contacts/<%= e.contact.id %>"><b><%= e.name %></b></a><% if (e.sub) { %> <span class="bd-muted bd-small"><%= e.sub %></span><% } %>
+        <div class="bd-small"><%= e.label %> · יום <%= DAY_NAMES[e.date.getDay()] %> <bdi class="bd-num"><%= fmtGreg(e.date) %></bdi> · <b class="bd-bm__when"><%= untilText(e.days) %></b></div></div>
+      <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/bm-known">
+        <input type="hidden" name="back" value="<%= back %>"><% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
+        <button class="bd-btn bd-btn--ghost bd-btn--sm" title="סימון כידוע מוריד את ההתראה">✓ ידוע</button>
+      </form>
+    </li>
+  <% }) %>
+  </ul>
+</section>
+<% } %>
 <% if (!total) { %><p class="bd-empty-start">עדיין אין מקורבים — <a href="<%= base %>/links">צרו קישור רישום</a>, <a href="<%= base %>/contacts/new">הוסיפו מקורב</a> או <a href="<%= base %>/contacts/import">ייבאו רשימה מאקסל</a>.</p><% } %>
 
 <a class="bd-sms-usage <%= sms.on && sms.low ? 'bd-sms-usage--low' : '' %>" href="<%= base %>/settings#sms" aria-label="יחידות SMS לתזכורות ימי הולדת">
