@@ -7,6 +7,18 @@ function bindDatebox(box) {
   };
   box.querySelectorAll('input[type=radio]').forEach((r) => r.addEventListener('change', sync));
   sync();
+  // תאריך לועזי: שדה הקלדה + כפתור לוח שנה (בורר התאריכים של המכשיר)
+  const wrap = box.querySelector('.bd-date-type');
+  if (wrap) {
+    const text = wrap.querySelector('input:not([type=date])'), nat = wrap.querySelector('input[type=date]');
+    wrap.querySelector('.bd-date-type__pick').addEventListener('click', () => {
+      try { nat.showPicker(); } catch { nat.focus(); nat.click(); }
+    });
+    nat.addEventListener('change', () => {
+      const [y, m, d] = nat.value.split('-');
+      if (y) { text.value = `${+d}.${+m}.${y}`; text.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+  }
   bindHebPreview(box);
 }
 
@@ -25,12 +37,12 @@ function bindHebPreview(box) {
     const p = new URLSearchParams({ date_type: g ? 'g' : 'h' });
     if (yz) p.set('kind', 'yahrzeit');
     if (g) {
-      const d = field('g_date').value;
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return show('');
+      const d = field('g_date').value.trim();
+      if (!/^\d{4}-\d{2}-\d{2}$|^\d{1,2}\s*[./\-\s]\s*\d{1,2}\s*[./\-\s]\s*(\d{4}|\d{2})$/.test(d)) return show('');
       p.set('g_date', d);
       if (field('after_sunset').checked) p.set('after_sunset', '1');
     } else {
-      const day = field('h_day').value, month = field('h_month').value;
+      const day = field('h_day').value.trim(), month = field('h_month').value;
       if (!day || !month) return show('');
       p.set('h_day', day); p.set('h_month', month); p.set('h_year', field('h_year').value);
     }
