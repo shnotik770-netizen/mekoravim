@@ -49,6 +49,7 @@
     <p class="bd-mb"><span class="bd-status <%= quota.low ? 'bd-status--bad' : 'bd-status--accent' %>"><span>יחידות לתזכורות: הוקצו <bdi class="bd-num"><%= quota.quota %></bdi> · נוצלו <bdi class="bd-num"><%= quota.used %></bdi> · יתרה <bdi class="bd-num"><%= quota.left %></bdi></span></span></p>
     <p class="bd-help bd-mb">רק התזכורות יורדות מהיתרה (הודעה ארוכה = כמה יחידות). קודי כניסה והודעות ניסיון על חשבון המערכת. לחידוש המכסה פנו למנהל.</p>
     <% if (!smsOn) { %><div class="bd-msg bd-msg--err">שליחת SMS עדיין לא הופעלה במערכת — פנו למנהל.</div><% } %>
+    <% if (shliach.phone && !smsCapable(shliach.phone)) { %><div class="bd-msg bd-msg--warn bd-mb">⚠️ הנייד שלך (<bdi dir="ltr"><%= shliach.phone %></bdi>) מחו״ל — שירות ה-SMS זמין רק לניידים ישראליים, ולכן תזכורות ה-SMS לא יישלחו. אפשר לראות את כל ימי ההולדת והיארצייטים בדשבורד.</div><% } %>
     <form method="post" action="<%= base %>/sms">
       <p class="bd-help bd-mb"><% if (shliach.phone) { %>ההודעות נשלחות לנייד שלך: <bdi class="bd-num" dir="ltr"><%= shliach.phone %></bdi> (לשינוי — בפרטים האישיים)<% } else { %><span class="bd-err">אין נייד בפרטים האישיים — הוסיפו נייד כדי לקבל תזכורות.</span><% } %></p>
       <fieldset class="bd-field"><legend class="bd-label">אילו תזכורות לשלוח (אפשר את שתיהן)</legend>

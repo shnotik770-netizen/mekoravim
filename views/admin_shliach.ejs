@@ -30,7 +30,8 @@
     <div class="bd-action-box">
       <b>👤 פרטי השליח</b>
       <p class="bd-small"><%= displayName(s) %><%= s.chabad_house ? ' · ' + s.chabad_house : '' %></p>
-      <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %> <span class="bd-help" dir="rtl">(כניסה ותזכורות SMS)</span></p>
+      <% if (s.phone) { %><p class="bd-num" dir="ltr" style="text-align:right"><%= s.phone %> <span class="bd-help" dir="rtl"><%= smsCapable(s.phone) ? '(כניסה ותזכורות SMS)' : '' %></span></p>
+        <% if (!smsCapable(s.phone)) { %><p class="bd-small" style="color:var(--bd-bad)">⚠️ נייד מחו״ל — לא מחובר לשירותי SMS (כניסה בקוד קבוע בלבד, בלי תזכורות SMS)</p><% } %>
         <div class="bd-inline">
           <a class="bd-btn bd-btn--soft bd-btn--sm" href="https://wa.me/<%= phoneIntl(s.phone) %>" target="_blank" rel="noopener">💬 וואטסאפ</a>
           <a class="bd-btn bd-btn--ghost bd-btn--sm" href="tel:+<%= phoneIntl(s.phone) %>">📞 חיוג</a>
@@ -44,7 +45,7 @@
             <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>" <%= addressKey(s) === k ? 'selected' : '' %>><%= label %></option><% }) %>
           </select></label>
           <label class="bd-small">בית חב״ד<input class="bd-input" name="chabad_house" value="<%= s.chabad_house %>" maxlength="80"></label>
-          <label class="bd-small">נייד (כניסה ותזכורות SMS)<input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" required></label>
+          <label class="bd-small">נייד (ישראלי, או מחו״ל עם קידומת: +1…)<input class="bd-input" name="phone" type="tel" dir="ltr" style="text-align:right" value="<%= s.phone %>" required></label>
           <p class="bd-help">שינוי הנייד מנתק את השליח מכל המכשירים.</p>
           <button class="bd-btn bd-btn--primary bd-btn--sm">שמירת הפרטים</button>
         </form>
@@ -55,7 +56,7 @@
       <p class="bd-help">הקישור האישי של השליח (לא להעביר לאחרים).</p>
       <div class="bd-inline">
         <button type="button" class="bd-btn bd-btn--ghost bd-btn--sm bd-copy-btn" data-copy="<%= base %>/s/<%= s.slug %>"><span>העתקת הקישור</span></button>
-        <form method="post" action="/admin/shluchim/<%= s.id %>/send-link"><button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && s.phone ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button></form>
+        <form method="post" action="/admin/shluchim/<%= s.id %>/send-link"><button class="bd-btn bd-btn--soft bd-btn--sm" <%= smsOn && smsCapable(s.phone) ? '' : 'disabled' %>>📩 שליחת הקישור ב-SMS</button></form>
       </div>
       <form method="post" action="/admin/shluchim/<%= s.id %>/code" class="bd-inline bd-mt" data-confirm="לקבוע קוד חדש? הקוד הקודם יפסיק לעבוד וכל המכשירים ינותקו.">
         <input class="bd-input" name="code" placeholder="קוד חדש (ריק = אקראי)" maxlength="32" autocomplete="off" aria-label="קוד חדש">

@@ -18,7 +18,7 @@ import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } fr
 import { seedDemoAccount } from './lib/demo.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
-import { smsConfigured, normalizePhone, sendSms, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
+import { smsConfigured, normalizePhone, shliachPhone, smsCapable, PHONE_RULE, sendSms, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
 import { RateLimiter, strongEnough, otpSendByIp, otpSendByAccount, loginByIp, loginByAccount, registerByIp, registerByLink, contactByIp, recordsByIp, recordsByLink, PUBLIC_MAX_ROWS, otpSendDaily, storeReveal, takeReveal } from './lib/security.js';
 import { parseBirth, parseContact, parseFamily, birthText, formValues, whatsappLink, phoneIntl, RELATIONS } from './lib/person.js';
 
@@ -85,7 +85,7 @@ app.use((req, res, next) => {
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   res.locals.v = ASSET_V;
   res.locals.todayISO = toISO(todayIL()); // "היום" לפי שעון ישראל (למשל max בשדה תאריך לידה)
-  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl, hebStamp });
+  Object.assign(res.locals, { ADDRESS_OPTIONS, addressKey, displayName, gword, phoneIntl, hebStamp, smsCapable });
   Object.assign(res.locals, { HEB_MONTHS, HEB_DAYS, RELATIONS, COLORS, DAY_NAMES, birthText, fmtGreg, flash: req.session.flash });
   req.session.flash = undefined;
   next();
@@ -627,7 +627,7 @@ function codeFrom(req) {
 // מניעת חשבון כפול (למשל לחיצה כפולה על "יצירה"): נייד שכבר בתהליך יצירה / קיים אצל שליח אחר
 const creatingPhones = new Set();
 app.post('/admin/shluchim', requireAdmin, async (req, res) => {
-  const phone0 = normalizePhone(req.body.phone);
+  const phone0 = shliachPhone(req.body.phone);
   if (phone0 && creatingPhones.has(phone0)) return res.redirect('/admin'); // הבקשה הראשונה עוד רצה
   if (phone0) creatingPhones.add(phone0);
   try { await createShliach(req, res); } finally { if (phone0) creatingPhones.delete(phone0); }
@@ -636,8 +636,9 @@ async function createShliach(req, res) {
   const name = String(req.body.name || '').trim().slice(0, 80);
   if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect('/admin'); }
   const house = String(req.body.chabad_house || '').trim().slice(0, 80);
-  const phone = normalizePhone(req.body.phone);
-  if (!phone) { flashErr(req, 'יש להזין מספר נייד תקין של השליח (05X-XXXXXXX)'); return res.redirect('/admin'); }
+  const phone = shliachPhone(req.body.phone);
+  if (!phone) { flashErr(req, PHONE_RULE); return res.redirect('/admin'); }
+  const sms = smsCapable(phone); // נייד מחו"ל: נוצר בלי שירותי SMS
   const { rows: [dup] } = await q(`SELECT id, name, created_at > now() - interval '10 minutes' AS fresh FROM shluchim WHERE phone=$1 ORDER BY id DESC LIMIT 1`, [phone]);
   if (dup?.fresh) { flash(req, `החשבון של ${dup.name} כבר נוצר לפני רגע — לא נוצר חשבון כפול`); return res.redirect(`/admin/shluchim/${dup.id}`); }
   if (dup && req.body.allow_dup !== 'on') {
@@ -651,13 +652,17 @@ async function createShliach(req, res) {
   if (quota.value === null) quota.value = await getDefaultQuota();
   const addr = parseAddress(req.body.address);
   // הנייד של השליח משמש גם כברירת מחדל ל-SMS השבועי (שהשליח מפעיל בעצמו)
-  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota, gender, use_title, sms_weekly, sms_enabled) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,TRUE,TRUE) RETURNING id', [name, house, randomToken(9), phone, quota.value, addr.gender, addr.use_title]);
+  const { rows } = await q('INSERT INTO shluchim (name, chabad_house, slug, phone, sms_phone, sms_quota, gender, use_title, sms_weekly, sms_enabled) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8,$8) RETURNING id', [name, house, randomToken(9), phone, quota.value, addr.gender, addr.use_title, sms]);
   const id = rows[0].id;
   req.auditShliachId = id;
   for (const [i, [n, c]] of DEFAULT_CATEGORIES.entries()) {
     await q('INSERT INTO categories (shliach_id, name, color, sort) VALUES ($1,$2,$3,$4)', [id, n, c, i]);
   }
   const s = await setCode(req, id, code);
+  if (!sms) {
+    flashErr(req, `החשבון נוצר ✓ — שימו לב: ${phone} אינו נייד ישראלי, ולכן השליח לא מחובר לשירותי SMS (קוד כניסה ב-SMS ותזכורות). שלחו לו את הקישור והקוד בוואטסאפ (בכפתור למעלה); הכניסה שלו תמיד בקוד הקבוע.`);
+    return res.redirect('/admin');
+  }
   const sent = await sendWelcome(req, s, code, true);
   if (sent.ok) flash(req, `החשבון נוצר, והקישור והקוד נשלחו ב-SMS ל-${phone}`);
   else flashErr(req, `החשבון נוצר, אבל ה-SMS לא נשלח (${sent.error}) — אפשר לשלוח בוואטסאפ`);
@@ -670,7 +675,7 @@ app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {
   if (!code) { flashErr(req, CODE_RULE); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   const s = await setCode(req, int(req.params.id), code);
   if (!s) return res.redirect(`/admin/shluchim/${int(req.params.id)}`);
-  const sent = s.phone ? await sendWelcome(req, s, code) : { ok: false, error: 'לשליח אין נייד' };
+  const sent = !s.phone ? { ok: false, error: 'לשליח אין נייד' } : !smsCapable(s.phone) ? { ok: false, error: 'נייד מחו״ל — אין SMS; שלחו בוואטסאפ' } : await sendWelcome(req, s, code);
   const msg = 'הקוד הוחלף וכל המכשירים המחוברים נותקו.';
   if (sent.ok) flash(req, `${msg} הקישור והקוד נשלחו ב-SMS ל-${s.phone}`); else flashErr(req, `${msg} ה-SMS לא נשלח (${sent.error})`);
   res.redirect(`/admin/shluchim/${int(req.params.id)}`);
@@ -682,6 +687,7 @@ app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
   const s = rows[0];
   if (!s) return res.redirect(`/admin/shluchim/${int(req.params.id)}`);
   if (!s.phone) { flashErr(req, 'לשליח אין נייד'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
+  if (!smsCapable(s.phone)) { flashErr(req, 'הנייד של השליח מחו״ל — אין שירותי SMS. העתיקו את הקישור ושלחו בוואטסאפ'); return res.redirect(`/admin/shluchim/${int(req.params.id)}`); }
   const sent = await sendWelcome(req, s, null);
   if (sent.ok) flash(req, `הקישור נשלח ב-SMS ל-${s.phone}`); else flashErr(req, `ה-SMS לא נשלח: ${sent.error}`);
   res.redirect(`/admin/shluchim/${int(req.params.id)}`);
@@ -691,15 +697,18 @@ app.post('/admin/shluchim/:id/send-link', requireAdmin, async (req, res) => {
 app.post('/admin/shluchim/:id/details', requireAdmin, async (req, res) => {
   const id = int(req.params.id), back = `/admin/shluchim/${id}`;
   const name = String(req.body.name || '').trim().slice(0, 80);
-  const phone = normalizePhone(req.body.phone);
+  const phone = shliachPhone(req.body.phone);
   if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect(back); }
-  if (!phone) { flashErr(req, 'מספר הנייד אינו תקין'); return res.redirect(back); }
+  if (!phone) { flashErr(req, PHONE_RULE); return res.redirect(back); }
   const addr = parseAddress(req.body.address);
   // שינוי נייד = שינוי היעד של קודי הכניסה — מנתקים סשנים קיימים
   const { rows: [r] } = await q(`UPDATE shluchim SET name=$1, chabad_house=$2, phone=$3, sms_phone=$3, gender=$4, use_title=$5,
       session_version=session_version + (CASE WHEN phone IS DISTINCT FROM $3 THEN 1 ELSE 0 END)
     WHERE id=$6 RETURNING id`, [name, String(req.body.chabad_house || '').trim().slice(0, 80), phone, addr.gender, addr.use_title, id]);
-  if (r) flash(req, 'פרטי השליח עודכנו');
+  if (r) {
+    if (smsCapable(phone)) flash(req, 'פרטי השליח עודכנו');
+    else flashErr(req, `הפרטים עודכנו ✓ — ${phone} אינו נייד ישראלי, ולכן השליח לא מחובר לשירותי SMS`);
+  }
   res.redirect(back);
 });
 
@@ -1052,7 +1061,7 @@ function renderLogin(req, res, error = null, status = 200) {
   const s = req.shliach;
   const otpSent = req.session.otp?.id === s.id && req.session.otp.at > Date.now() - OTP_TTL_MIN * 60 * 1000;
   res.status(status).render('shliach_login', {
-    error, otpSent, maskedPhone: maskPhone(s.phone), canOtp: !!s.phone && smsConfigured(),
+    error, otpSent, maskedPhone: maskPhone(s.phone), canOtp: smsCapable(s.phone) && smsConfigured(),
   });
 }
 
@@ -1481,7 +1490,7 @@ const recentOtp = (req) => req.session.otpLogin?.id === req.shliach.id && req.se
 
 async function renderSettings(req, res, error = null, status = 200) {
   res.status(status).render('settings', {
-    error, records: await recordsStatus(req.shliach.id), openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: !!req.shliach.phone && smsConfigured(), categories: await loadCategories(req.shliach.id),
+    error, records: await recordsStatus(req.shliach.id), openProfile: !!req.openProfile, needCurrent: !!req.shliach.access_code_hash && !recentOtp(req), canOtp: smsCapable(req.shliach.phone) && smsConfigured(), categories: await loadCategories(req.shliach.id),
     catCounts: Object.fromEntries((await q('SELECT category_id, count(*)::int AS n FROM contacts WHERE shliach_id=$1 AND category_id IS NOT NULL GROUP BY 1', [req.shliach.id])).rows.map((r) => [r.category_id, r.n])),
     smsOn: smsConfigured(), fmtDate, quota: quotaStatus(req.shliach),
     previews: req.shliach.sms_weekly && req.shliach.sms_daily
@@ -1506,7 +1515,8 @@ router.post('/sms', async (req, res) => {
     return res.redirect(back);
   }
   const weekly = req.body.sms_weekly === 'on', daily = req.body.sms_daily === 'on';
-  if ((weekly || daily) && !normalizePhone(s.phone)) return renderSettings(req, res, 'כדי להפעיל תזכורות יש להזין מספר נייד בפרטים האישיים', 400);
+  if ((weekly || daily) && !s.phone) return renderSettings(req, res, 'כדי להפעיל תזכורות יש להזין מספר נייד בפרטים האישיים', 400);
+  if ((weekly || daily) && !smsCapable(s.phone)) return renderSettings(req, res, 'תזכורות SMS זמינות רק לנייד ישראלי — המספר שלך מחו״ל', 400);
   const yzDays = remindDays(req.body.yahrzeit_remind_days);
   await q('UPDATE shluchim SET sms_weekly=$1, sms_daily=$2, sms_enabled=$3, yahrzeit_remind_days=$5 WHERE id=$4',
     [weekly, daily, weekly || daily, s.id, yzDays]);
@@ -1539,8 +1549,8 @@ router.post('/settings', async (req, res) => {
     if (!name) return fail('יש להזין שם');
     const house = String(req.body.chabad_house || '').trim().slice(0, 80);
     const rawPhone = String(req.body.phone || '').trim();
-    const phone = rawPhone ? normalizePhone(rawPhone) : '';
-    if (rawPhone && !phone) return fail('מספר הנייד אינו תקין');
+    const phone = rawPhone ? shliachPhone(rawPhone) : '';
+    if (rawPhone && !phone) return fail(PHONE_RULE);
     const phoneChanged = phone !== (s.phone || '');
     // שינוי הנייד (שאליו נשלח קוד הכניסה החד-פעמי) דורש את הקוד הנוכחי, כמו החלפת קוד
     if (phoneChanged && s.access_code_hash && !recentOtp(req) && !(await currentCodeOk(req, s))) {
