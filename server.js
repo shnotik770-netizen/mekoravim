@@ -578,12 +578,26 @@ function codeFrom(req) {
   return validCode(code) ? code : null;
 }
 
+// מניעת חשבון כפול (למשל לחיצה כפולה על "יצירה"): נייד שכבר בתהליך יצירה / קיים אצל שליח אחר
+const creatingPhones = new Set();
 app.post('/admin/shluchim', requireAdmin, async (req, res) => {
+  const phone0 = normalizePhone(req.body.phone);
+  if (phone0 && creatingPhones.has(phone0)) return res.redirect('/admin'); // הבקשה הראשונה עוד רצה
+  if (phone0) creatingPhones.add(phone0);
+  try { await createShliach(req, res); } finally { if (phone0) creatingPhones.delete(phone0); }
+});
+async function createShliach(req, res) {
   const name = String(req.body.name || '').trim().slice(0, 80);
   if (!name) { flashErr(req, 'יש להזין שם'); return res.redirect('/admin'); }
   const house = String(req.body.chabad_house || '').trim().slice(0, 80);
   const phone = normalizePhone(req.body.phone);
   if (!phone) { flashErr(req, 'יש להזין מספר נייד תקין של השליח (05X-XXXXXXX)'); return res.redirect('/admin'); }
+  const { rows: [dup] } = await q(`SELECT id, name, created_at > now() - interval '10 minutes' AS fresh FROM shluchim WHERE phone=$1 ORDER BY id DESC LIMIT 1`, [phone]);
+  if (dup?.fresh) { flash(req, `החשבון של ${dup.name} כבר נוצר לפני רגע — לא נוצר חשבון כפול`); return res.redirect(`/admin/shluchim/${dup.id}`); }
+  if (dup && req.body.allow_dup !== 'on') {
+    flashErr(req, `כבר קיים שליח עם הנייד ${phone}: ${dup.name}. אם זה בכוונה (למשל שני חשבונות לאותו אדם) — סמנו "לאפשר נייד שכבר קיים" ונסו שוב.`);
+    return res.redirect('/admin#new-shliach');
+  }
   const code = codeFrom(req);
   if (!code) { flashErr(req, CODE_RULE); return res.redirect('/admin'); }
   const quota = parseQuota(req.body.sms_quota);
@@ -602,7 +616,7 @@ app.post('/admin/shluchim', requireAdmin, async (req, res) => {
   if (sent.ok) flash(req, `החשבון נוצר, והקישור והקוד נשלחו ב-SMS ל-${phone}`);
   else flashErr(req, `החשבון נוצר, אבל ה-SMS לא נשלח (${sent.error}) — אפשר לשלוח בוואטסאפ`);
   res.redirect('/admin');
-});
+}
 
 // קוד קבוע חדש (ריק = אקראי) ושליחתו ב-SMS
 app.post('/admin/shluchim/:id/code', requireAdmin, async (req, res) => {

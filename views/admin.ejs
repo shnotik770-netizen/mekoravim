@@ -134,13 +134,14 @@
 </section>
 <aside class="bd-card" id="new-shliach">
   <h2 class="bd-section-title">שליח חדש</h2>
-  <form method="post" action="/admin/shluchim">
+  <form method="post" action="/admin/shluchim" data-once>
     <div class="bd-field"><label class="bd-label" for="sn">שם השליח / השלוחה<span class="req">*</span></label><input class="bd-input" id="sn" name="name" required maxlength="80"></div>
     <div class="bd-field"><label class="bd-label" for="sa">פנייה</label><select class="bd-input" id="sa" name="address">
       <% ADDRESS_OPTIONS.forEach(([k, label]) => { %><option value="<%= k %>"><%= label %></option><% }) %>
     </select><span class="bd-help">משנה את הברכה ("שלום, הרבנית…") וההודעות. השליח/ה יכול/ה לשנות בהגדרות.</span></div>
     <div class="bd-field"><label class="bd-label" for="sh">שם בית חב״ד <span class="opt">(לא חובה)</span></label><input class="bd-input" id="sh" name="chabad_house" maxlength="80"></div>
-    <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required autocomplete="tel"><span class="bd-help">הקישור ופרטי הכניסה יישלחו לנייד הזה ב-SMS מיד עם יצירת החשבון</span></div>
+    <div class="bd-field"><label class="bd-label" for="sp">נייד של השליח<span class="req">*</span></label><input class="bd-input" id="sp" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:right" placeholder="050-0000000" required autocomplete="tel"><span class="bd-help">הקישור ופרטי הכניסה יישלחו לנייד הזה ב-SMS מיד עם יצירת החשבון</span>
+      <label class="bd-check bd-small bd-mt"><input type="checkbox" name="allow_dup"> לאפשר נייד שכבר קיים אצל שליח אחר</label></div>
     <div class="bd-field"><label class="bd-label" for="sc">קוד כניסה קבוע <span class="opt">(ריק = 6 ספרות אקראיות)</span></label><input class="bd-input" id="sc" name="code" maxlength="32" autocomplete="off"><span class="bd-help">השליח יוכל להיכנס עם הקוד הזה, או עם קוד חד-פעמי שיישלח לנייד שלו ב-SMS.</span></div>
     <div class="bd-field"><label class="bd-label" for="sq">מכסת SMS לתזכורות <span class="opt">(ריק = <%= defaultQuota %>)</span></label><input class="bd-input" id="sq" name="sms_quota" type="number" min="0" max="100000" inputmode="numeric"><span class="bd-help">רק תזכורות ימי הולדת יורדות מהמכסה (הודעה ארוכה = כמה יחידות). קודי כניסה והודעות מערכת לא נספרים. אפשר להוסיף יחידות בכל עת מתפריט הפעולות.</span></div>
     <button class="bd-btn bd-btn--primary bd-btn--block" style="min-height:var(--bd-tap);font-size:var(--bd-fs-md)">יצירת חשבון ושליחה ב-SMS</button>
