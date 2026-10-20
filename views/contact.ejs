@@ -71,7 +71,7 @@
           <div class="bd-next-pill<%= yz ? ' bd-next-pill--yz' : '' %>"><%= yz ? '🕯️ יארצייט' : '🎂' %> <b><%= f.next.actualLabel %></b> · יום <%= DAY_NAMES[f.next.date.getDay()] %> · <bdi class="bd-num"><%= fmtGreg(f.next.date) %></bdi><% if (f.next.age) { %> · <%= yz ? f.next.age + ' שנים' : 'ימלאו ' + f.next.age %><% } %> · <span class="bd-next-pill__when"><%= whenStr(f.next.date) %></span></div>
           <% if (f.next.note) { %><div class="bd-person-row__note">ⓘ <%= f.next.note %></div><% } %>
           <% } %>
-          <% const bmd = !yz && !['בת', 'אמא', 'סבתא', 'אחות'].includes(f.relation) ? barMitzvahDate(f) : null; if (bmd && bmd >= today) { %>
+          <% const bmd = !yz && !['בת', 'אמא', 'סבתא', 'אחות'].includes(f.relation) ? barMitzvahDate(f) : null; if (bmd && bmd >= today && bmd - today <= 366 * 864e5) { /* רק מגיל 12 — השנה שלפני הבר מצווה */ %>
           <div class="bd-person-row__bm"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה: <b><%= hebDateStr(f.h_day, f.h_month, f.h_year + 13) %></b> · <bdi class="bd-num"><%= fmtGreg(bmd) %></bdi> · <%= untilText(Math.round((bmd - today) / 864e5)) %> · 📜 <%= parshaOnOrAfter(bmd, il) %><% if (f.bm_known) { %> · <span class="bd-muted">✓ ידוע</span><% } %></div>
           <% } %>
           <div class="bd-person-row__remind"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: yz ? '🔔 תזכורת לפני היארצייט' : '🔔 תזכורת SMS' }) %></div>
