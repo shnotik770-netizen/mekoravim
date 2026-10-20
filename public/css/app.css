@@ -644,3 +644,4 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-chips a.bd-chip[aria-pressed="true"] { background: color-mix(in srgb, var(--tag, var(--bd-fg)) 14%, var(--bd-surface)); color: var(--bd-fg); border-color: color-mix(in srgb, var(--tag, var(--bd-fg)) 55%, transparent); font-weight: 600; }
 .bd .bd-chips a.bd-chip[aria-pressed="false"] { opacity: .5; text-decoration: line-through; text-decoration-thickness: 1px; }
 .bd-row__parsha { font-size: .72rem; color: var(--bd-fg-muted); white-space: nowrap; }
+.bd-help-sm { font-size: .72rem; opacity: .85; }
