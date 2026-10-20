@@ -7,7 +7,10 @@
   const yz = !!e.yahrzeit;
   // יארצייט: ההודעה נשלחת לקרוב (המקורב), לא "מזל טוב"
   const fem = yz && ['אמא', 'סבתא', 'אחות', 'בת'].includes(e.member.relation);
-  const msg = yz
+  const bm = !!e.barmitzvah;
+  const msg = bm
+    ? (e.member ? `מזל טוב לבר המצווה של ${first}! 🎉 שתזכו לרוב נחת יהודי חסידי ממנו.` : `מזל טוב לבר המצווה, ${first}! 🎉 שתזכה להיות חסיד, ירא שמים ולמדן.`)
+    : yz
     ? `שלום ${e.contact.first_name || e.contact.last_name}, רציתי להזכיר שב${e.actualLabel} (יום ${DAY_NAMES[e.date.getDay()]}) חל היארצייט של ${first} ז״ל. ${fem ? 'יהי זכרה ברוך' : 'יהי זכרו ברוך'} 🕯️`
     : 'מזל טוב ' + first + '! 🎂 מאחלים לך שנה טובה ומבורכת, מלאה בבריאות, שמחה והצלחה.';
   const wa = intl ? 'https://wa.me/' + intl + '?text=' + encodeURIComponent(msg) : '';
@@ -22,6 +25,9 @@
     <span class="bd-row__dow"><%= isToday ? 'היום' : 'יום ' + DAY_NAMES[e.date.getDay()] %></span>
     <span class="bd-row__heb"><%= e.label %></span>
     <span class="bd-row__greg bd-num"><%= e.date.getDate() %>.<%= e.date.getMonth() + 1 %></span>
+    <% if (bm) { %><span class="bd-row__age bd-row__age--bm"><%- include('icons', { name: 'tefillin' }) %>בר מצווה</span>
+    <% } else if (e.age && yz) { %><span class="bd-row__age"><%= e.age === 1 ? 'שנה ראשונה' : e.age + ' שנים' %></span>
+    <% } else if (e.age) { %><span class="bd-row__age"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
   </div>
   <div class="bd-row__who">
     <div class="bd-row__line">
@@ -30,7 +36,6 @@
     </div>
     <% if (e.member) { %><div class="bd-kin"><span><%= yz ? 'יארצייט · ' : '👪 ' %><%= e.member.relation %> של <a href="<%= base %>/contacts/<%= e.contact.id %>"><%= e.contact.first_name %> <%= e.contact.last_name %></a></span></div><% } %>
     <div class="bd-row__meta">
-      <% if (e.age && yz) { %><span><%= e.age === 1 ? 'שנה ראשונה' : e.age + ' שנים' %> לפטירה</span><% } else if (e.age) { %><span style="display:inline-flex;gap:4px;align-items:center"><%- include('icons', { name: 'cake' }) %>גיל <%= e.age %></span><% } %>
       <% if (past && !done) { %><span style="color:var(--bd-bad);font-weight:500">טרם נוצר קשר</span><% } %>
       <% if (e.note) { %><span class="bd-note">ⓘ <%= e.note %></span><% } %>
     </div>

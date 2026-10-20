@@ -13,7 +13,7 @@ import {
 
 import { loadPeople, collectEvents, collectEvents as collectAll } from './lib/events.js';
 import { audit, auditRequests, pruneAudit } from './lib/audit.js';
-import { upcomingBarMitzvahs, untilText, barMitzvahDate, BM_MONTHS } from './lib/barmitzvah.js';
+import { upcomingBarMitzvahs, untilText, barMitzvahDate, BM_MONTHS, isBarMitzvahEvent } from './lib/barmitzvah.js';
 import { noteDemo, noteDemoReject, report as loadReport, alertSettings, saveAlertSettings, sendTestAlert, POOL_MAX } from './lib/monitor.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
@@ -1010,9 +1010,10 @@ router.get('/', async (req, res) => {
   const people = await loadPeople(s.id);
   // סינון לפי סוג: הכל / ימי הולדת / יארצייט (חל על כל הדשבורד — הריבועים, הרשימות וההתראות)
   const hasYz = people.family.some((f) => f.kind === 'yahrzeit');
-  const type = hasYz && ['bday', 'yz'].includes(req.query.type) ? req.query.type : '';
-  const keep = type === 'yz' ? (e) => e.yahrzeit : type === 'bday' ? (e) => !e.yahrzeit : () => true;
-  const collectEvents = (p, a, b) => collectAll(p, a, b).filter(keep);
+  const type = ['bday', 'bm'].includes(req.query.type) || (hasYz && req.query.type === 'yz') ? req.query.type : '';
+  const keep = type === 'yz' ? (e) => e.yahrzeit : type === 'bday' ? (e) => !e.yahrzeit : type === 'bm' ? (e) => e.barmitzvah : () => true;
+  const mark = (e) => { e.barmitzvah = isBarMitzvahEvent(e); return e; };
+  const collectEvents = (p, a, b) => collectAll(p, a, b).map(mark).filter(keep);
   const today = todayIL();
   const w = weekRange(today), m = hebMonthRange(today), r = pickRange(view === 'range' ? req.query : {}, today);
   const from = new Date(Math.min(w.start, m.start, addDays(today, -14)));

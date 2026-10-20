@@ -54,7 +54,7 @@
 <% if (total) { %><a class="bd-missed-btn" href="<%= qs({ view: 'missed' }) %>" aria-pressed="<%= view === 'missed' %>">⏳ ימי הולדת שעברו בלי ברכה<% if (overdue.length) { %> <span class="bd-missed-btn__n bd-num"><%= overdue.length %></span><% } %><span class="bd-missed-btn__hint">שבועיים אחרונים · אפשר לבחור טווח</span></a><% } %>
 <% if (barMitzvahs.length) { %>
 <section class="bd-bm" aria-label="בר מצוות מתקרבות">
-  <div class="bd-bm__title">🎉 בר מצווה מתקרבת<% if (barMitzvahs.length > 1) { %> <span class="bd-num">(<%= barMitzvahs.length %>)</span><% } %></div>
+  <div class="bd-bm__title"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה מתקרבת<% if (barMitzvahs.length > 1) { %> <span class="bd-num">(<%= barMitzvahs.length %>)</span><% } %></div>
   <ul class="bd-bm__list">
   <% barMitzvahs.forEach(e => { %>
     <li>
@@ -87,11 +87,12 @@
     <%- include('partials/icons', { name: 'search' }) %>
     <input class="bd-input" type="search" name="q" placeholder="חיפוש מקורב לפי שם או טלפון…" autocomplete="off" aria-label="חיפוש מקורב">
   </form>
-  <% if (hasYz) { %>
+  <% if (total) { %>
   <nav class="bd-seg bd-seg--type" aria-label="הצגה לפי סוג">
-    <a href="<%= qs({ type: '' }) %>" aria-selected="<%= !type %>">🎂🕯️ הכל</a>
+    <a href="<%= qs({ type: '' }) %>" aria-selected="<%= !type %>">הכל</a>
     <a href="<%= qs({ type: 'bday' }) %>" aria-selected="<%= type === 'bday' %>">🎂 ימי הולדת</a>
-    <a href="<%= qs({ type: 'yz' }) %>" aria-selected="<%= type === 'yz' %>">🕯️ יארצייט</a>
+    <% if (hasYz) { %><a href="<%= qs({ type: 'yz' }) %>" aria-selected="<%= type === 'yz' %>">🕯️ יארצייט</a><% } %>
+    <a href="<%= qs({ type: 'bm' }) %>" aria-selected="<%= type === 'bm' %>"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה</a>
   </nav>
   <% if (categories.length) { %><p class="bd-filter-label">סינון לפי סיווג</p><% } %>
   <% } %>
@@ -127,7 +128,7 @@
     </div>
     <ul class="bd-list">
       <% if (!list.length) { %>
-        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : type === 'yz' ? 'אין יארצייט בטווח הזה' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
+        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : type === 'yz' ? 'אין יארצייט בטווח הזה' : type === 'bm' ? 'אין בר מצוות בטווח הזה — אפשר לבחור טווח ארוך יותר (📅 טווח)' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
       <% } %>
       <% list.forEach(e => { %><%- include('partials/event_row', { e, back }) %><% }) %>
     </ul>

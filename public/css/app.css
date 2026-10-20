@@ -623,3 +623,15 @@ div.bd-stat:hover { border-color: var(--bd-line); }
 .bd .bd-seg--type a { flex: 1; justify-content: center; font-weight: var(--bd-fw-medium); text-decoration: none; }
 .bd .bd-seg--type a[aria-selected="true"] { background: var(--bd-accent); color: var(--bd-accent-fg, #fff); box-shadow: none; }
 .bd-filter-label { font-size: .78rem; color: var(--bd-fg-muted); margin: 0 2px 6px; }
+
+/* בורר סוג קומפקטי + גיל מתחת לתאריך + אייקון תפילין */
+.bd .bd-seg--type { display: inline-flex; width: auto; max-width: 100%; padding: 3px; }
+.bd .bd-seg--type a { flex: none; min-height: 32px; padding: 0 12px; font-size: .82rem; gap: 4px; }
+.bd-row__age { display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; font-size: .75rem; color: var(--bd-fg-muted); white-space: nowrap; }
+.bd-row__age--bm { color: var(--bd-accent); font-weight: 700; }
+.bd-ico-tefillin { color: #1d1d1f; vertical-align: -3px; flex: none; }
+.bd-seg--type a[aria-selected="true"] .bd-ico-tefillin { color: #fff; }
+.bd-row--done:not(.is-open) .bd-row__age { display: none; }
+.bd-ico-tefillin { color: var(--bd-fg); }
+.bd-ico-tefillin .shin { stroke: var(--bd-surface); }
+.bd-seg--type a[aria-selected="true"] .bd-ico-tefillin .shin { stroke: var(--bd-accent); }

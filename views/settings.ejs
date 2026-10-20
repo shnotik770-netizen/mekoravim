@@ -66,7 +66,7 @@
         </select>
         <label class="bd-check bd-small bd-mt"><input type="checkbox" name="yz_apply_all"> להחיל גם על כל היארצייטים שכבר רשומים</label>
         <span class="bd-help">SMS לנייד שלכם לפני כל יארצייט (בנוסף לתזכורת השבועית/היומית). אפשר לשנות לכל יארצייט בכרטיס המקורב. יורד ממכסת ה-SMS לתזכורות.</span></div>
-      <div class="bd-field bd-mt"><label class="bd-label" for="bm-months">🎉 התראת בר מצווה</label>
+      <div class="bd-field bd-mt"><label class="bd-label" for="bm-months"><%- include('partials/icons', { name: 'tefillin' }) %> התראת בר מצווה</label>
         <select class="bd-input" id="bm-months" name="barmitzvah_months" style="max-width:260px">
           <% const bm = shliach.barmitzvah_months; %>
           <option value="" <%= bm === null || bm === undefined ? 'selected' : '' %>>כבוי</option>
