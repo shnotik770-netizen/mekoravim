@@ -59,7 +59,8 @@
   <% barMitzvahs.forEach(e => { %>
     <li>
       <div class="bd-bm__who"><a href="<%= base %>/contacts/<%= e.contact.id %>"><b><%= e.name %></b></a><% if (e.sub) { %> <span class="bd-muted bd-small"><%= e.sub %></span><% } %>
-        <div class="bd-small"><%= e.label %> · יום <%= DAY_NAMES[e.date.getDay()] %> <bdi class="bd-num"><%= fmtGreg(e.date) %></bdi> · <b class="bd-bm__when"><%= untilText(e.days) %></b></div></div>
+        <div class="bd-small"><%= e.label %> · יום <%= DAY_NAMES[e.date.getDay()] %> <bdi class="bd-num"><%= fmtGreg(e.date) %></bdi> · <b class="bd-bm__when"><%= untilText(e.days) %></b></div>
+        <div class="bd-small bd-muted">📜 <%= e.parsha %></div></div>
       <form method="post" action="<%= base %>/contacts/<%= e.contact.id %>/bm-known">
         <input type="hidden" name="back" value="<%= back %>"><% if (e.member) { %><input type="hidden" name="family_member_id" value="<%= e.member.id %>"><% } %>
         <button class="bd-btn bd-btn--ghost bd-btn--sm" title="סימון כידוע מוריד את ההתראה">✓ ידוע</button>
@@ -88,18 +89,17 @@
     <input class="bd-input" type="search" name="q" placeholder="חיפוש מקורב לפי שם או טלפון…" autocomplete="off" aria-label="חיפוש מקורב">
   </form>
   <% if (total) { %>
-  <nav class="bd-seg bd-seg--type" aria-label="הצגה לפי סוג">
-    <a href="<%= qs({ type: '' }) %>" aria-selected="<%= !type %>">הכל</a>
-    <a href="<%= qs({ type: 'bday' }) %>" aria-selected="<%= type === 'bday' %>">🎂 ימי הולדת</a>
-    <% if (hasYz) { %><a href="<%= qs({ type: 'yz' }) %>" aria-selected="<%= type === 'yz' %>">🕯️ יארצייט</a><% } %>
-    <a href="<%= qs({ type: 'bm' }) %>" aria-selected="<%= type === 'bm' %>"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה</a>
+  <% const tOn = (k) => !types || types.has(k); const TL = { bday: '🎂 ימי הולדת', yz: '🕯️ יארצייט' }; %>
+  <nav class="bd-seg bd-seg--type" aria-label="הצגה לפי סוג (לחיצה מוסיפה / מורידה)">
+    <% TYPE_KEYS.forEach(k => { %><a href="<%= qs({ types: toggle(types, TYPE_KEYS, k) }) %>" aria-pressed="<%= tOn(k) %>"><% if (k === 'bm') { %><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה<% } else { %><%= TL[k] %><% } %></a><% }) %>
   </nav>
   <% if (categories.length) { %><p class="bd-filter-label">סינון לפי סיווג</p><% } %>
   <% } %>
   <% if (categories.length) { %>
   <div class="bd-chips" role="group" aria-label="סינון לפי סיווג">
-    <a class="bd-chip" href="<%= qs({ cat: '' }) %>" aria-pressed="<%= !cat %>">הכל</a>
-    <% categories.forEach(c => { %><a class="bd-chip" href="<%= qs({ cat: cat === c.id ? '' : c.id }) %>" aria-pressed="<%= cat === c.id %>" style="--tag:<%= c.color %>"><span class="bd-dot"></span><%= c.name %></a><% }) %>
+    <% const cOn = (k) => !cats || cats.has(k); %>
+    <% categories.forEach(c => { %><a class="bd-chip" href="<%= qs({ cats: toggle(cats, CAT_KEYS, String(c.id)) }) %>" aria-pressed="<%= cOn(String(c.id)) %>" style="--tag:<%= c.color %>"><span class="bd-dot"></span><%= c.name %></a><% }) %>
+    <% if (CAT_KEYS.includes('0')) { %><a class="bd-chip" href="<%= qs({ cats: toggle(cats, CAT_KEYS, '0') }) %>" aria-pressed="<%= cOn('0') %>">ללא סיווג</a><% } %>
   </div>
   <% } %>
 </div>
@@ -128,7 +128,7 @@
     </div>
     <ul class="bd-list">
       <% if (!list.length) { %>
-        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : type === 'yz' ? 'אין יארצייט בטווח הזה' : type === 'bm' ? 'אין בר מצוות בטווח הזה — אפשר לבחור טווח ארוך יותר (📅 טווח)' : cat ? 'אין ימי הולדת של "' + (catById.get(cat)?.name || '') + '" בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
+        <li class="bd-empty"><div class="bd-empty__icon" aria-hidden="true">🕯️</div><%= view === 'missed' ? '👏 כל הכבוד — לא נשאר אף אחד בלי ברכה בטווח הזה' : typesQ === 'bm' ? 'אין בר מצוות בטווח הזה — אפשר לבחור טווח ארוך יותר (📅 טווח)' : typesQ === 'yz' ? 'אין יארצייט בטווח הזה' : types || cats ? 'אין אירועים לפי הסינון שנבחר בטווח הזה' : 'אין ימי הולדת בטווח הזה' %></li>
       <% } %>
       <% list.forEach(e => { %><%- include('partials/event_row', { e, back }) %><% }) %>
     </ul>
@@ -177,8 +177,8 @@
 <dialog class="bd-range" id="bd-range" aria-labelledby="bd-range-title">
   <form method="get" class="bd-range__form" data-range-form data-today="<%= toISO(today) %>" data-max="<%= maxRange %>">
     <input type="hidden" name="view" value="<%= view === 'missed' ? 'missed' : 'range' %>">
-    <% if (cat) { %><input type="hidden" name="cat" value="<%= cat %>"><% } %>
-    <% if (type) { %><input type="hidden" name="type" value="<%= type %>"><% } %>
+    <% if (catsQ) { %><input type="hidden" name="cats" value="<%= catsQ %>"><% } %>
+    <% if (typesQ) { %><input type="hidden" name="types" value="<%= typesQ %>"><% } %>
     <div class="bd-range__head">
       <h2 class="bd-range__title" id="bd-range-title">בחירת טווח תאריכים</h2>
       <button type="button" class="bd-range__x" data-range-close aria-label="סגירה">✕</button>

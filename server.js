@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { q, migrate, transaction, dbStorage, pool } from './lib/db.js';
 import {
   HEB_MONTHS, HEB_DAYS, DAY_NAMES, todayIL, nextBirthday, weekRange, hebMonthRange,
-  MONTH_INPUT, monthInputName, hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
+  MONTH_INPUT, monthInputName, parshaOnOrAfter, hebToday, addDays, fmtGreg, hebFromGreg, parseISO, weekInfo, birthNote, hebDateStr, hebRangeStr, toISO, monthName, hebYearStr, hebStamp,
 } from './lib/dates.js';
 
 import { loadPeople, collectEvents, collectEvents as collectAll } from './lib/events.js';
@@ -1005,15 +1005,33 @@ router.get('/', async (req, res) => {
   if (!req.authorized) return renderLogin(req, res);
   const s = req.shliach;
   const categories = await loadCategories(s.id);
-  const cat = int(req.query.cat);
   const view = req.query.view === '30' ? 'range' : VIEWS.includes(req.query.view) ? req.query.view : 'week';
   const people = await loadPeople(s.id);
-  // סינון לפי סוג: הכל / ימי הולדת / יארצייט (חל על כל הדשבורד — הריבועים, הרשימות וההתראות)
+  const il = !s.diaspora;
+  // מסננים בלחצנים: כל לחצן לחוץ = מוצג; כולם לחוצים (ברירת מחדל) = הכול. null = הכול
+  const parseSet = (v, all) => {
+    const set = new Set(String(v || '').split(',').filter((x) => all.includes(x)));
+    return set.size && set.size < all.length ? set : null;
+  };
+  const toggle = (set, all, v) => {
+    const next = new Set(set || all);
+    if (next.has(v)) next.delete(v); else next.add(v);
+    return next.size === 0 || next.size === all.length ? '' : all.filter((x) => next.has(x)).join(',');
+  };
+  // סוג (חל על כל הדשבורד): ימי הולדת / יארצייט / בר מצווה
   const hasYz = people.family.some((f) => f.kind === 'yahrzeit');
-  const type = ['bday', 'bm'].includes(req.query.type) || (hasYz && req.query.type === 'yz') ? req.query.type : '';
-  const keep = type === 'yz' ? (e) => e.yahrzeit : type === 'bday' ? (e) => !e.yahrzeit : type === 'bm' ? (e) => e.barmitzvah : () => true;
-  const mark = (e) => { e.barmitzvah = isBarMitzvahEvent(e); return e; };
-  const collectEvents = (p, a, b) => collectAll(p, a, b).map(mark).filter(keep);
+  const TYPE_KEYS = hasYz ? ['bday', 'yz', 'bm'] : ['bday', 'bm'];
+  const types = parseSet(req.query.types, TYPE_KEYS);
+  const typeOf = (e) => (e.yahrzeit ? 'yz' : e.barmitzvah ? 'bm' : 'bday');
+  const mark = (e) => {
+    e.barmitzvah = isBarMitzvahEvent(e);
+    if (e.barmitzvah) e.parsha = parshaOnOrAfter(e.date, il);
+    return e;
+  };
+  const collectEvents = (p, a, b) => collectAll(p, a, b).map(mark).filter((e) => !types || types.has(typeOf(e)));
+  // סיווג (חל על הרשימה): לכל סיווג לחצן, ו"ללא סיווג" כשיש מקורבים בלי סיווג
+  const CAT_KEYS = [...categories.map((c) => String(c.id)), ...(people.contacts.some((c) => !c.category_id) ? ['0'] : [])];
+  const cats = parseSet(req.query.cats, CAT_KEYS);
   const today = todayIL();
   const w = weekRange(today), m = hebMonthRange(today), r = pickRange(view === 'range' ? req.query : {}, today);
   const from = new Date(Math.min(w.start, m.start, addDays(today, -14)));
@@ -1035,20 +1053,21 @@ router.get('/', async (req, res) => {
   const overdue = all.filter((e) => e.date < today && e.date >= addDays(today, -14) && !e.contacted);
   const upcoming = collectEvents(people, addDays(w.end, 1), addDays(w.end, 60)).slice(0, 5);
   const next = collectEvents(people, addDays(today, 1), addDays(today, 400))[0];
-  const list = lists[view].filter((e) => !cat || e.contact.category_id === cat);
+  const list = lists[view].filter((e) => !cats || cats.has(String(e.contact.category_id || 0)));
   const viewQ = view === 'range' ? (r.preset ? {} : { from: toISO(r.start), to: toISO(r.end) })
     : view === 'missed' ? (mr.days ? (mr.days === 14 ? {} : { days: mr.days }) : { from: toISO(mr.start), to: toISO(mr.end) }) : {};
   res.render('dashboard', {
     records: await recordsStatus(s.id),
-    barMitzvahs: type === 'yz' ? [] : upcomingBarMitzvahs(people, today, s.barmitzvah_months), untilText,
-    weekInfo: weekInfo(today), hebRangeStr, toISO,
+    barMitzvahs: types && !types.has('bm') ? [] : upcomingBarMitzvahs(people, today, s.barmitzvah_months, il), untilText,
+    weekInfo: weekInfo(today, il), hebRangeStr, toISO,
     sms: { ...quotaStatus(s), on: s.sms_weekly || s.sms_daily, weekly: s.sms_weekly, daily: s.sms_daily },
-    today, hebToday: hebToday(today), view, cat, categories, catById: new Map(categories.map((c) => [c.id, c])),
+    today, hebToday: hebToday(today), view, categories, catById: new Map(categories.map((c) => [c.id, c])),
+    types, TYPE_KEYS, cats, CAT_KEYS, toggle, typesQ: types ? [...types].join(',') : '', catsQ: cats ? [...cats].join(',') : '',
     lists, list, overdue, upcoming, next, weekRange: w, monthRange: m, range: r, missed: mr, MISSED_DAYS, maxRange: MAX_RANGE_DAYS,
-    total: people.contacts.length, familyTotal: people.family.length, hasYz, type,
+    total: people.contacts.length, familyTotal: people.family.length, hasYz,
     qs: (o) => {
       const keep = !o.view || o.view === view ? viewQ : {};
-      const p = new URLSearchParams({ view, ...keep, ...(cat ? { cat } : {}), ...(type ? { type } : {}), ...o });
+      const p = new URLSearchParams({ view, ...keep, ...(cats ? { cats: [...cats].join(',') } : {}), ...(types ? { types: [...types].join(',') } : {}), ...o });
       if ('days' in o) { p.delete('from'); p.delete('to'); }
       for (const [k, v] of [...p]) if (v === '' || v === 'null') p.delete(k);
       return `?${p}`;
@@ -1308,7 +1327,7 @@ async function renderContact(req, res, { error = null, posted = null, status = 2
   c.next = nextBirthday(c, today);
   for (const f of family) f.next = nextBirthday(f, today);
   res.status(status).render('contact', {
-    barMitzvahDate, untilText, hebDateStr,
+    barMitzvahDate, untilText, hebDateStr, parshaOnOrAfter, il: !req.shliach.diaspora,
     c, family, log, link, values: posted || formValues(c), posted, openEdit: !!posted, today, formValues, wa: whatsappLink(c.phone),
     categories: await loadCategories(req.shliach.id), fmtDate,
     fmtTime: (t) => new Date(t).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' }),
@@ -1621,6 +1640,9 @@ router.post('/settings', async (req, res) => {
     if (phoneChanged) req.session.sh = { ...(Array.isArray(req.session.sh) ? {} : req.session.sh), [s.id]: u.session_version };
     req.auditDetail = phoneChanged ? 'כולל שינוי נייד' : undefined;
     flash(req, 'הפרטים עודכנו');
+  } else if (a === 'calendar') {
+    await q('UPDATE shluchim SET diaspora=$1 WHERE id=$2', [req.body.diaspora === '1', s.id]);
+    flash(req, req.body.diaspora === '1' ? 'הפרשות יחושבו לפי לוח חוץ לארץ' : 'הפרשות יחושבו לפי לוח ארץ ישראל');
   } else if (a === 'yechi') {
     await q('UPDATE shluchim SET show_yechi=$1 WHERE id=$2', [req.body.show_yechi === 'on', s.id]);
     flash(req, req.body.show_yechi === 'on' ? 'יחי אדוננו יוצג בתחתית הדפים' : 'יחי אדוננו הוסתר');

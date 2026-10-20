@@ -72,7 +72,7 @@
           <% if (f.next.note) { %><div class="bd-person-row__note">ⓘ <%= f.next.note %></div><% } %>
           <% } %>
           <% const bmd = !yz && !['בת', 'אמא', 'סבתא', 'אחות'].includes(f.relation) ? barMitzvahDate(f) : null; if (bmd && bmd >= today) { %>
-          <div class="bd-person-row__bm"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה: <b><%= hebDateStr(f.h_day, f.h_month, f.h_year + 13) %></b> · <bdi class="bd-num"><%= fmtGreg(bmd) %></bdi> · <%= untilText(Math.round((bmd - today) / 864e5)) %><% if (f.bm_known) { %> · <span class="bd-muted">✓ ידוע</span><% } %></div>
+          <div class="bd-person-row__bm"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה: <b><%= hebDateStr(f.h_day, f.h_month, f.h_year + 13) %></b> · <bdi class="bd-num"><%= fmtGreg(bmd) %></bdi> · <%= untilText(Math.round((bmd - today) / 864e5)) %> · 📜 <%= parshaOnOrAfter(bmd, il) %><% if (f.bm_known) { %> · <span class="bd-muted">✓ ידוע</span><% } %></div>
           <% } %>
           <div class="bd-person-row__remind"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: yz ? '🔔 תזכורת לפני היארצייט' : '🔔 תזכורת SMS' }) %></div>
         </div>

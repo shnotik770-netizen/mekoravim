@@ -101,6 +101,16 @@
   </form>
 </section>
 <section class="bd-card">
+  <h2 class="bd-section-title">📜 לוח הפרשות</h2>
+  <form method="post" class="bd-stack">
+    <input type="hidden" name="action" value="calendar">
+    <label class="bd-check"><input type="radio" name="diaspora" value="0" <%= !shliach.diaspora ? 'checked' : '' %> data-autosubmit> ארץ ישראל</label>
+    <label class="bd-check"><input type="radio" name="diaspora" value="1" <%= shliach.diaspora ? 'checked' : '' %> data-autosubmit> חוץ לארץ</label>
+    <p class="bd-help">לפיו מחושבות פרשת השבוע בדשבורד ופרשת הבר מצווה (אחרי יום טוב שני של גלויות הפרשות בחו״ל לפעמים שונות).</p>
+    <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
+  </form>
+</section>
+<section class="bd-card">
   <h2 class="bd-section-title">📇 רשומות בחשבון</h2>
   <div class="bd-meter <%= records.near ? 'bd-meter--low' : '' %>" aria-hidden="true"><span style="width:<%= Math.min(100, Math.round(records.used / Math.max(1, records.quota) * 100)) %>%"></span></div>
   <p class="bd-small bd-mt">בשימוש <b class="bd-num"><%= records.used %></b> מתוך <b class="bd-num"><%= records.quota %></b> (מקורבים ובני משפחה) · נותרו <b class="bd-num"><%= records.left %></b></p>
