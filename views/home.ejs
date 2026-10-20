@@ -2,7 +2,7 @@
   const waNumber = '972533404770';
   const wa = (t) => `https://wa.me/${waNumber}?text=${encodeURIComponent(t)}`;
   const waContact = wa('שלום, אשמח לשמוע על זכרתי התקשרתי');
-  const ticker = ['ימי הולדת עבריים', 'תזכורת SMS שבועית ויומית', 'קישורי רישום למקורבים', 'ייבוא מאקסל', 'בני משפחה', 'סימון "יצרתי קשר"', 'בלי שבת וחג', 'נשמר כאפליקציה'];
+  const ticker = ['ימי הולדת עבריים', 'תזכורת SMS שבועית ויומית', 'בר מצווה מתקרבת', 'יארצייט', 'קישורי רישום למקורבים', 'ייבוא מאקסל', 'בני משפחה', 'סימון "יצרתי קשר"', 'בלי שבת וחג', 'נשמר כאפליקציה'];
 %><!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>זכרתי התקשרתי — לא מפספסים אף יום הולדת</title>
-<meta name="description" content="זכרתי התקשרתי — מערכת לשלוחים: ימי ההולדת העבריים של המקורבים ובני משפחותיהם, תזכורות SMS וקישורי רישום.">
+<meta name="description" content="זכרתי התקשרתי — מערכת לשלוחים: ימי ההולדת העבריים של המקורבים ובני משפחותיהם, תזכורות SMS, בר מצוות מתקרבות, יארצייט וקישורי רישום.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -36,6 +36,7 @@
       <p class="hm-eyebrow hm-rise" style="--d:0">זכרתי התקשרתי · לשלוחים ולבתי חב״ד</p>
       <h1 class="hm-title hm-rise" style="--d:1">לא מפספסים<br>אף <em>יום הולדת</em></h1>
       <p class="hm-lead hm-rise" style="--d:2">כל ימי ההולדת העבריים של המקורבים ובני המשפחה — במקום אחד, עם תזכורת ב-SMS ובוואטסאפ בלחיצה.</p>
+      <p class="hm-also hm-rise" style="--d:2">וגם תזכורות ל<b>בר מצוות</b> מתקרבות 🎉 ול<b>יארצייט</b> של יקירי המקורבים 🕯️</p>
       <div class="hm-cta hm-rise" style="--d:3">
         <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
         <a class="hm-btn hm-btn--line" href="/demo">▶ איך זה עובד</a>
@@ -48,7 +49,7 @@
       <div class="hm-badge" role="note" aria-label="מחיר השקה: 40 שקל, והמערכת שלך לתמיד (עד 770 רשומות)"><span class="hm-badge__l1">מחיר השקה</span><span class="hm-badge__l2">40<small>₪*</small></span><span class="hm-badge__l3">והמערכת שלך<br>לתמיד!</span></div>
       <div class="hm-phone"><img src="/img/dashboard.png?v=<%= v %>" alt=""></div>
       <div class="hm-pop hm-pop--a"><b>🎂 היום</b><span>יום הולדת לדוד כהן · 36</span></div>
-      <div class="hm-pop hm-pop--b"><b>📱 SMS</b><span>3 ימי הולדת השבוע</span></div>
+      <div class="hm-pop hm-pop--b"><b>🎉 בר מצווה</b><span>שמוליק כהן · בעוד 3 חודשים</span></div>
       <div class="hm-pop hm-pop--c"><b>✓ יצרתי קשר</b><span>שרה לוי · ט״ו בשבט</span></div>
     </div>
   </div>

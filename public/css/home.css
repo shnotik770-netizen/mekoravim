@@ -214,3 +214,5 @@ h1, h2, h3 { margin: 0; }
 .hm-info-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .hm-btn--dark { color: var(--night) !important; border-color: rgb(15 27 51 / .35) !important; }
 .hm-info-cta a.hm-btn--gold { color: var(--night); }
+.hm-also { margin: 10px 0 0; max-width: 38ch; font-size: clamp(.95rem, 2.3vw, 1.08rem); color: rgb(255 255 255 / .72); }
+.hm-also b { color: var(--gold, #E3B157); font-weight: 700; }
