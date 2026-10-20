@@ -214,5 +214,8 @@ h1, h2, h3 { margin: 0; }
 .hm-info-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .hm-btn--dark { color: var(--night) !important; border-color: rgb(15 27 51 / .35) !important; }
 .hm-info-cta a.hm-btn--gold { color: var(--night); }
-.hm-also { margin: 10px 0 0; max-width: 38ch; font-size: clamp(.95rem, 2.3vw, 1.08rem); color: rgb(255 255 255 / .72); }
-.hm-also b { color: var(--gold, #E3B157); font-weight: 700; }
+.hm-bubbles { margin: 16px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.hm-bub { display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 12px; border-radius: 999px; background: rgb(255 255 255 / .08); border: 1.5px solid rgb(227 176 75 / .6); }
+.hm-bub i { font-style: normal; font-size: 1.5rem; line-height: 1; }
+.hm-bub b { display: block; font-size: .95rem; color: var(--gold, #E3B04B); font-weight: 800; line-height: 1.25; }
+.hm-bub span { display: block; font-size: .8rem; color: rgb(255 255 255 / .75); line-height: 1.3; }
