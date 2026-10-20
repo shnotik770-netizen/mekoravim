@@ -6,7 +6,7 @@
   const mode = internal ? 'both' : (link.date_kinds || 'birthday');
   const yzList = typeof yahrzeits !== 'undefined' && yahrzeits.length ? yahrzeits : (mode === 'yahrzeit' ? [{ date_type: 'h' }] : []);
   const defaultIntro = { birthday: 'נשמח לדעת מתי יום ההולדת שלך — כדי לאחל לך מזל טוב ביום המיוחד!',
-    yahrzeit: 'נשמח לדעת את תאריכי היארצייט של יקיריך — כדי להזכיר לך ולעזור בקדיש, עלייה לתורה ולימוד לעילוי נשמתם.',
+    yahrzeit: 'נשמח לדעת את תאריכי היארצייט של יקיריך — כדי להזכיר לך ולעזור בקדיש, עלייה לתורה ואזכרה לעילוי נשמתם.',
     both: 'נשמח לדעת מתי יום ההולדת שלך ושל בני המשפחה, ואת תאריכי היארצייט של יקיריך.' }[mode];
 %>
 <% if (!internal) { %>
