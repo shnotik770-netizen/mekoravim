@@ -51,9 +51,9 @@
         </select>
         <noscript><button class="bd-btn bd-btn--ghost bd-btn--sm">שמירה</button></noscript>
       </form>
-      <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/remind', value: c.remind_days, id: 'remind', label: '🔔 תזכורת SMS' }) %>
+      <%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/remind', value: c.remind_days, id: 'remind', label: '🔔 תזכורת SMS אישית' }) %>
     </div>
-    <p class="bd-help">תזכורת SMS לנייד שלכם — גם אם התזכורות הכלליות כבויות. יורדת ממכסת ה-SMS לתזכורות.</p>
+    <p class="bd-help">הודעה מיוחדת לנייד שלכם לפני יום ההולדת של <%= c.first_name || fullName %> — כדי לא לשכוח להתקשר אליו/ה דווקא. נשלחת בנוסף לתזכורת השבועית/היומית (וגם אם הן כבויות), ויורדת ממכסת ה-SMS.</p>
     <a class="bd-btn bd-btn--soft bd-btn--block bd-mt" href="#edit" data-open-edit>✏️ עריכת פרטים, בני משפחה ויארצייט</a>
   </section>
 
@@ -74,7 +74,7 @@
           <% const bmd = !yz && !['בת', 'אמא', 'סבתא', 'אחות'].includes(f.relation) ? barMitzvahDate(f) : null; if (bmd && bmd >= today && bmd - today <= 366 * 864e5) { /* רק מגיל 12 — השנה שלפני הבר מצווה */ %>
           <div class="bd-person-row__bm"><%- include('partials/icons', { name: 'tefillin' }) %> בר מצווה: <b><%= hebDateStr(f.h_day, f.h_month, f.h_year + 13) %></b> · <bdi class="bd-num"><%= fmtGreg(bmd) %></bdi> · <%= untilText(Math.round((bmd - today) / 864e5)) %> · 📜 <%= parshaOnOrAfter(bmd, il) %><% if (f.bm_known) { %> · <span class="bd-muted">✓ ידוע</span><% } %></div>
           <% } %>
-          <div class="bd-person-row__remind"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: yz ? '🔔 תזכורת לפני היארצייט' : '🔔 תזכורת SMS' }) %></div>
+          <div class="bd-person-row__remind"><%- include('partials/remind_select', { action: base + '/contacts/' + c.id + '/family/' + f.id + '/remind', value: f.remind_days, id: 'remind-f' + f.id, label: yz ? '🔔 תזכורת SMS אישית לפני היארצייט' : '🔔 תזכורת SMS אישית' }) %></div>
         </div>
       </li>
     <% }) %>
