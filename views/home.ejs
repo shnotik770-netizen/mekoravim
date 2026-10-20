@@ -38,7 +38,7 @@
       <p class="hm-lead hm-rise" style="--d:2">כל ימי ההולדת העבריים של המקורבים ובני המשפחה — במקום אחד, עם תזכורת ב-SMS ובוואטסאפ בלחיצה.</p>
       <div class="hm-bubbles hm-rise" style="--d:2">
         <div class="hm-bub"><i>🕯️</i><div><b>תזכורות לקראת יארצייטים</b><span>לקדיש, עלייה לתורה ולאזכרה</span></div></div>
-        <div class="hm-bub"><i>🎉</i><div><b>תזכורות ייעודיות לבר מצוות</b><span>כולל הפרשה · בזמן שקבעתם מראש</span></div></div>
+        <div class="hm-bub"><span class="hm-tef"><%- include('partials/icons', { name: 'tefillin', size: 32 }) %></span><div><b>תזכורות ייעודיות לבר מצוות</b><span>כולל הפרשה · בזמן שקבעתם מראש</span></div></div>
       </div>
       <div class="hm-cta hm-rise" style="--d:3">
         <a class="hm-btn hm-btn--gold" href="<%= waContact %>" target="_blank" rel="noopener"><%- include('partials/icons', { name: 'chat' }) %>יצירת קשר בוואטסאפ</a>
@@ -52,7 +52,7 @@
       <div class="hm-badge" role="note" aria-label="מחיר השקה: 40 שקל, והמערכת שלך לתמיד (עד 770 רשומות)"><span class="hm-badge__l1">מחיר השקה</span><span class="hm-badge__l2">40<small>₪*</small></span><span class="hm-badge__l3">והמערכת שלך<br>לתמיד!</span></div>
       <div class="hm-phone"><img src="/img/dashboard.png?v=<%= v %>" alt=""></div>
       <div class="hm-pop hm-pop--a"><b>🎂 היום</b><span>יום הולדת לדוד כהן · 36</span></div>
-      <div class="hm-pop hm-pop--b"><b>🎉 בר מצווה</b><span>שמוליק כהן · בעוד 3 חודשים</span></div>
+      <div class="hm-pop hm-pop--b"><b><%- include('partials/icons', { name: 'tefillin', size: 18 }) %> בר מצווה</b><span>שמוליק כהן · בעוד 3 חודשים</span></div>
       <div class="hm-pop hm-pop--c"><b>✓ יצרתי קשר</b><span>שרה לוי · ט״ו בשבט</span></div>
     </div>
   </div>
@@ -71,7 +71,7 @@
       <article class="hm-feat" data-reveal><span class="hm-ico">📱</span><h3>תזכורת ב-SMS</h3><p>שבועית ביום ראשון, יומית, או מיוחדת על מקורב — עד חודש לפני. לא בשבת ולא בחג.</p></article>
       <article class="hm-feat" data-reveal><span class="hm-ico">👨‍👩‍👧</span><h3>כל המשפחה</h3><p>גם הילדים ובני הזוג מופיעים בדשבורד ביום ההולדת שלהם.</p></article>
       <article class="hm-feat" data-reveal><span class="hm-ico">🕯️</span><h3>יארצייט</h3><p>תאריך הפטירה נשמר, והיארצייט מחושב כל שנה — עם תזכורת לפני, לקדיש, לעלייה לתורה ולאזכרה.</p></article>
-      <article class="hm-feat" data-reveal><span class="hm-ico">🎉</span><h3>בר מצווה מתקרבת</h3><p>התראה כמה חודשים לפני שבן של מקורב מגיע לגיל 13 — כדי להספיק להיערך.</p></article>
+      <article class="hm-feat" data-reveal><span class="hm-ico hm-ico--tef"><%- include('partials/icons', { name: 'tefillin', size: 34 }) %></span><h3>בר מצווה מתקרבת</h3><p>התראה כמה חודשים לפני שבן של מקורב מגיע לגיל 13 — כדי להספיק להיערך.</p></article>
       <article class="hm-feat" data-reveal><span class="hm-ico">📋</span><h3>ייבוא מאקסל</h3><p>יש לכם רשימה? מדביקים את כולה בבת אחת.</p></article>
       <article class="hm-feat" data-reveal><span class="hm-ico">🔒</span><h3>פרטי לגמרי</h3><p>רק אתם רואים את המקורבים שלכם. כניסה בקוד או ב-SMS.</p></article>
     </div>
