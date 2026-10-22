@@ -224,3 +224,11 @@ h1, h2, h3 { margin: 0; }
 .bd-ico-tefillin .shin { stroke: #FBF6EC; }
 .hm-pop .bd-ico-tefillin { color: #16181d; vertical-align: -3px; }
 .hm-terms .bd-ico-tefillin { vertical-align: -4px; }
+/* הרחבות — ריבוע בתוך הבאנר */
+.hm-ext { position: relative; max-width: 420px; margin: 26px auto 0; padding: 16px 20px; border-radius: 20px; background: rgb(255 255 255 / .07); border: 1.5px solid rgb(227 176 75 / .45); text-align: start; }
+.hm-ext h3 { margin: 0 0 10px; font: 800 1.15rem/1.2 var(--display); color: var(--gold); text-align: center; }
+.hm-ext h3 small { font: 500 .85rem var(--body, inherit); color: rgb(255 255 255 / .7); }
+.hm-ext ul { list-style: none; margin: 0; padding: 0; }
+.hm-ext li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px dashed rgb(255 255 255 / .18); }
+.hm-ext li:first-child { border-top: 0; }
+.hm-ext li span { font: 900 1.25rem/1 var(--display); color: var(--gold); white-space: nowrap; }
