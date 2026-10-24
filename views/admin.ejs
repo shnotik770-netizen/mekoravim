@@ -17,7 +17,8 @@
   <a class="bd-stat" href="<%= tile('shluchim') %>" aria-pressed="<%= d === 'shluchim' %>"><span class="bd-stat__label">שלוחים פעילים</span><span class="bd-stat__value bd-num"><%= summary.active %></span>
     <span class="bd-stat__hint"><span class="bd-num"><%= summary.used30 %></span> השתמשו ב-30 יום</span><span class="bd-stat__more">פירוט ▾</span></a>
   <a class="bd-stat" href="<%= tile('contacts') %>" aria-pressed="<%= d === 'contacts' %>"><span class="bd-stat__label">מקורבים במערכת</span><span class="bd-stat__value bd-num"><%= summary.contacts %></span><span class="bd-stat__more">פירוט ▾</span></a>
-  <a class="bd-stat" href="<%= tile('sms') %>" aria-pressed="<%= d === 'sms' %>"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span><span class="bd-stat__more">פירוט ▾</span></a>
+  <a class="bd-stat" href="<%= tile('sms') %>" aria-pressed="<%= d === 'sms' %>"><span class="bd-stat__label">יחידות SMS החודש</span><span class="bd-stat__value bd-num"><%= summary.sms_month %></span>
+    <% if (balance.units !== null) { %><span class="bd-stat__hint" <%- balance.low ? 'style="color:var(--bd-bad);font-weight:600"' : '' %>>יתרה בימות: <span class="bd-num"><%= balance.units %></span><%= balance.low ? ' ⚠️' : '' %></span><% } %><span class="bd-stat__more">פירוט ▾</span></a>
   <a class="bd-stat" href="<%= tile('problems') %>" aria-pressed="<%= d === 'problems' %>"><span class="bd-stat__label">תקלות ב-24 שעות</span><span class="bd-stat__value bd-num" <%- summary.problems24 ? 'style="color:var(--bd-bad)"' : '' %>><%= summary.problems24 %></span><span class="bd-stat__more">פירוט ▾</span></a>
   <% const hot = load.day.inUse >= Math.ceil(POOL_MAX * 0.8) || load.day.waiting > 0; %>
   <a class="bd-stat" href="<%= tile('load') %>" aria-pressed="<%= d === 'load' %>"><span class="bd-stat__label">עומס (שיא 24 ש׳)</span><span class="bd-stat__value bd-num" <%- hot ? 'style="color:var(--bd-bad)"' : '' %>><%= load.day.inUse %>/<%= POOL_MAX %></span><span class="bd-stat__more">פירוט ▾</span></a>
@@ -42,7 +43,22 @@
     <div class="bd-table-wrap"><table class="bd-table"><thead><tr><th>שליח</th><th>מקורבים</th><th>בני משפחה</th><th>חדשים (30 יום)</th><th>"יצרתי קשר" (30 יום)</th></tr></thead><tbody>
       <% detail.rows.forEach(r => { %><tr><td><a href="/admin/shluchim/<%= r.id %>"><%= r.name %></a></td><td class="bd-num"><%= r.contacts %></td><td class="bd-num"><%= r.family %></td><td class="bd-num"><%= r.new30 %></td><td class="bd-num"><%= r.greetings30 %></td></tr><% }) %>
     </tbody></table></div>
-  <% } else if (d === 'sms') { %>
+  <% } else if (d === 'sms') { const B = balance; %>
+    <div class="bd-msg <%= !B.configured ? 'bd-msg--info' : B.error ? 'bd-msg--err' : B.low ? 'bd-msg--warn' : 'bd-msg--ok' %> bd-mb"><span>
+      💳 <b>יתרה בחשבון ימות המשיח:</b>
+      <% if (!B.configured) { %>SMS לא מוגדר (חסר YEMOT_TOKEN).
+      <% } else if (B.units === null && !B.error) { %>עוד לא נבדקה.
+      <% } else { %><% if (B.units !== null) { %><b class="bd-num"><%= B.units %></b> יחידות<%= B.low ? ' — מתחת לסף ההתראה!' : '' %><% } %><% if (B.error) { %> · הבדיקה האחרונה נכשלה: <%= B.error %><% } %>
+        <span class="bd-muted bd-small">(נבדק <%= ago(B.at) %>)</span><% } %>
+    </span></div>
+    <% if (B.configured) { %>
+    <form method="post" action="/admin/balance" class="bd-inline">
+      <label class="bd-small">התראת SMS כשהיתרה יורדת מתחת ל-<input class="bd-input" name="threshold" type="number" min="0" max="1000000" style="flex:0 0 110px" value="<%= B.threshold %>"></label>
+      <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
+    </form>
+    <form method="post" action="/admin/balance/check" class="bd-mt" data-once><button class="bd-btn bd-btn--ghost bd-btn--sm">בדיקת יתרה עכשיו</button></form>
+    <p class="bd-help bd-mt bd-mb">היתרה נבדקת אוטומטית פעם ביום. כשהיא יורדת מתחת לסף נשלח SMS לנייד ההתראות של המנהל (מוגדר ב"עומס"), ותזכורת כל 3 ימים עד שהיתרה עולה.</p>
+    <% } %>
     <div class="bd-minis">
       <% if (!detail.kinds.length) { %><span>עוד לא נשלחו הודעות החודש</span><% } %>
       <% detail.kinds.forEach(k => { %><span><b class="bd-num"><%= k.units %></b> <%= KIND[k.kind] || k.kind %> <span class="bd-muted">(<%= k.msgs %> הודעות)</span></span><% }) %>

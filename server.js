@@ -17,6 +17,7 @@ import { upcomingBarMitzvahs, untilText, barMitzvahDate, BM_MONTHS, isBarMitzvah
 import { noteDemo, noteDemoReject, report as loadReport, alertSettings, saveAlertSettings, sendTestAlert, POOL_MAX } from './lib/monitor.js';
 import { ADDRESS_OPTIONS, addressKey, parseAddress, displayName, g as gword } from './lib/address.js';
 import { seedDemoAccount } from './lib/demo.js';
+import { balanceState, checkBalance, saveThreshold, startBalanceChecks } from './lib/balance.js';
 import { recordsStatus, roomError, RECORDS_STEP } from './lib/records.js';
 import { splitTable, guessMapping, parseRow, dupKey, toTSV, FIELDS as IMPORT_FIELDS, MAX_ROWS as IMPORT_MAX } from './lib/import.js';
 import { smsConfigured, normalizePhone, shliachPhone, smsCapable, PHONE_RULE, sendSms, sendToShliach, sendReminder, weeklyMessageFor, previewKind, startScheduler, quotaStatus, getDefaultQuota, setDefaultQuota } from './lib/sms.js';
@@ -310,7 +311,19 @@ app.get('/admin', requireAdmin, async (req, res) => {
   const d = ['shluchim', 'contacts', 'sms', 'problems', 'load'].includes(req.query.d) ? req.query.d : null;
   res.render('admin', { shluchim: rows, base: baseUrl(req), info, smsOn: smsConfigured(), defaultQuota: await getDefaultQuota(), quotaStatus, summary,
     d, detail: d === 'load' ? { ...loadReport(), settings: await alertSettings() } : d ? await adminDetail(d) : null, fmtDate,
-    load: loadReport(), POOL_MAX, fmtTime });
+    load: loadReport(), POOL_MAX, fmtTime, balance: await balanceState() });
+});
+
+// יתרת היחידות בימות המשיח: סף להתראה ובדיקה ידנית
+app.post('/admin/balance', requireAdmin, async (req, res) => {
+  const n = parseInt(req.body.threshold, 10);
+  if (!Number.isInteger(n) || n < 0 || n > 1000000) flashErr(req, 'סף לא תקין');
+  else { await saveThreshold(n); flash(req, 'סף ההתראה נשמר'); }
+  res.redirect('/admin?d=sms#detail');
+});
+app.post('/admin/balance/check', requireAdmin, async (req, res) => {
+  try { const st = await checkBalance(); flash(req, `היתרה בימות המשיח: ${st.units} יחידות`); } catch (e) { flashErr(req, `הבדיקה נכשלה: ${e.message}`); }
+  res.redirect('/admin?d=sms#detail');
 });
 
 // מעקב עומס: נייד להתראות וסף (% מתקרת החיבורים)
@@ -1705,4 +1718,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   pruneAudit().catch(() => {});
   setInterval(() => pruneAudit().catch(() => {}), 24 * 3600 * 1000);
   startScheduler();
+  startBalanceChecks();
 }
