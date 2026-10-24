@@ -57,7 +57,7 @@
       <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
     </form>
     <form method="post" action="/admin/balance/check" class="bd-mt" data-once><button class="bd-btn bd-btn--ghost bd-btn--sm">בדיקת יתרה עכשיו</button></form>
-    <p class="bd-help bd-mt bd-mb">היתרה נבדקת אוטומטית פעם ביום. כשהיא יורדת מתחת לסף נשלח SMS לנייד ההתראות של המנהל (מוגדר ב"עומס"), ותזכורת כל 3 ימים עד שהיתרה עולה.</p>
+    <p class="bd-help bd-mt bd-mb">היתרה נבדקת אוטומטית פעם ביום, בבוקר. כשהיא יורדת מתחת לסף נשלח SMS לנייד ההתראות של המנהל (מוגדר ב"עומס"), ותזכורת כל 3 ימים עד שהיתרה עולה.</p>
     <% } %>
     <div class="bd-minis">
       <% if (!detail.kinds.length) { %><span>עוד לא נשלחו הודעות החודש</span><% } %>
@@ -98,7 +98,7 @@
       <button class="bd-btn bd-btn--primary bd-btn--sm">שמירה</button>
     </form>
     <form method="post" action="/admin/alerts/test" class="bd-mt"><button class="bd-btn bd-btn--ghost bd-btn--sm" <%= L.settings.phone ? '' : 'disabled' %>>שליחת התראת ניסיון</button></form>
-    <p class="bd-help bd-mt">SMS נשלח כשהחיבורים בו-זמנית מגיעים לסף, כשיש בקשות שממתינות לחיבור, או כש-5 כניסות להדגמה נדחו תוך 10 דקות — לכל היותר הודעה אחת בשעה. ההודעות על חשבון המערכת.</p>
+    <p class="bd-help bd-mt">SMS נשלח כשהחיבורים בו-זמנית מגיעים לסף, כשיש בקשות שממתינות לחיבור, או כש-5 כניסות להדגמה נדחו תוך 10 דקות — לכל היותר הודעה אחת בשעה, ורק בבוקר (8:00–10:00, ביום חול). התראות מהלילה או משבת נשלחות כסיכום אחד בבוקר. ההודעות על חשבון המערכת.</p>
   <% } else { %>
     <div class="bd-minis"><span><b class="bd-num"><%= summary.problems24 %></b> ב-24 שעות</span><span><b class="bd-num"><%= detail.w.errors7 %></b> שגיאות שרת ב-7 ימים</span><span><b class="bd-num"><%= detail.w.fails7 %></b> כשלים/חסימות ב-7 ימים</span></div>
     <% if (!detail.groups.length) { %><p class="bd-help">👍 אין תקלות ב-24 השעות האחרונות.</p><% } else { %>
